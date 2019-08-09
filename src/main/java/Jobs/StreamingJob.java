@@ -57,6 +57,8 @@ public class StreamingJob {
 		CMsketch.estimateCount(1);
 
 		DataStream<String> line = env.readTextFile("data/10percent.csv");
+
+
 		DataStream<Tuple2<Integer, Integer>> tuple = line.map(new MapFunction<String, Tuple2<Integer, Integer>>() {
 			@Override
 			public Tuple2<Integer, Integer> map (String line){
@@ -65,10 +67,9 @@ public class StreamingJob {
 			}
 		});
 
-		CMsketch = tuple.keyBy(0)
-				.window(new TumblingProcessingTimeWindows.of(Time.seconds(1)))
-				.aggregate(new CountMinSketchAggregator<Tuple2<Integer, Integer>>(height, width, seed));
-
+		DataStream<CountMinSketch> sketches = tuple.keyBy(0)
+				.window(new TumblingProcessingTimeWindows.of(Time.seconds(1L)))
+					.aggregate(new CountMinSketchAggregator<Tuple2<Integer, Integer>>(height, width, seed));
 
 
 		/*

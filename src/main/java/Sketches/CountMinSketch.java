@@ -3,7 +3,12 @@ package Sketches;
 
 import Sketches.HashFunctions.PairwiseIndependentHashFunctions;
 
-public class CountMinSketch<T> implements Sketches.Sketch<T, Integer> {
+import java.io.IOException;
+import java.io.ObjectStreamException;
+import java.io.Serializable;
+import java.util.Random;
+
+public class CountMinSketch<T> implements Sketches.Sketch<T, Integer>, Serializable {
 
 	private int width;
 	private int height;
@@ -106,5 +111,17 @@ public class CountMinSketch<T> implements Sketches.Sketch<T, Integer> {
 			sketch.concat("\n");
 		}
 		return sketch;
+	}
+
+	private void writeObject(java.io.ObjectOutputStream out) throws IOException {
+		out.defaultWriteObject();
+	}
+
+	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException{
+		in.defaultReadObject();
+	}
+
+	private void readObjectNoData() throws ObjectStreamException {
+		System.out.println("readObjectNoData() called - should give an exception");
 	}
 }
