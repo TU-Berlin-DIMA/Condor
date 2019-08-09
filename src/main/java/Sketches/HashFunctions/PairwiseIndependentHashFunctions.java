@@ -2,9 +2,10 @@ package Sketches.HashFunctions;
 
 import org.apache.flink.util.XORShiftRandom;
 
+import java.io.Serializable;
 import java.util.Random;
 
-public class PairwiseIndependentHashFunctions {
+public class PairwiseIndependentHashFunctions implements Serializable {
 
 
 	private final int[] a;

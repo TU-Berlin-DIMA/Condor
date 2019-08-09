@@ -28,7 +28,7 @@ public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountM
 	 */
 	@Override
 	public CountMinSketch createAccumulator() {
-
+		System.out.println("Create");
 		return new CountMinSketch<T>(width, height, hashFunctions);
 	}
 
@@ -43,6 +43,7 @@ public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountM
 	 */
 	@Override
 	public CountMinSketch add(T value, CountMinSketch accumulator) {
+		System.out.println("Add:\n" + value);
 		accumulator.update(value);
 		return accumulator;
 	}

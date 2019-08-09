@@ -18,16 +18,23 @@
 
 package Jobs;
 
+import Sketches.CountMinSketch;
 import Sketches.CountMinSketchAggregator;
-import akka.remote.artery.compress.CountMinSketch;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.KeyedStream;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
+import org.apache.flink.streaming.api.datastream.WindowedStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.assigners.GlobalWindows;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Skeleton for a Flink Streaming Job.
@@ -53,10 +60,9 @@ public class StreamingJob {
 		int height = 15;
 		int seed = 1;
 
-		CountMinSketch CMsketch = new CountMinSketch(width, height, seed);
-		CMsketch.estimateCount(1);
 
 		DataStream<String> line = env.readTextFile("data/10percent.csv");
+        System.out.println(line.toString());
 		DataStream<Tuple2<Integer, Integer>> tuple = line.map(new MapFunction<String, Tuple2<Integer, Integer>>() {
 			@Override
 			public Tuple2<Integer, Integer> map (String line){
@@ -65,36 +71,13 @@ public class StreamingJob {
 			}
 		});
 
-		CMsketch = tuple.keyBy(0)
-				.window(new TumblingProcessingTimeWindows.of(Time.seconds(1)))
-				.aggregate(new CountMinSketchAggregator<Tuple2<Integer, Integer>>(height, width, seed));
+        KeyedStream<Tuple2<Integer, Integer>, Tuple> keyed = tuple.keyBy(0);
+        WindowedStream<Tuple2<Integer, Integer>, Tuple, TimeWindow> win = keyed.timeWindow(Time.seconds(1));
+        SingleOutputStreamOperator<CountMinSketch> sketches = win.aggregate(new CountMinSketchAggregator<Tuple2<Integer, Integer>>(height, width, seed));
 
+        //sketches.writeAsText("output/CMsketch");
 
-
-		/*
-		 * Here, you can start creating your execution plan for Flink.
-		 *
-		 * Start with getting some data from the environment, like
-		 * 	env.readTextFile(textPath);
-		 *
-		 * then, transform the resulting DataStream<String> using operations
-		 * like
-		 * 	.filter()
-		 * 	.flatMap()
-		 * 	.join()
-		 * 	.coGroup()
-		 *
-		 * and many more.
-		 * Have a look at the programming guide for the Java API:
-		 *
-		 * http://flink.apache.org/docs/latest/apis/streaming/index.html
-		 *
-		 */
-
-		// execute program
 		env.execute("Flink Streaming Java API Skeleton");
-
-
 
 	}
 }

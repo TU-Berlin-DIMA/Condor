@@ -3,7 +3,9 @@ package Sketches;
 
 import Sketches.HashFunctions.PairwiseIndependentHashFunctions;
 
-public class CountMinSketch<T> implements Sketches.Sketch<T, Integer> {
+import java.io.Serializable;
+
+public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
 
 	private int width;
 	private int height;
