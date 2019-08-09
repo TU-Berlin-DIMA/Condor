@@ -62,7 +62,6 @@ public class StreamingJob {
 
 
 		DataStream<String> line = env.readTextFile("data/10percent.csv");
-        System.out.println(line.toString());
 		DataStream<Tuple2<Integer, Integer>> tuple = line.map(new MapFunction<String, Tuple2<Integer, Integer>>() {
 			@Override
 			public Tuple2<Integer, Integer> map (String line){

@@ -2,6 +2,9 @@ package Sketches.HashFunctions;
 
 import org.apache.flink.util.XORShiftRandom;
 
+import java.io.IOException;
+import java.io.ObjectStreamException;
+
 import java.io.Serializable;
 import java.util.Random;
 
@@ -48,6 +51,7 @@ public class PairwiseIndependentHashFunctions implements Serializable {
 			a[i] = rand.nextInt(p);
 			b[i] = rand.nextInt(p);
 		}
+
 	}
 
 	// hashes integers
@@ -82,6 +86,28 @@ public class PairwiseIndependentHashFunctions implements Serializable {
 			}
 		}else return false;
 		return true;
+	}
+
+	private void writeObject(java.io.ObjectOutputStream out) throws IOException {
+		out.writeInt(numFunctions);
+		for (int i = 0; i < numFunctions; i++){
+			out.writeInt(a[i]);
+			out.writeInt(b[i]);
+		}
+		out.writeObject(rand);
+	}
+
+	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException{
+		numFunctions = in.readInt();
+		for (int i = 0; i < numFunctions; i++){
+			a[i] = in.readInt();
+			b[i] = in.readInt();
+		}
+		rand = (Random) in.readObject();
+	}
+
+	private void readObjectNoData() throws ObjectStreamException{
+		System.out.println("readObjectNoData() called - should give an exception");
 	}
 
 }
