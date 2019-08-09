@@ -20,10 +20,12 @@ package Jobs;
 
 import Sketches.CountMinSketch;
 import Sketches.CountMinSketchAggregator;
+import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.KeyedStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
@@ -84,11 +86,42 @@ public class StreamingJob {
             }
         });
 
-        KeyedStream<Tuple2<Integer, Integer>, Tuple> keyed = tuple.keyBy(0);
-        WindowedStream<Tuple2<Integer, Integer>, Tuple, TimeWindow> win = keyed.timeWindow(Time.minutes(1));
-        SingleOutputStreamOperator<CountMinSketch> sketches = win.aggregate(new CountMinSketchAggregator<Tuple2<Integer, Integer>>(height, width, seed));
 
-        sketches.writeAsText("output/CMsketch").setParallelism(1);
+		tuple.writeAsText("output/test.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+
+
+
+
+        /*KeyedStream<Tuple2<Integer, Integer>, Tuple> keyed = tuple.keyBy(0);
+        WindowedStream<Tuple2<Integer, Integer>, Tuple, TimeWindow> win = keyed.timeWindow(Time.minutes(1));
+        
+        SingleOutputStreamOperator<Integer> testOutput = win.aggregate(new AggregateFunction<Tuple2<Integer, Integer>, Integer, Integer>() {
+            @Override
+            public Integer createAccumulator() {
+                return 0;
+            }
+            @Override
+            public Integer add(Tuple2<Integer, Integer> value, Integer accumulator) {
+                accumulator += value.f0;
+                return accumulator;
+            }
+            @Override
+            public Integer getResult(Integer accumulator) {
+                return accumulator;
+            }
+            @Override
+            public Integer merge(Integer a, Integer b) {
+                return a + b;
+            }
+        });
+
+        testOutput.writeAsText("output/testOutput.txt").setParallelism(1);*/
+
+
+
+        // SingleOutputStreamOperator<CountMinSketch> sketches = win.aggregate(new CountMinSketchAggregator<Tuple2<Integer, Integer>>(height, width, seed));
+
+        // sketches.writeAsText("output/CMsketch").setParallelism(1);
 
 		env.execute("Flink Streaming Java API Skeleton");
 
