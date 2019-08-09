@@ -81,7 +81,11 @@ public class StreamingJob {
             public void flatMap(String value, Collector<Tuple2<Integer, Integer>> out){
                 String[] tuples = value.split(",");
                 if(tuples.length == 2) {
-                    out.collect(new Tuple2<>(Integer.getInteger(tuples[0]), Integer.getInteger(tuples[1])));
+                    Integer key = Integer.getInteger(tuples[0]);
+                    Integer val = Integer.getInteger(tuples[1]);
+                    if (key != null && val != null) {
+                        out.collect(new Tuple2<>(key, val));
+                    }
                 }
             }
         });
