@@ -95,4 +95,16 @@ public class CountMinSketch<T> implements Sketches.Sketch<T, Integer> {
 		}
 		return this;
 	}
+
+	@Override
+	public String toString(){
+		String sketch = new String();
+		for (int i = 0; i < height; i++) {
+			for (int j = 0; j < width; j++) {
+				sketch.concat(array[i][j] + " | ");
+			}
+			sketch.concat("\n");
+		}
+		return sketch;
+	}
 }
