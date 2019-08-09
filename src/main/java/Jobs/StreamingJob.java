@@ -20,6 +20,7 @@ package Jobs;
 
 import Sketches.CountMinSketch;
 import Sketches.CountMinSketchAggregator;
+import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -32,6 +33,7 @@ import org.apache.flink.streaming.api.windowing.assigners.GlobalWindows;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
+import org.apache.flink.util.Collector;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -62,13 +64,15 @@ public class StreamingJob {
 
 
 		DataStream<String> line = env.readTextFile("data/10percent.csv");
-		DataStream<Tuple2<Integer, Integer>> tuple = line.map(new MapFunction<String, Tuple2<Integer, Integer>>() {
-			@Override
-			public Tuple2<Integer, Integer> map (String line){
-				String[] tuples = line.split(",");
-				return new Tuple2<>(Integer.getInteger(tuples[0]), Integer.getInteger(tuples[1]));
-			}
-		});
+		DataStream<Tuple2<Integer, Integer>> tuple = line.flatMap(new FlatMapFunction<String, Tuple2<Integer, Integer>>() {
+            @Override
+            public void flatMap(String value, Collector<Tuple2<Integer, Integer>> out){
+                String[] tuples = value.split(",");
+                if(tuples.length == 2) {
+                    out.collect(new Tuple2<>(Integer.getInteger(tuples[0]), Integer.getInteger(tuples[1])));
+                }
+            }
+        });
 
         KeyedStream<Tuple2<Integer, Integer>, Tuple> keyed = tuple.keyBy(0);
         WindowedStream<Tuple2<Integer, Integer>, Tuple, TimeWindow> win = keyed.timeWindow(Time.seconds(1));
