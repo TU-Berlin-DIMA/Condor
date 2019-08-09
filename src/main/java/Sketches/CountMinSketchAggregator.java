@@ -9,9 +9,9 @@ public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountM
 	private int width;
 	private PairwiseIndependentHashFunctions hashFunctions;
 
-	public CountMinSketchAggregator(int height, int weight, int seed){
+	public CountMinSketchAggregator(int height, int width, int seed){
 		this.height = height;
-		this.width = weight;
+		this.width = width;
 		hashFunctions = new PairwiseIndependentHashFunctions(height, seed);
 	}
 	/**

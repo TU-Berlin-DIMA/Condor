@@ -115,11 +115,25 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
 	}
 
 	private void writeObject(java.io.ObjectOutputStream out) throws IOException {
-		out.defaultWriteObject();
+		out.writeInt(width);
+		out.writeInt(height);
+		for (int i = 0; i < height; i++){
+			for (int j = 0; j < width; j++){
+				out.writeInt(array[i][j]);
+			}
+		}
+		out.writeObject(hashFunctions);
 	}
 
 	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException{
-		in.defaultReadObject();
+		width = in.readInt();
+		height = in.readInt();
+		for (int i = 0; i < height; i++){
+			for (int j = 0; j < width; j++){
+				array[i][j] = in.readInt();
+			}
+		}
+		hashFunctions = (PairwiseIndependentHashFunctions) in.readObject();
 	}
 
 	private void readObjectNoData() throws ObjectStreamException {
