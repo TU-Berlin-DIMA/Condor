@@ -19,6 +19,7 @@
 package Jobs;
 
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.streaming.api.datastream.DataStream;
 
 /**
  * Skeleton for a Flink Batch Job.
@@ -35,6 +36,8 @@ public class BatchJob {
 	public static void main(String[] args) throws Exception {
 		// set up the batch execution environment
 		final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+
+
 
 		/*
 		 * Here, you can start creating your execution plan for Flink.

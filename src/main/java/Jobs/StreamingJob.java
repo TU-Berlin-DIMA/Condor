@@ -18,9 +18,16 @@
 
 package Jobs;
 
+import Sketches.CountMinSketchAggregator;
 import akka.remote.artery.compress.CountMinSketch;
+import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.java.tuple.Tuple;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.windowing.assigners.GlobalWindows;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
+import org.apache.flink.streaming.api.windowing.time.Time;
 
 /**
  * Skeleton for a Flink Streaming Job.
@@ -49,6 +56,21 @@ public class StreamingJob {
 		CountMinSketch CMsketch = new CountMinSketch(width, height, seed);
 		CMsketch.estimateCount(1);
 
+		DataStream<String> line = env.readTextFile("data/10percent.csv");
+		DataStream<Tuple2<Integer, Integer>> tuple = line.map(new MapFunction<String, Tuple2<Integer, Integer>>() {
+			@Override
+			public Tuple2<Integer, Integer> map (String line){
+				String[] tuples = line.split(",");
+				return new Tuple2<>(Integer.getInteger(tuples[0]), Integer.getInteger(tuples[1]));
+			}
+		});
+
+		CMsketch = tuple.keyBy(0)
+				.window(new TumblingProcessingTimeWindows.of(Time.seconds(1)))
+				.aggregate(new CountMinSketchAggregator<Tuple2<Integer, Integer>>(height, width, seed));
+
+
+
 		/*
 		 * Here, you can start creating your execution plan for Flink.
 		 *
@@ -71,6 +93,7 @@ public class StreamingJob {
 
 		// execute program
 		env.execute("Flink Streaming Java API Skeleton");
+
 
 
 	}
