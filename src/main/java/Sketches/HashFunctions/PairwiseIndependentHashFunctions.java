@@ -59,7 +59,11 @@ public class PairwiseIndependentHashFunctions implements Serializable {
 		int[] result = new int[numFunctions];
 
 		for (int i = 0; i < numFunctions; i++){
-			result[i] = (a[i]* o.hashCode() + b[i]) % p;
+			int temp = (a[i]* o.hashCode() + b[i]) % p;
+			if (temp < 0){
+				temp *= -1;
+			}
+			result[i] = temp;
 		}
 
 		return result;

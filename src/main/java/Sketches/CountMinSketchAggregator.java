@@ -3,6 +3,10 @@ package Sketches;
 import Sketches.HashFunctions.PairwiseIndependentHashFunctions;
 import org.apache.flink.api.common.functions.AggregateFunction;
 
+import java.io.IOException;
+import java.io.ObjectStreamException;
+import java.util.Random;
+
 public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountMinSketch, CountMinSketch> {
 
 	private int height;
@@ -18,7 +22,7 @@ public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountM
 	 * Creates a new accumulator, starting a new aggregate.
 	 *
 	 * <p>The new accumulator is typically meaningless unless a value is added
-	 * via {@link #add(Object, Object)}.
+	 * via {@link #add(Object, CountMinSketch)}
 	 *
 	 * <p>The accumulator is the state of a running aggregation. When a program has multiple
 	 * aggregates in progress (such as per key and window), the state (per key and window)
@@ -28,7 +32,7 @@ public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountM
 	 */
 	@Override
 	public CountMinSketch createAccumulator() {
-		System.out.println("Create");
+		System.out.println("Created Accumulator (CM Sketch)");
 		return new CountMinSketch<T>(width, height, hashFunctions);
 	}
 
@@ -78,5 +82,21 @@ public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountM
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	private void writeObject(java.io.ObjectOutputStream out) throws IOException {
+		out.writeInt(height);
+		out.writeInt(width);
+		out.writeObject(hashFunctions);
+	}
+
+	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException{
+		height = in.readInt();
+		width = in.readInt();
+		hashFunctions = (PairwiseIndependentHashFunctions) in.readObject();
+	}
+
+	private void readObjectNoData() throws ObjectStreamException {
+		System.out.println("readObjectNoData() called - should give an exception");
 	}
 }

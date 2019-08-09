@@ -62,6 +62,16 @@ public class StreamingJob {
 		int height = 15;
 		int seed = 1;
 
+		CountMinSketchAggregator testAggregator = new CountMinSketchAggregator(height, width, seed);
+		CountMinSketch<Tuple2<Integer, Integer>> testSketch = testAggregator.createAccumulator();
+		testSketch.update(new Tuple2<>(1,1));
+		testSketch.update(new Tuple2<>(1,2));
+		testSketch.update(new Tuple2<>(1,1));
+
+		int approximate_count = testSketch.query(new Tuple2<>(1,1));
+		System.out.println("approximate count of (1,1): " + approximate_count);
+
+
 
 		DataStream<String> line = env.readTextFile("data/10percent.csv");
 		DataStream<Tuple2<Integer, Integer>> tuple = line.flatMap(new FlatMapFunction<String, Tuple2<Integer, Integer>>() {
@@ -75,10 +85,10 @@ public class StreamingJob {
         });
 
         KeyedStream<Tuple2<Integer, Integer>, Tuple> keyed = tuple.keyBy(0);
-        WindowedStream<Tuple2<Integer, Integer>, Tuple, TimeWindow> win = keyed.timeWindow(Time.seconds(1));
+        WindowedStream<Tuple2<Integer, Integer>, Tuple, TimeWindow> win = keyed.timeWindow(Time.minutes(1));
         SingleOutputStreamOperator<CountMinSketch> sketches = win.aggregate(new CountMinSketchAggregator<Tuple2<Integer, Integer>>(height, width, seed));
 
-        //sketches.writeAsText("output/CMsketch");
+        sketches.writeAsText("output/CMsketch").setParallelism(1);
 
 		env.execute("Flink Streaming Java API Skeleton");
 
