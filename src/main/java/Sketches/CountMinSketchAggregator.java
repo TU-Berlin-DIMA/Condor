@@ -2,6 +2,9 @@ package Sketches;
 
 import Sketches.HashFunctions.PairwiseIndependentHashFunctions;
 import org.apache.flink.api.common.functions.AggregateFunction;
+import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.ObjectStreamException;
@@ -9,14 +12,17 @@ import java.util.Random;
 
 public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountMinSketch, CountMinSketch> {
 
+	private static final Logger LOG = LoggerFactory.getLogger(LocalStreamEnvironment.class);
 	private int height;
 	private int width;
+	private int seed;
 	private PairwiseIndependentHashFunctions hashFunctions;
 
 	public CountMinSketchAggregator(int height, int width, int seed){
 		this.height = height;
 		this.width = width;
-		hashFunctions = new PairwiseIndependentHashFunctions(height, seed);
+		this.seed = seed;
+
 	}
 	/**
 	 * Creates a new accumulator, starting a new aggregate.
@@ -32,7 +38,8 @@ public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountM
 	 */
 	@Override
 	public CountMinSketch createAccumulator() {
-		System.out.println("Created Accumulator (CM Sketch)");
+		LOG.info("Accumulator starts");
+		hashFunctions = new PairwiseIndependentHashFunctions(height, seed);
 		return new CountMinSketch<T>(width, height, hashFunctions);
 	}
 
@@ -47,7 +54,6 @@ public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountM
 	 */
 	@Override
 	public CountMinSketch add(T value, CountMinSketch accumulator) {
-		System.out.println("Add:\n" + value);
 		accumulator.update(value);
 		return accumulator;
 	}

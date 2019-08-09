@@ -104,6 +104,7 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
 
 	@Override
 	public String toString(){
+		System.out.println("TOUCH!!!!!!!!!!!!!");
 		String sketch = new String();
 		for (int i = 0; i < height; i++) {
 			for (int j = 0; j < width; j++) {

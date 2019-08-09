@@ -12,12 +12,13 @@ public class CountMinSketchAggregator2<T> implements AggregateFunction<T , Integ
 
 	private int height;
 	private int width;
+	private int seed;
 	private PairwiseIndependentHashFunctions hashFunctions;
 
 	public CountMinSketchAggregator2(int height, int weight, int seed){
 		this.height = height;
 		this.width = weight;
-		hashFunctions = new PairwiseIndependentHashFunctions(height, seed);
+		this.seed = seed;
 	}
 	/**
 	 * Creates a new accumulator, starting a new aggregate.
@@ -34,6 +35,8 @@ public class CountMinSketchAggregator2<T> implements AggregateFunction<T , Integ
 	@Override
 	public Integer createAccumulator() {
 		LOG.info("Accumulator starts");
+		hashFunctions = new PairwiseIndependentHashFunctions(height, seed);
+
 		return new Integer(0);
 	}
 
