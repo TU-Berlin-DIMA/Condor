@@ -98,7 +98,7 @@ public class StreamingJob {
 
         KeyedStream<Tuple2<Integer, Integer>, Tuple> keyed = tuple.keyBy(0);
 
-		WindowedStream<Tuple2<Integer, Integer>, Tuple, GlobalWindow> win = keyed.countWindow(10000);
+		 WindowedStream<Tuple2<Integer, Integer>, Tuple, GlobalWindow> win = keyed.countWindow(10000);
         
         /*SingleOutputStreamOperator<Integer> testOutput = win.aggregate(new AggregateFunction<Tuple2<Integer, Integer>, Integer, Integer>() {
             @Override
