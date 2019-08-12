@@ -31,7 +31,8 @@ public class PairwiseIndependentHashFunctions implements Serializable {
 		}
 	}
 	public PairwiseIndependentHashFunctions(int numFunctions, long seed) {
-		this.rand = new XORShiftRandom(seed);
+		//this.rand = new XORShiftRandom(seed);
+		this.rand = new Random();
 		this.numFunctions = numFunctions;
 		a = new int[numFunctions];
 		b = new int[numFunctions];
@@ -59,7 +60,7 @@ public class PairwiseIndependentHashFunctions implements Serializable {
 		int[] result = new int[numFunctions];
 
 		for (int i = 0; i < numFunctions; i++){
-			int temp = (a[i]* o.hashCode() + b[i]) % p;
+			int temp = (a[i]* o.hashCode() + b[i])%p;
 			if (temp < 0){
 				temp *= -1;
 			}

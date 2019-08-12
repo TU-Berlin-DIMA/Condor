@@ -6,6 +6,8 @@ import Sketches.HashFunctions.PairwiseIndependentHashFunctions;
 import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 
 public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
@@ -15,12 +17,16 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
 	private int height;
 	private int[][] array;
 	private PairwiseIndependentHashFunctions hashFunctions;
+	private int elementsProcessed;
+	private HashSet<T> Elements;
 
 	public CountMinSketch(int width, int height, PairwiseIndependentHashFunctions hashFunctions){
 		this.width = width;
 		this.height = height;
 		array = new int[height][width];
 		this.hashFunctions = hashFunctions;
+		this.elementsProcessed = 0;
+		this.Elements = new HashSet<>();
 	}
 
 	/**
@@ -33,8 +39,13 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
 
 		int[] indices = hashFunctions.hash(tuple);
 		for (int i = 0; i < height; i++){
+
+			int pos = indices[i] % width;
+			//System.out.println(this + " "+ tuple+" "+pos+" "+indices[i]);
 			array[i][indices[i] % width] ++;
 		}
+		Elements.add(tuple);
+		elementsProcessed++;
 	}
 
 	/**
@@ -50,6 +61,7 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
 		for (int i = 0; i < height; i++){
 			array[i][indices[i] % width] += weight;
 		}
+		elementsProcessed++;
 	}
 
 	/**
@@ -104,14 +116,25 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
 
 	@Override
 	public String toString(){
-		System.out.println("TOUCH!!!!!!!!!!!!!");
 		String sketch = new String();
+		sketch += "Functions\n";
+		for (int i = 0; i < height; i++) {
+			sketch += i + ":  A: " + hashFunctions.getA()[i] + "  ";
+			sketch += "B: " + hashFunctions.getB()[i] + "\n";
+		}
 		for (int i = 0; i < height; i++) {
 			for (int j = 0; j < width; j++) {
-				sketch.concat(array[i][j] + " | ");
+
+				sketch += array[i][j] + " | ";
 			}
-			sketch.concat("\n");
+			sketch += "\n";
 		}
+		sketch += "Elements processed: " + elementsProcessed+ "\n";
+		for (T elem:
+				Elements) {
+			sketch += elem.toString() + ", ";
+		}
+		sketch += "\n";
 		return sketch;
 	}
 
