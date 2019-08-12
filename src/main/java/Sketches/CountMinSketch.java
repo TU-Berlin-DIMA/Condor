@@ -100,7 +100,7 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
 		return hashFunctions;
 	}
 
-	protected CountMinSketch merge(CountMinSketch other) throws Exception {
+	public CountMinSketch merge(CountMinSketch other) throws Exception {
 		if (other.getWidth() == width && other.getHeight() == height && hashFunctions.equals(other.hashFunctions)){
 			int[][] a2 = other.getArray();
 			for (int i = 0; i < height; i++){
