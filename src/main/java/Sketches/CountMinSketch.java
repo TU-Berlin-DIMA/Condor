@@ -18,7 +18,7 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
 	private int[][] array;
 	private PairwiseIndependentHashFunctions hashFunctions;
 	private int elementsProcessed;
-	private HashSet<T> Elements;
+	private HashSet<Object> Elements;
 
 	public CountMinSketch(int width, int height, PairwiseIndependentHashFunctions hashFunctions){
 		this.width = width;
@@ -35,7 +35,7 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
 	 * @param tuple
 	 */
 	@Override
-	public void update(T tuple) {
+	public void update(Object tuple) {
 
 		int[] indices = hashFunctions.hash(tuple);
 		for (int i = 0; i < height; i++){
@@ -53,7 +53,7 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
 	 * @param tuple
 	 * @param weight must be positive
 	 */
-	public void weightedUpdate(T tuple, int weight) throws Exception {
+	public void weightedUpdate(Object tuple, int weight) throws Exception {
 		if (weight < 0){
 			throw new Exception("Count Min sketch only accepts positive weights!");
 		}
@@ -71,7 +71,7 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
 	 * @return The approximate count of tuple so far
 	 */
 	@Override
-	public Integer query(T tuple) {
+	public Integer query(Object tuple) {
 		int[] indices = hashFunctions.hash(tuple);
 		int min = -1;
 		for (int i = 0; i < height; i++){
@@ -100,7 +100,15 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
 		return hashFunctions;
 	}
 
-	protected CountMinSketch merge(CountMinSketch other) throws Exception {
+	public int getElementsProcessed() {
+		return elementsProcessed;
+	}
+
+	public HashSet<Object> getElements() {
+		return Elements;
+	}
+
+	public CountMinSketch merge(CountMinSketch other) throws Exception {
 		if (other.getWidth() == width && other.getHeight() == height && hashFunctions.equals(other.hashFunctions)){
 			int[][] a2 = other.getArray();
 			for (int i = 0; i < height; i++){
@@ -108,6 +116,8 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
 					array[i][j] += a2[i][j];
 				}
 			}
+			elementsProcessed += other.getElementsProcessed();
+			Elements.addAll(other.getElements());
 		}else {
 			throw new Exception("Sketches to merge have to be the same size and hash Functions");
 		}
@@ -130,7 +140,7 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
 			sketch += "\n";
 		}
 		sketch += "Elements processed: " + elementsProcessed+ "\n";
-		for (T elem:
+		for (Object elem:
 				Elements) {
 			sketch += elem.toString() + ", ";
 		}
