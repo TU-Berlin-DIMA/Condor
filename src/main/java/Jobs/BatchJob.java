@@ -18,8 +18,29 @@
 
 package Jobs;
 
+import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.functions.IterationRuntimeContext;
+import org.apache.flink.api.common.functions.RichMapFunction;
+import org.apache.flink.api.common.functions.RuntimeContext;
+import org.apache.flink.api.common.state.ValueState;
+import org.apache.flink.api.common.state.ValueStateDescriptor;
+import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.api.java.operators.DataSource;
+import org.apache.flink.api.java.operators.MapOperator;
+import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.core.fs.FileSystem;
+import org.apache.flink.streaming.api.TimerService;
+import org.apache.flink.util.Collector;
+import sun.util.calendar.BaseCalendar;
+
+import java.io.IOException;
+import java.sql.Time;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Timer;
 
 /**
  * Skeleton for a Flink Batch Job.
@@ -37,33 +58,81 @@ public class BatchJob {
 		// set up the batch execution environment
 		final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
+		DataSet<Tuple2<Integer, Integer>> line = env.readTextFile("data/10percent.csv")
+				.flatMap(new FlatMapFunction<String, Tuple2<Integer, Integer>>() {
+					@Override
+					public void flatMap(String value, Collector<Tuple2<Integer, Integer>> out) throws Exception {
+						String[] tuples = value.split(",");
+
+						if(tuples.length == 2) {
+
+							Integer key = new Integer(tuples[0]);
+							Integer val = new Integer(tuples[1]);
+
+							if (key != null && val != null) {
+								out.collect(new Tuple2<>(key, new Integer(1)));
+							}
+						}else {
+							System.out.println("invalid value : " + value);
+						}
+					}
+				});
 
 
-		/*
-		 * Here, you can start creating your execution plan for Flink.
-		 *
-		 * Start with getting some data from the environment, like
-		 * 	env.readTextFile(textPath);
-		 *
-		 * then, transform the resulting DataSet<String> using operations
-		 * like
-		 * 	.filter()
-		 * 	.flatMap()
-		 * 	.join()
-		 * 	.coGroup()
-		 *
-		 * and many more.
-		 * Have a look at the programming guide for the Java API:
-		 *
-		 * http://flink.apache.org/docs/latest/apis/batch/index.html
-		 *
-		 * and the examples
-		 *
-		 * http://flink.apache.org/docs/latest/apis/batch/examples.html
-		 *
-		 */
+
+		Calendar calendar = Calendar.getInstance();
+		calendar.set(2018, 1, 1);
+		long timestampInMillis = calendar.getTimeInMillis();
+
+		System.out.println(timestampInMillis);
+
+		line.map(new timeStampMapFunction())
+			.writeAsText("output/test.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+
+
 
 		// execute program
 		env.execute("Flink Batch Java API Skeleton");
+
+
+	}
+
+	public static class timeStampMapFunction extends RichMapFunction<Tuple2<Integer, Integer>, Tuple3<Integer, Integer, Long>> {
+
+		private ValueState<Integer> countState;
+
+		@Override
+		public void open(Configuration parameters) throws Exception {
+			countState = new ValueState<Integer>() {
+				int value;
+				@Override
+				public Integer value() throws IOException {
+					return value;
+				}
+
+				@Override
+				public void update(Integer value) throws IOException {
+					this.value = value;
+				}
+
+				@Override
+				public void clear() {
+					value = 0;
+				}
+			};
+			countState.update(0);
+		}
+
+		@Override
+		public Tuple3<Integer, Integer, Long> map(Tuple2<Integer, Integer> value) throws Exception {
+
+			int count = countState.value();
+			count ++;
+			countState.update(count);
+
+			Long timestamp = 100000L + ((count / 1000) + 1);
+
+			return new Tuple3<>(value.f0, value.f1, timestamp);
+		}
 	}
 }
