@@ -57,6 +57,7 @@ public class BatchJob {
 	public static void main(String[] args) throws Exception {
 		// set up the batch execution environment
 		final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+		env.setParallelism(1);
 
 		DataSet<Tuple2<Integer, Integer>> line = env.readTextFile("data/10percent.csv")
 				.flatMap(new FlatMapFunction<String, Tuple2<Integer, Integer>>() {
@@ -84,16 +85,15 @@ public class BatchJob {
 		calendar.set(2018, 1, 1);
 		long timestampInMillis = calendar.getTimeInMillis();
 
+		System.out.println("TimeStamp!!!");
 		System.out.println(timestampInMillis);
 
 		line.map(new timeStampMapFunction())
-			.writeAsText("output/test.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
-
+                .writeAsCsv("data/timestamped.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
 
 		// execute program
 		env.execute("Flink Batch Java API Skeleton");
-
 
 	}
 
@@ -130,7 +130,7 @@ public class BatchJob {
 			count ++;
 			countState.update(count);
 
-			Long timestamp = 100000L + ((count / 1000) + 1);
+			Long timestamp = 1517499757961L + Math.floorDiv(count, 10000) * 60000L;
 
 			return new Tuple3<>(value.f0, value.f1, timestamp);
 		}

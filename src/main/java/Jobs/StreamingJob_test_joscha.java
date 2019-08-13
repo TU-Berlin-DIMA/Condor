@@ -87,7 +87,6 @@ public class StreamingJob_test_joscha {
 
                 int random = new XORShiftRandom().nextInt(parallelism);
 
-
                 return new Tuple3<>(value.f0, value.f1, random);
             }
         });
@@ -109,7 +108,6 @@ public class StreamingJob_test_joscha {
 
 
         env.execute("Flink Streaming Java API Skeleton");
-
     }
 }
 
