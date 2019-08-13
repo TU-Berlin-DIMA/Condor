@@ -101,15 +101,12 @@ public class StreamingJob {
         KeyedStream<Tuple2<Integer, Integer>, Tuple> keyed = tuple.keyBy(0);
         //keyed.writeAsText("output/data.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
-
-
         //SingleOutputStreamOperator<Tuple2<Integer, Integer>> testOutput = keyed.
 
         //WindowedStream<Tuple2<Integer, Integer>, Tuple, GlobalWindow> win = keyed.countWindow(1000000);
         //AllWindowedStream<Tuple2<Integer, Integer>, TimeWindow> win = tuple.timeWindowAll(Time.seconds(2));
         //AllWindowedStream<Tuple2<Integer, Integer>, GlobalWindow> win = tuple.countWindowAll(10000000);
         WindowedStream<Tuple2<Integer, Integer>, Tuple, TimeWindow> win = keyed.timeWindow(Time.seconds(2));
-
 
 
 
@@ -152,8 +149,10 @@ public class StreamingJob {
             }
         });
 
+
         testOutput.writeAsText("output/testOutput.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
         realOutput.writeAsText("output/realOutput.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+
 
 
         env.execute("Flink Streaming Java API Skeleton");

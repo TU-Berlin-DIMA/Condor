@@ -99,7 +99,7 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
 	public PairwiseIndependentHashFunctions getHashFunctions() {
 		return hashFunctions;
 	}
-
+	
 	public int getElementsProcessed() {
 		return elementsProcessed;
 	}
