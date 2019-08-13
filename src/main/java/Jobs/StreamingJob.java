@@ -32,6 +32,8 @@ import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.*;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.ProcessFunction;
+import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.GlobalWindows;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
@@ -142,6 +144,28 @@ public class StreamingJob {
 //                }
 //            }
 //        });
+
+        SingleOutputStreamOperator<Long> debug = testOutput.process(new ProcessFunction<Tuple2<Long, CountMinSketch>, Long>() {
+            /**
+             * Process one element from the input stream.
+             *
+             * <p>This function can output zero or more elements using the {@link Collector} parameter
+             * and also update internal state or set timers using the {@link Context} parameter.
+             *
+             * @param value The input value.
+             * @param ctx   A {@link Context} that allows querying the timestamp of the element and getting
+             *              a {@link TimerService} for registering timers and querying the time. The
+             *              context is only valid during the invocation of this method, do not store it.
+             * @param out   The collector for returning result values.
+             * @throws Exception This method may throw exceptions. Throwing an exception will cause the operation
+             *                   to fail and may trigger recovery.
+             */
+            @Override
+            public void processElement(Tuple2<Long, CountMinSketch> value, Context ctx, Collector<Long> out) throws Exception {
+                out.collect(ctx.timestamp());
+            }
+        });
+
         SingleOutputStreamOperator<Tuple2<Long, CountMinSketch>> realOutput = testOutput.timeWindowAll(Time.seconds(1)).reduce(new ReduceFunction<Tuple2<Long, CountMinSketch>>() {
             @Override
             public Tuple2<Long, CountMinSketch> reduce(Tuple2<Long, CountMinSketch> value1, Tuple2<Long, CountMinSketch> value2) throws Exception {
@@ -150,9 +174,9 @@ public class StreamingJob {
         });
 
 
-        testOutput.writeAsText("output/testOutput.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
-        realOutput.writeAsText("output/realOutput.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
-
+        testOutput.writeAsCsv("output/testOutput.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+        realOutput.writeAsCsv("output/realOutput.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+        debug.writeAsText("output/debug.txt", FileSystem.WriteMode.OVERWRITE);
 
 
         env.execute("Flink Streaming Java API Skeleton");
