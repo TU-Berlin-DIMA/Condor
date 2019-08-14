@@ -45,7 +45,7 @@ public class EventTimeStreamingJob {
         int width = 10;
         int height = 5;
         int seed = 1;
-        int keyField = 2;
+        int keyField = 1;
 
         Time windowTime = Time.minutes(1);
 
@@ -57,7 +57,7 @@ public class EventTimeStreamingJob {
 
         SingleOutputStreamOperator<CountMinSketch> distributedSketches = timestamped.keyBy(0) // key by the partition (should always be on field 1)
                 .timeWindow(windowTime) // keyed window by Window Time
-                        .aggregate(new CountMinSketchAggregator<>(height, width, seed, keyField)); // aggregate with our Sketches
+                        .aggregate(new CountMinSketchAggregator<>(height, width, seed, 1)); // aggregate with our Sketches
 
         SingleOutputStreamOperator<CountMinSketch> finalSketch = distributedSketches.timeWindowAll(windowTime) // global window
                 .reduce(new ReduceFunction<CountMinSketch>() { // Merge all sketches in the global window
