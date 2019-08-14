@@ -2,13 +2,13 @@ package Jobs;
 
 import Sketches.CountMinSketch;
 import Sketches.CountMinSketchAggregator;
-import org.apache.flink.api.common.functions.AggregateFunction;
-import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.functions.ReduceFunction;
+import org.apache.flink.api.common.functions.*;
+import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.tuple.Tuple4;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.AllWindowedStream;
@@ -25,6 +25,7 @@ import org.apache.flink.util.Collector;
 import org.apache.flink.util.XORShiftRandom;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 
 public class EventTimeStreamingJob {
     public static void main(String[] args) throws Exception {
@@ -34,86 +35,24 @@ public class EventTimeStreamingJob {
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
 
-        int parallelism = 8;
+        // int parallelism = env.getParallelism();
 
         int width = 10;
         int height = 5;
         int seed = 1;
 
+        Time windowTime = Time.minutes(1);
+
 
         DataStream<String> line = env.readTextFile("data/timestamped.csv");
-        DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new FlatMapFunction<String, Tuple3<Integer, Integer, Long>>() {
-            @Override
-            public void flatMap(String value, Collector<Tuple3<Integer, Integer, Long>> out){
-                String[] tuples = value.split(",");
+        DataStream<Tuple4<Integer, Integer, Long, Integer>> timestamped = line.flatMap(new eventTimeRichFlatMapFunction())
+                .assignTimestampsAndWatermarks(new customTimeStampExtractor());
 
-                if(tuples.length == 3) {
-
-                    Integer key = new Integer(tuples[0]);
-                    Integer val = new Integer(tuples[1]);
-                    Long timestamp = new Long(tuples[2]);
-
-                    if (key != null && val != null) {
-                        out.collect(new Tuple3<>(key, val, timestamp));
-                    }
-                }
-            }
-        }).assignTimestampsAndWatermarks(new customTimeStampExtractor());
-
-
-        /**
-         * test with count per window
-         */
-        SingleOutputStreamOperator<Integer> aggregate = timestamped.timeWindowAll(Time.minutes(1))
-                .aggregate(new AggregateFunction<Tuple3<Integer, Integer, Long>, Integer, Integer>() {
-                    @Override
-                    public Integer createAccumulator() {
-                        return 0;
-                    }
-
-                    @Override
-                    public Integer add(Tuple3<Integer, Integer, Long> value, Integer accumulator) {
-                        accumulator++;
-                        return accumulator;
-                    }
-
-                    @Override
-                    public Integer getResult(Integer accumulator) {
-                        return accumulator;
-                    }
-
-                    @Override
-                    public Integer merge(Integer a, Integer b) {
-                        return a + b;
-                    }
-                });
-
-
-        aggregate.writeAsText("output/test.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
-
-
-
-
-
-                /*.map(new MapFunction<Tuple3<Integer, Integer, Long>, Tuple3<Integer, Integer, Long>>() {
-            @Override
-            public Tuple3<Integer, Integer, Long> map(Tuple3<Integer, Integer, Long> value) throws Exception {
-                long random = new XORShiftRandom().nextInt(parallelism);
-
-                return new Tuple3<Integer, Integer, Long>(value.f0, value.f1, random);
-            }
-        });
-
-        timestamped.keyBy(2)*/
-
-
-
-
-        /*
-        SingleOutputStreamOperator<CountMinSketch> windowedSketches = keyedStream.timeWindow(Time.seconds(1))
+        SingleOutputStreamOperator<CountMinSketch> distributedSketches = timestamped.keyBy(3)
+                .timeWindow(windowTime)
                 .aggregate(new CountMinSketchAggregator<>(height, width, seed));
 
-        SingleOutputStreamOperator<CountMinSketch> merged = windowedSketches.timeWindowAll(Time.seconds(1))
+        SingleOutputStreamOperator<CountMinSketch> finalSketch = distributedSketches.timeWindowAll(windowTime)
                 .reduce(new ReduceFunction<CountMinSketch>() {
                     @Override
                     public CountMinSketch reduce(CountMinSketch value1, CountMinSketch value2) throws Exception {
@@ -121,17 +60,61 @@ public class EventTimeStreamingJob {
                     }
                 });
 
-
-         */
-
-
         env.execute("Flink Streaming Java API Skeleton");
     }
 
-    public static class customTimeStampExtractor implements AssignerWithPunctuatedWatermarks<Tuple3<Integer, Integer, Long>>{
+    public static class eventTimeRichFlatMapFunction extends RichFlatMapFunction<String, Tuple4<Integer, Integer, Long, Integer>> {
+
+        ValueState<Integer> state;
+
+        @Override
+        public void open(Configuration parameters) throws Exception {
+            state = new ValueState<Integer>() {
+                int value;
+
+                @Override
+                public Integer value() throws IOException {
+                    return value;
+                }
+
+                @Override
+                public void update(Integer value) throws IOException {
+                    this.value = value;
+                }
+
+                @Override
+                public void clear() {
+                    value = 0;
+                }
+            };
+            state.update(0);
+        }
+
+        @Override
+        public void flatMap(String value, Collector<Tuple4<Integer, Integer, Long, Integer>> out) throws Exception {
+            String[] tuples = value.split(",");
+
+            if(tuples.length == 3) {
+
+                int currentNode = state.value();
+                int next = currentNode % this.getRuntimeContext().getNumberOfParallelSubtasks();
+                state.update(next);
+
+                Integer key = new Integer(tuples[0]);
+                Integer val = new Integer(tuples[1]);
+                Long timestamp = new Long(tuples[2]);
+
+                if (key != null && val != null) {
+                    out.collect(new Tuple4<>(key, val, timestamp, currentNode));
+                }
+            }
+        }
+    }
+
+    public static class customTimeStampExtractor implements AssignerWithPunctuatedWatermarks<Tuple4<Integer, Integer, Long, Integer>>{
         /**
          * Asks this implementation if it wants to emit a watermark. This method is called right after
-         * the {@link #extractTimestamp(Tuple3, long)}  method.
+         * the {@link #extractTimestamp(Tuple4, long)}   method.
          *
          * <p>The returned watermark will be emitted only if it is non-null and its timestamp
          * is larger than that of the previously emitted watermark (to preserve the contract of
@@ -148,7 +131,7 @@ public class EventTimeStreamingJob {
          */
         @Nullable
         @Override
-        public Watermark checkAndGetNextWatermark(Tuple3<Integer, Integer, Long> lastElement, long extractedTimestamp) {
+        public Watermark checkAndGetNextWatermark(Tuple4<Integer, Integer, Long, Integer> lastElement, long extractedTimestamp) {
             return new Watermark(extractedTimestamp);
         }
 
@@ -166,7 +149,7 @@ public class EventTimeStreamingJob {
          * @return The new timestamp.
          */
         @Override
-        public long extractTimestamp(Tuple3<Integer, Integer, Long> element, long previousElementTimestamp) {
+        public long extractTimestamp(Tuple4<Integer, Integer, Long, Integer> element, long previousElementTimestamp) {
             return element.f2;
         }
     }
