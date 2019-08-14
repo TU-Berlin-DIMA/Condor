@@ -24,6 +24,7 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.XORShiftRandom;
+import org.omg.PortableInterceptor.INACTIVE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,10 +33,7 @@ import java.io.IOException;
 
 public class EventTimeStreamingJob {
 
-
-
     public static void main(String[] args) throws Exception {
-
 
         // set up the streaming execution environment
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -52,15 +50,16 @@ public class EventTimeStreamingJob {
 
 
         DataStream<String> line = env.readTextFile("data/timestamped.csv");
-        DataStream<Tuple4<Integer, Integer, Long, Integer>> timestamped = line.flatMap(new eventTimeRichFlatMapFunction())
-                .assignTimestampsAndWatermarks(new customTimeStampExtractor());
+        DataStream<Tuple4<Integer, Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
+                .map(new AddParallelismRichFlatMapFunction()) // add a variable indicating the partition of the data
+                        .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
-        SingleOutputStreamOperator<CountMinSketch> distributedSketches = timestamped.keyBy(3)
-                .timeWindow(windowTime)
-                .aggregate(new CountMinSketchAggregator<>(height, width, seed));
+        SingleOutputStreamOperator<CountMinSketch> distributedSketches = timestamped.keyBy(1) // key by the partition (should always be on field 1)
+                .timeWindow(windowTime) // keyed window by Window Time
+                        .aggregate(new CountMinSketchAggregator<>(height, width, seed)); // aggregate with our Sketches
 
-        SingleOutputStreamOperator<CountMinSketch> finalSketch = distributedSketches.timeWindowAll(windowTime)
-                .reduce(new ReduceFunction<CountMinSketch>() {
+        SingleOutputStreamOperator<CountMinSketch> finalSketch = distributedSketches.timeWindowAll(windowTime) // global window
+                .reduce(new ReduceFunction<CountMinSketch>() { // Merge all sketches in the global window
                     @Override
                     public CountMinSketch reduce(CountMinSketch value1, CountMinSketch value2) throws Exception {
                         return value1.merge(value2);
@@ -72,7 +71,10 @@ public class EventTimeStreamingJob {
         env.execute("Flink Streaming Java API Skeleton");
     }
 
-    public static class eventTimeRichFlatMapFunction extends RichFlatMapFunction<String, Tuple4<Integer, Integer, Long, Integer>> {
+    /**
+     *
+     */
+    public static class AddParallelismRichFlatMapFunction extends RichMapFunction<Tuple3<Integer, Integer, Long>, Tuple4<Integer, Integer, Integer, Long>> {
 
         private static final Logger LOG = LoggerFactory.getLogger(LocalStreamEnvironment.class);
 
@@ -102,27 +104,42 @@ public class EventTimeStreamingJob {
         }
 
         @Override
-        public void flatMap(String value, Collector<Tuple4<Integer, Integer, Long, Integer>> out) throws Exception {
+        public Tuple4<Integer, Integer, Integer, Long> map(Tuple3<Integer, Integer, Long> value) throws Exception {
+
+            int currentNode = state.value();
+            int next = currentNode % this.getRuntimeContext().getNumberOfParallelSubtasks();
+            state.update(next);
+
+            return new Tuple4<>(currentNode, value.f0, value.f1, value.f2);
+
+        }
+    }
+
+    /**
+     * FlatMap to create Tuples from the incoming data
+     */
+    public static class CreateTuplesFlatMap implements FlatMapFunction<String, Tuple3<Integer, Integer, Long>>{
+        @Override
+        public void flatMap(String value, Collector<Tuple3<Integer, Integer, Long>> out) throws Exception {
             String[] tuples = value.split(",");
 
             if(tuples.length == 3) {
-
-                int currentNode = state.value();
-                int next = currentNode % this.getRuntimeContext().getNumberOfParallelSubtasks();
-                state.update(next);
 
                 Integer key = new Integer(tuples[0]);
                 Integer val = new Integer(tuples[1]);
                 Long timestamp = new Long(tuples[2]);
 
                 if (key != null && val != null) {
-                    out.collect(new Tuple4<>(key, val, timestamp, currentNode));
+                    out.collect(new Tuple3<>(key, val, timestamp));
                 }
             }
         }
     }
 
-    public static class customTimeStampExtractor implements AssignerWithPunctuatedWatermarks<Tuple4<Integer, Integer, Long, Integer>>{
+    /**
+     * The Custom TimeStampExtractor which is used to assign Timestamps and Watermarks for our data
+     */
+    public static class CustomTimeStampExtractor implements AssignerWithPunctuatedWatermarks<Tuple4<Integer, Integer, Integer, Long>>{
         /**
          * Asks this implementation if it wants to emit a watermark. This method is called right after
          * the {@link #extractTimestamp(Tuple4, long)}   method.
@@ -142,7 +159,7 @@ public class EventTimeStreamingJob {
          */
         @Nullable
         @Override
-        public Watermark checkAndGetNextWatermark(Tuple4<Integer, Integer, Long, Integer> lastElement, long extractedTimestamp) {
+        public Watermark checkAndGetNextWatermark(Tuple4<Integer, Integer, Integer, Long> lastElement, long extractedTimestamp) {
             return new Watermark(extractedTimestamp);
         }
 
@@ -160,9 +177,8 @@ public class EventTimeStreamingJob {
          * @return The new timestamp.
          */
         @Override
-        public long extractTimestamp(Tuple4<Integer, Integer, Long, Integer> element, long previousElementTimestamp) {
-            return element.f2;
+        public long extractTimestamp(Tuple4<Integer, Integer, Integer, Long> element, long previousElementTimestamp) {
+            return element.f3;
         }
     }
-
 }
