@@ -67,6 +67,7 @@ public class EventTimeJob {
                     }
                 });
 
+
         finalSketch.writeAsText("output/eventTimeSketches.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
         env.execute("Flink Streaming Java API Skeleton");
