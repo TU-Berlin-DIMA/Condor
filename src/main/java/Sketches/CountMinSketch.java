@@ -127,24 +127,24 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
 	@Override
 	public String toString(){
 		String sketch = new String();
-//		sketch += "Functions\n";
-//		for (int i = 0; i < height; i++) {
-//			sketch += i + ":  A: " + hashFunctions.getA()[i] + "  ";
-//			sketch += "B: " + hashFunctions.getB()[i] + "\n";
-//		}
-//		for (int i = 0; i < height; i++) {
-//			for (int j = 0; j < width; j++) {
-//
-//				sketch += array[i][j] + " | ";
-//			}
-//			sketch += "\n";
-//		}
-		sketch += /*"Elements processed: " + */elementsProcessed/*+ "\n"*/;
-//		for (Object elem:
-//				Elements) {
-//			sketch += elem.toString() + ", ";
-//		}
-//		sketch += "\n";
+		sketch += "Functions\n";
+		for (int i = 0; i < height; i++) {
+			sketch += i + ":  A: " + hashFunctions.getA()[i] + "  ";
+			sketch += "B: " + hashFunctions.getB()[i] + "\n";
+		}
+		for (int i = 0; i < height; i++) {
+			for (int j = 0; j < width; j++) {
+
+				sketch += array[i][j] + " | ";
+			}
+			sketch += "\n";
+		}
+		sketch += "Elements processed: " + elementsProcessed+ "\n";
+		for (Object elem:
+				Elements) {
+			sketch += elem.toString() + ", ";
+		}
+		sketch += "\n";
 		return sketch;
 	}
 

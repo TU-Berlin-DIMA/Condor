@@ -14,6 +14,7 @@ import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.AllWindowedStream;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
+import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks;
 import org.apache.flink.streaming.api.functions.timestamps.AscendingTimestampExtractor;
@@ -23,12 +24,18 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.XORShiftRandom;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
 
 public class EventTimeStreamingJob {
+
+
+
     public static void main(String[] args) throws Exception {
+
 
         // set up the streaming execution environment
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -60,10 +67,14 @@ public class EventTimeStreamingJob {
                     }
                 });
 
+        finalSketch.writeAsText("output/eventTimeSketches.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+
         env.execute("Flink Streaming Java API Skeleton");
     }
 
     public static class eventTimeRichFlatMapFunction extends RichFlatMapFunction<String, Tuple4<Integer, Integer, Long, Integer>> {
+
+        private static final Logger LOG = LoggerFactory.getLogger(LocalStreamEnvironment.class);
 
         ValueState<Integer> state;
 
