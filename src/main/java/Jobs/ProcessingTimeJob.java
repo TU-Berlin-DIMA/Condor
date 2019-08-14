@@ -3,17 +3,27 @@ package Jobs;
 import Sketches.CountMinSketch;
 import Sketches.CountMinSketchAggregator;
 import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.functions.RichMapFunction;
+import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.tuple.Tuple4;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.KeyedStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.datastream.WindowedStream;
+import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
 import org.apache.flink.util.Collector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 public class ProcessingTimeJob {
     public static void main(String[] args) throws Exception {
@@ -45,11 +55,51 @@ public class ProcessingTimeJob {
             }
         });
 
-
-        
-
-
         env.execute("Flink Streaming Java API Skeleton");
 
+    }
+
+    /**
+     *  Stateful map function to add the parallelism variable
+     */
+    public static class AddParallelismRichFlatMapFunction extends RichMapFunction<Tuple3<Integer, Integer, Long>, Tuple4<Integer, Integer, Integer, Long>> {
+
+        private static final Logger LOG = LoggerFactory.getLogger(LocalStreamEnvironment.class);
+
+        ValueState<Integer> state;
+
+        @Override
+        public void open(Configuration parameters) throws Exception {
+            state = new ValueState<Integer>() {
+                int value;
+
+                @Override
+                public Integer value() throws IOException {
+                    return value;
+                }
+
+                @Override
+                public void update(Integer value) throws IOException {
+                    this.value = value;
+                }
+
+                @Override
+                public void clear() {
+                    value = 0;
+                }
+            };
+            state.update(0);
+        }
+
+        @Override
+        public Tuple4<Integer, Integer, Integer, Long> map(Tuple3<Integer, Integer, Long> value) throws Exception {
+
+            int currentNode = state.value();
+            int next = currentNode % this.getRuntimeContext().getNumberOfParallelSubtasks();
+            state.update(next);
+
+            return new Tuple4<>(currentNode, value.f0, value.f1, value.f2);
+
+        }
     }
 }

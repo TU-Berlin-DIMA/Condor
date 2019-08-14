@@ -82,7 +82,7 @@ public class StreamingJob {
         //AllWindowedStream<Tuple2<Integer, Integer>, GlobalWindow> win = tuple.countWindowAll(10000000);
 //        WindowedStream<Tuple2<Integer, Integer>, Tuple, TimeWindow> win = keyed.timeWindow(Time.seconds(2));
 
-        SingleOutputStreamOperator<CountMinSketch> testOutput = win.aggregate(new CountMinSketchAggregator(height,width,seed));
+        SingleOutputStreamOperator<CountMinSketch> testOutput = win.aggregate(new CountMinSketchAggregator(height,width,seed, 1));
 
 //        SingleOutputStreamOperator<Tuple2<Long, CountMinSketch>> testOutput = win.aggregate(new CountMinSketchAggregator(height, width, seed), new CountMinSketchProcess());
 //        SingleOutputStreamOperator<Tuple2<Long, CountMinSketch>> realOutput = testOutput.keyBy(0).reduce(new ReduceFunction<Tuple2<Long, CountMinSketch>>() {

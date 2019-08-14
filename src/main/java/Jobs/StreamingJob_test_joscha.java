@@ -61,6 +61,7 @@ public class StreamingJob_test_joscha {
         int width = 10;
         int height = 5;
         int seed = 1;
+        int keyField = 1;
 
 
         DataStream<String> line = env.readTextFile("data/10percent.csv");
@@ -93,7 +94,7 @@ public class StreamingJob_test_joscha {
 
         KeyedStream<Tuple3<Integer, Integer, Integer>, Tuple> keyedStream = streamWithKey.keyBy(2);
         SingleOutputStreamOperator<CountMinSketch> windowedSketches = keyedStream.timeWindow(Time.seconds(1))
-                .aggregate(new CountMinSketchAggregator<>(height, width, seed));
+                .aggregate(new CountMinSketchAggregator<>(height, width, seed, keyField));
 
         SingleOutputStreamOperator<CountMinSketch> merged = windowedSketches.timeWindowAll(Time.seconds(1))
                 .reduce(new ReduceFunction<CountMinSketch>() {

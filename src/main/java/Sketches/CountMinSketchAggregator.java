@@ -19,12 +19,14 @@ public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountM
     private int seed;
     private int count;
     private PairwiseIndependentHashFunctions hashFunctions;
+    private int keyField;
 
-    public CountMinSketchAggregator(int height, int width, int seed){
+    public CountMinSketchAggregator(int height, int width, int seed, int keyField){
         this.height = height;
         this.width = width;
         this.seed = seed;
         this.count = 0;
+        this.keyField = keyField;
     }
     /**
      * Creates a new accumulator, starting a new aggregate.
@@ -57,7 +59,7 @@ public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountM
     public CountMinSketch add(T value, CountMinSketch accumulator) {
         count++;
         if(value instanceof Tuple){
-            accumulator.update(((Tuple) value).getField(0));
+            accumulator.update(((Tuple) value).getField(keyField));
             return accumulator;
         }
         accumulator.update(value);

@@ -45,6 +45,7 @@ public class EventTimeStreamingJob {
         int width = 10;
         int height = 5;
         int seed = 1;
+        int keyField = 2;
 
         Time windowTime = Time.minutes(1);
 
@@ -54,9 +55,9 @@ public class EventTimeStreamingJob {
                 .map(new AddParallelismRichFlatMapFunction()) // add a variable indicating the partition of the data
                         .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
-        SingleOutputStreamOperator<CountMinSketch> distributedSketches = timestamped.keyBy(1) // key by the partition (should always be on field 1)
+        SingleOutputStreamOperator<CountMinSketch> distributedSketches = timestamped.keyBy(0) // key by the partition (should always be on field 1)
                 .timeWindow(windowTime) // keyed window by Window Time
-                        .aggregate(new CountMinSketchAggregator<>(height, width, seed)); // aggregate with our Sketches
+                        .aggregate(new CountMinSketchAggregator<>(height, width, seed, keyField)); // aggregate with our Sketches
 
         SingleOutputStreamOperator<CountMinSketch> finalSketch = distributedSketches.timeWindowAll(windowTime) // global window
                 .reduce(new ReduceFunction<CountMinSketch>() { // Merge all sketches in the global window
@@ -72,7 +73,7 @@ public class EventTimeStreamingJob {
     }
 
     /**
-     *
+     *  Stateful map function to add the parallelism variable
      */
     public static class AddParallelismRichFlatMapFunction extends RichMapFunction<Tuple3<Integer, Integer, Long>, Tuple4<Integer, Integer, Integer, Long>> {
 
@@ -107,7 +108,8 @@ public class EventTimeStreamingJob {
         public Tuple4<Integer, Integer, Integer, Long> map(Tuple3<Integer, Integer, Long> value) throws Exception {
 
             int currentNode = state.value();
-            int next = currentNode % this.getRuntimeContext().getNumberOfParallelSubtasks();
+            int next = currentNode +1;
+            next = next % this.getRuntimeContext().getNumberOfParallelSubtasks();
             state.update(next);
 
             return new Tuple4<>(currentNode, value.f0, value.f1, value.f2);
