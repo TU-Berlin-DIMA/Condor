@@ -25,7 +25,7 @@ public final class BuildSketch {
                     public Sketch reduce(Sketch value1, Sketch value2) throws Exception {
                         return value1.merge(value2);
                     }
-                });
+                }).returns(Sketch.class);
     }
 
     public static <T, S extends Sketch> SingleOutputStreamOperator<S> timeBased(DataStream<T> inputStream, Time windowTime, S sketch, int keyField){
