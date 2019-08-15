@@ -28,6 +28,22 @@ public final class BuildSketch {
                 });
     }
 
+    public static <T, S extends Sketch> SingleOutputStreamOperator<S> timeBased(DataStream<T> inputStream, Time windowTime, S sketch, int keyField){
+        SketchAggregator<T,S> agg = new SketchAggregator(sketch, keyField);
+        return inputStream
+                .map(new AddParallelismTuple())
+                .keyBy(0)
+                .timeWindow(windowTime)
+                .aggregate(agg)
+                .timeWindowAll(windowTime)
+                .reduce(new ReduceFunction<Sketch>() { // Merge all sketches in the global window
+                    @Override
+                    public Sketch reduce(Sketch value1, Sketch value2) throws Exception {
+                        return value1.merge(value2);
+                    }
+                });
+    }
+
     public static class IntegerState implements ValueState<Integer>{
         int value;
 

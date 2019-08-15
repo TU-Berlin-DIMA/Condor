@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 
-public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
+public class CountMinSketch implements Sketch<Object, Integer>, Serializable {
 
 
     private int width;
@@ -18,7 +18,7 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
     private int[][] array;
     private PairwiseIndependentHashFunctions hashFunctions;
     private int elementsProcessed;
-    private HashSet<T> Elements;
+    private HashSet<Object> Elements;
 
     public CountMinSketch(int width, int height, PairwiseIndependentHashFunctions hashFunctions) {
         this.width = width;
@@ -29,13 +29,22 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
         this.Elements = new HashSet<>();
     }
 
+    public CountMinSketch(int width, int height, int seed) {
+        this.width = width;
+        this.height = height;
+        array = new int[height][width];
+        this.hashFunctions = new PairwiseIndependentHashFunctions(height, seed);
+        this.elementsProcessed = 0;
+        this.Elements = new HashSet<>();
+    }
+
     /**
      * Update the sketch with a value T by increasing the count by 1.
      *
      * @param tuple
      */
     @Override
-    public void update(T tuple) {
+    public void update(Object tuple) {
 
         int[] indices = hashFunctions.hash(tuple);
         for (int i = 0; i < height; i++) {
@@ -72,7 +81,7 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
      * @return The approximate count of tuple so far
      */
     @Override
-    public Integer query(T tuple) {
+    public Integer query(Object tuple) {
         int[] indices = hashFunctions.hash(tuple);
         int min = -1;
         for (int i = 0; i < height; i++) {
@@ -105,7 +114,7 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
         return elementsProcessed;
     }
 
-    public HashSet<T> getElements() {
+    public HashSet<Object> getElements() {
         return Elements;
     }
 
