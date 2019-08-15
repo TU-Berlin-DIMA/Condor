@@ -2,7 +2,9 @@ package Sketches;
 
 import Sketches.HashFunctions.PairwiseIndependentHashFunctions;
 import org.apache.flink.api.common.functions.AggregateFunction;
+import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.java.tuple.Tuple;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,22 +13,24 @@ import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.util.Random;
 
-public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountMinSketch, CountMinSketch> {
+public class CountMinSketchAggregator<T1> implements AggregateFunction<Tuple2<Integer,T1>, CountMinSketch, CountMinSketch> {
 
     private static final Logger LOG = LoggerFactory.getLogger(LocalStreamEnvironment.class);
+
     private int height;
     private int width;
-    private int seed;
+    private long seed;
     private int count;
-    private PairwiseIndependentHashFunctions hashFunctions;
     private int keyField;
+    private PairwiseIndependentHashFunctions hashFunctions;
 
-    public CountMinSketchAggregator(int height, int width, int seed, int keyField){
+
+    public CountMinSketchAggregator(int height, int width, long s, int k) throws IOException {
+        this.keyField = k;
         this.height = height;
         this.width = width;
-        this.seed = seed;
+        this.seed = s;
         this.count = 0;
-        this.keyField = keyField;
     }
     /**
      * Creates a new accumulator, starting a new aggregate.
@@ -43,7 +47,9 @@ public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountM
     @Override
     public CountMinSketch createAccumulator() {
         hashFunctions = new PairwiseIndependentHashFunctions(height, seed);
-        return new CountMinSketch<T>(width, height, hashFunctions);
+        CountMinSketch tCountMinSketch = new CountMinSketch(width, height, hashFunctions);
+
+        return tCountMinSketch;
     }
 
     /**
@@ -56,13 +62,14 @@ public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountM
      * @param accumulator The accumulator to add the value to
      */
     @Override
-    public CountMinSketch add(T value, CountMinSketch accumulator) {
+    public CountMinSketch add(Tuple2<Integer,T1> value, CountMinSketch accumulator) {
         count++;
-        if(value instanceof Tuple){
-            accumulator.update(((Tuple) value).getField(keyField));
+        if(value.f1 instanceof Tuple){
+            Object field = ((Tuple) value.f1).getField(this.keyField);
+            accumulator.update(field);
             return accumulator;
         }
-        accumulator.update(value);
+        accumulator.update(value.f1);
         return accumulator;
     }
 
@@ -91,7 +98,6 @@ public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountM
      */
     @Override
     public CountMinSketch merge(CountMinSketch a, CountMinSketch b) {
-        LOG.info("Accumulator ends: " + count);
         try {
             return a.merge(b);
         } catch (Exception e) {
@@ -103,12 +109,18 @@ public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountM
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
         out.writeInt(height);
         out.writeInt(width);
+        out.writeInt(count);
+        out.writeInt(keyField);
+        out.writeLong(seed);
         out.writeObject(hashFunctions);
     }
 
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException{
         height = in.readInt();
         width = in.readInt();
+        count = in.readInt();
+        keyField = in.readInt();
+        seed = in.readLong();
         hashFunctions = (PairwiseIndependentHashFunctions) in.readObject();
     }
 
@@ -116,3 +128,5 @@ public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountM
         System.out.println("readObjectNoData() called - should give an exception");
     }
 }
+
+

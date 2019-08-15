@@ -18,17 +18,26 @@
 
 package Jobs;
 
+import Sketches.BuildSketch;
 import Sketches.CountMinSketch;
 import Sketches.CountMinSketchAggregator;
+import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.*;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks;
+import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
 import org.apache.flink.util.Collector;
+
+import javax.annotation.Nullable;
 
 /**
  * Skeleton for a Flink Streaming Job.
@@ -47,7 +56,7 @@ public class StreamingJob {
     public static void main(String[] args) throws Exception {
         // set up the streaming execution environment
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.setStreamTimeCharacteristic(TimeCharacteristic.ProcessingTime);
+        env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
 
         int width = 10;
@@ -55,74 +64,87 @@ public class StreamingJob {
         int seed = 1;
 
 
-        DataStream<String> line = env.readTextFile("data/10percent.csv");
-        DataStream<Tuple2<Integer, Integer>> tuple = line.flatMap(new FlatMapFunction<String, Tuple2<Integer, Integer>>() {
-            @Override
-            public void flatMap(String value, Collector<Tuple2<Integer, Integer>> out){
-                String[] tuples = value.split(",");
+        int keyField = 0;
 
-                if(tuples.length == 2) {
-
-                    Integer key = new Integer(tuples[0]);
-                    Integer val = new Integer(tuples[1]);
-
-                    if (key != null && val != null) {
-                        out.collect(new Tuple2<>(key, new Integer(1)));
-                    }
-                }
-            }
-        });
+        Time windowTime = Time.minutes(1);
+        CountMinSketchAggregator agg = new CountMinSketchAggregator<>(height, width, seed, keyField);
 
 
-        KeyedStream<Tuple2<Integer, Integer>, Tuple> keyed = tuple.keyBy(0);
+        DataStream<String> line = env.readTextFile("data/timestamped.csv");
+        DataStream<Tuple3< Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
+                .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
-        WindowedStream<Tuple2<Integer, Integer>, Tuple, GlobalWindow> win = keyed.countWindow(1000);
-        //AllWindowedStream<Tuple2<Integer, Integer>, TimeWindow> win = tuple.timeWindowAll(Time.seconds(2));
-        //AllWindowedStream<Tuple2<Integer, Integer>, GlobalWindow> win = tuple.countWindowAll(10000000);
-//        WindowedStream<Tuple2<Integer, Integer>, Tuple, TimeWindow> win = keyed.timeWindow(Time.seconds(2));
+        SingleOutputStreamOperator<CountMinSketch> finalSketch = BuildSketch.timeBased(timestamped, windowTime, agg);
 
-        SingleOutputStreamOperator<CountMinSketch> testOutput = win.aggregate(new CountMinSketchAggregator(height,width,seed, 1));
-
-//        SingleOutputStreamOperator<Tuple2<Long, CountMinSketch>> testOutput = win.aggregate(new CountMinSketchAggregator(height, width, seed), new CountMinSketchProcess());
-//        SingleOutputStreamOperator<Tuple2<Long, CountMinSketch>> realOutput = testOutput.keyBy(0).reduce(new ReduceFunction<Tuple2<Long, CountMinSketch>>() {
-//            @Override
-//            public Tuple2<Long, CountMinSketch> reduce(Tuple2<Long, CountMinSketch> value1, Tuple2<Long, CountMinSketch> value2) throws Exception {
-//                try {
-//                    return new Tuple2<>(value1.f0, value1.f1.merge(value2.f1));
-//                } catch (Exception e) {
-//                    return null;
-//                }
-//            }
-//        });
-
-//        SingleOutputStreamOperator<Long> debug = testOutput.process(new ProcessFunction<Tuple2<Long, CountMinSketch>, Long>() {
-//            @Override
-//            public void processElement(Tuple2<Long, CountMinSketch> value, Context ctx, Collector<Long> out) throws Exception {
-//                out.collect(ctx.timestamp());
-//            }
-//        });
-
-//        SingleOutputStreamOperator<Long> debug = testOutput.process(new ProcessFunction<CountMinSketch, Long>() {
-//            @Override
-//            public void processElement(CountMinSketch value, Context ctx, Collector<Long> out) throws Exception {
-//                out.collect(ctx.timestamp());
-//            }
-//        });
-
-//        SingleOutputStreamOperator<Tuple2<Long, CountMinSketch>> realOutput = testOutput.timeWindowAll(Time.seconds(1)).reduce(new ReduceFunction<Tuple2<Long, CountMinSketch>>() {
-//            @Override
-//            public Tuple2<Long, CountMinSketch> reduce(Tuple2<Long, CountMinSketch> value1, Tuple2<Long, CountMinSketch> value2) throws Exception {
-//                return new Tuple2<>(value1.f0, value1.f1.merge(value2.f1));
-//            }
-//        });
-
-
-        testOutput.writeAsText("output/testOutput.text", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
-        //realOutput.writeAsCsv("output/realOutput.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
-        //debug.writeAsText("output/debug.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
-
-
+        finalSketch.writeAsText("output/eventTimeSketches.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
         env.execute("Flink Streaming Java API Skeleton");
 
+    }
+
+    /**
+     * FlatMap to create Tuples from the incoming data
+     */
+    public static class CreateTuplesFlatMap implements FlatMapFunction<String, Tuple3<Integer, Integer, Long>>{
+        @Override
+        public void flatMap(String value, Collector<Tuple3<Integer, Integer, Long>> out) throws Exception {
+            String[] tuples = value.split(",");
+
+            if(tuples.length == 3) {
+
+                Integer key = new Integer(tuples[0]);
+                Integer val = new Integer(tuples[1]);
+                Long timestamp = new Long(tuples[2]);
+
+                if (key != null && val != null) {
+                    out.collect(new Tuple3<>(key, val, timestamp));
+                }
+            }
+        }
+    }
+
+    /**
+     * The Custom TimeStampExtractor which is used to assign Timestamps and Watermarks for our data
+     */
+    public static class CustomTimeStampExtractor implements AssignerWithPunctuatedWatermarks<Tuple3<Integer, Integer, Long>> {
+        /**
+         * Asks this implementation if it wants to emit a watermark. This method is called right after
+         * the {@link #checkAndGetNextWatermark(Tuple3, long)} method.
+         *
+         * <p>The returned watermark will be emitted only if it is non-null and its timestamp
+         * is larger than that of the previously emitted watermark (to preserve the contract of
+         * ascending watermarks). If a null value is returned, or the timestamp of the returned
+         * watermark is smaller than that of the last emitted one, then no new watermark will
+         * be generated.
+         *
+         * <p>For an example how to use this method, see the documentation of
+         * {@link AssignerWithPunctuatedWatermarks this class}.
+         *
+         * @param lastElement
+         * @param extractedTimestamp
+         * @return {@code Null}, if no watermark should be emitted, or the next watermark to emit.
+         */
+        @Nullable
+        @Override
+        public Watermark checkAndGetNextWatermark(Tuple3<Integer, Integer, Long> lastElement, long extractedTimestamp) {
+            return new Watermark(extractedTimestamp);
+        }
+
+        /**
+         * Assigns a timestamp to an element, in milliseconds since the Epoch.
+         *
+         * <p>The method is passed the previously assigned timestamp of the element.
+         * That previous timestamp may have been assigned from a previous assigner,
+         * by ingestion time. If the element did not carry a timestamp before, this value is
+         * {@code Long.MIN_VALUE}.
+         *
+         * @param element                  The element that the timestamp will be assigned to.
+         * @param previousElementTimestamp The previous internal timestamp of the element,
+         *                                 or a negative value, if no timestamp has been assigned yet.
+         * @return The new timestamp.
+         */
+        @Override
+        public long extractTimestamp(Tuple3<Integer, Integer, Long> element, long previousElementTimestamp) {
+            return element.f2;
+        }
     }
 }
