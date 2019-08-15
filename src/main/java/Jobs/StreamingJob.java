@@ -18,15 +18,17 @@
 
 package Jobs;
 
-import Sketches.BuildSketch;
-import Sketches.CountMinSketch;
-import Sketches.CountMinSketchAggregator;
+import Sketches.*;
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.functions.ReduceFunction;
+import org.apache.flink.api.common.functions.RichMapFunction;
+import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple4;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.*;
@@ -38,6 +40,7 @@ import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
 import org.apache.flink.util.Collector;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 
 /**
  * Skeleton for a Flink Streaming Job.
@@ -54,31 +57,81 @@ import javax.annotation.Nullable;
 public class StreamingJob {
 
     public static void main(String[] args) throws Exception {
+
         // set up the streaming execution environment
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
 
-        int width = 10;
-        int height = 5;
+        int parallelism = env.getParallelism();
         int seed = 1;
-
-
-        int keyField = 0;
+        int logRegNum = 10;
 
         Time windowTime = Time.minutes(1);
-        CountMinSketchAggregator agg = new CountMinSketchAggregator<>(height, width, seed, keyField);
-
 
         DataStream<String> line = env.readTextFile("data/timestamped.csv");
-        DataStream<Tuple3< Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
-                .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
+        DataStream<Tuple4<Integer, Integer, Integer, Long>> timestamped = line.flatMap(new EventTimeJob.CreateTuplesFlatMap()) // Create the tuples from the incoming Data
+                .map(new EventTimeJob.AddParallelismRichFlatMapFunction()) // add a variable indicating the partition of the data
+                .assignTimestampsAndWatermarks(new EventTimeJob.CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
-        SingleOutputStreamOperator<CountMinSketch> finalSketch = BuildSketch.timeBased(timestamped, windowTime, agg);
+        SingleOutputStreamOperator<HyperLogLogSketch> distributedSketches = timestamped.keyBy(0) // key by the partition (should always be on field 1)
+                .timeWindow(windowTime) // keyed window by Window Time
+                .aggregate(new HyperLogLogAggregator<>(10, seed)); // aggregate with our Sketches
 
-        finalSketch.writeAsText("output/eventTimeSketches.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+        SingleOutputStreamOperator<HyperLogLogSketch> finalSketch = distributedSketches.timeWindowAll(windowTime) // global window
+                .reduce(new ReduceFunction<HyperLogLogSketch>() { // Merge all sketches in the global window
+                    @Override
+                    public HyperLogLogSketch reduce(HyperLogLogSketch value1, HyperLogLogSketch value2) throws Exception {
+                        return (HyperLogLogSketch) value1.merge(value2);
+                    }
+                });
+
+        finalSketch.writeAsText("output/eventTimeHLLSketch.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+
         env.execute("Flink Streaming Java API Skeleton");
+    }
 
+    /**
+     *  Stateful map function to add the parallelism variable
+     */
+    public static class AddParallelismRichFlatMapFunction extends RichMapFunction<Tuple3<Integer, Integer, Long>, Tuple4<Integer, Integer, Integer, Long>> {
+
+        ValueState<Integer> state;
+
+        @Override
+        public void open(Configuration parameters) throws Exception {
+            state = new ValueState<Integer>() {
+                int value;
+
+                @Override
+                public Integer value() throws IOException {
+                    return value;
+                }
+
+                @Override
+                public void update(Integer value) throws IOException {
+                    this.value = value;
+                }
+
+                @Override
+                public void clear() {
+                    value = 0;
+                }
+            };
+            state.update(0);
+        }
+
+        @Override
+        public Tuple4<Integer, Integer, Integer, Long> map(Tuple3<Integer, Integer, Long> value) throws Exception {
+
+            int currentNode = state.value();
+            int next = currentNode +1;
+            next = next % this.getRuntimeContext().getNumberOfParallelSubtasks();
+            state.update(next);
+
+            return new Tuple4<>(currentNode, value.f0, value.f1, value.f2);
+
+        }
     }
 
     /**
@@ -105,10 +158,10 @@ public class StreamingJob {
     /**
      * The Custom TimeStampExtractor which is used to assign Timestamps and Watermarks for our data
      */
-    public static class CustomTimeStampExtractor implements AssignerWithPunctuatedWatermarks<Tuple3<Integer, Integer, Long>> {
+    public static class CustomTimeStampExtractor implements AssignerWithPunctuatedWatermarks<Tuple4<Integer, Integer, Integer, Long>>{
         /**
          * Asks this implementation if it wants to emit a watermark. This method is called right after
-         * the {@link #checkAndGetNextWatermark(Tuple3, long)} method.
+         * the {@link #extractTimestamp(Tuple4, long)}   method.
          *
          * <p>The returned watermark will be emitted only if it is non-null and its timestamp
          * is larger than that of the previously emitted watermark (to preserve the contract of
@@ -125,7 +178,7 @@ public class StreamingJob {
          */
         @Nullable
         @Override
-        public Watermark checkAndGetNextWatermark(Tuple3<Integer, Integer, Long> lastElement, long extractedTimestamp) {
+        public Watermark checkAndGetNextWatermark(Tuple4<Integer, Integer, Integer, Long> lastElement, long extractedTimestamp) {
             return new Watermark(extractedTimestamp);
         }
 
@@ -143,8 +196,8 @@ public class StreamingJob {
          * @return The new timestamp.
          */
         @Override
-        public long extractTimestamp(Tuple3<Integer, Integer, Long> element, long previousElementTimestamp) {
-            return element.f2;
+        public long extractTimestamp(Tuple4<Integer, Integer, Integer, Long> element, long previousElementTimestamp) {
+            return element.f3;
         }
     }
 }
