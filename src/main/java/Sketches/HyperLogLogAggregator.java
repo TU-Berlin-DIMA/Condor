@@ -1,29 +1,29 @@
 package Sketches;
 
-import akka.util.HashCode;
 import org.apache.flink.api.common.functions.AggregateFunction;
 
-public class HyperLogLogAggregator<T> implements AggregateFunction<T, HyperLogLog, Long> {
+public class HyperLogLogAggregator<T> implements AggregateFunction<T, HyperLogLogSketch, Long> {
 
     long seed;
 
     @Override
-    public HyperLogLog createAccumulator() {
+    public HyperLogLogSketch createAccumulator() {
+
         return null;
     }
 
     @Override
-    public HyperLogLog add(T value, HyperLogLog accumulator) {
+    public HyperLogLogSketch add(T value, HyperLogLogSketch accumulator) {
         return null;
     }
 
     @Override
-    public Long getResult(HyperLogLog accumulator) {
+    public Long getResult(HyperLogLogSketch accumulator) {
         return null;
     }
 
     @Override
-    public HyperLogLog merge(HyperLogLog a, HyperLogLog b) {
+    public HyperLogLogSketch merge(HyperLogLogSketch a, HyperLogLogSketch b) {
         return null;
     }
 }

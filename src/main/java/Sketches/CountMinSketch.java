@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 
-public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
+public class CountMinSketch<T> implements Sketch<T>, Serializable {
 
 
     private int width;
@@ -71,7 +71,6 @@ public class CountMinSketch<T> implements Sketch<T, Integer>, Serializable {
      * @param tuple
      * @return The approximate count of tuple so far
      */
-    @Override
     public Integer query(T tuple) {
         int[] indices = hashFunctions.hash(tuple);
         int min = -1;

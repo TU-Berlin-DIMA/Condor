@@ -2,21 +2,25 @@ package Sketches;
 
 import Sketches.HashFunctions.PairwiseIndependentHashFunctions;
 
-public class HyperLogLog<T> implements Sketch<T, Integer>{
+import java.io.IOException;
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 
-    private final int regNum; //number of registers
-    private final int logRegNum;
-    private final byte[] registers;
+public class HyperLogLogSketch implements Sketch<Object>, Serializable {
+
+    private int regNum; //number of registers
+    private int logRegNum;
+    private byte[] registers;
     public long distinctItemCount; // Field so that value is accessible after serializing
-    private final PairwiseIndependentHashFunctions hashFunctions;
+    private PairwiseIndependentHashFunctions hashFunctions;
 
     /**
      * @param logRegNum the logarithm of the number of registers. should be in 4...16
      *        Going beyond 16 would make the data structure big for no good reason.
      *        Setting logRegNum in at 10-12 should give roughly 2% accuracy most of the time
      */
-    public HyperLogLog(int logRegNum, long seed) {
-        HyperLogLog.checkSpaceValid(logRegNum);
+    public HyperLogLogSketch(int logRegNum, long seed) {
+        HyperLogLogSketch.checkSpaceValid(logRegNum);
         this.regNum = 1 << logRegNum;
         this.registers = new byte[this.regNum];
         this.logRegNum = logRegNum;
@@ -24,7 +28,7 @@ public class HyperLogLog<T> implements Sketch<T, Integer>{
     }
 
     @Override
-    public void update(T t) {
+    public void update(Object t) {
 
         long hash = hashFunctions.hash(t)[0];
         long firstBits = ((long) hashFunctions.hash(t)[1]) << 32;
@@ -38,24 +42,19 @@ public class HyperLogLog<T> implements Sketch<T, Integer>{
     }
 
     /**
-     * adds the long 'itemHash' to the data structure.
-     * Uses the first bits to identify the register and then counts trailing zeros
-     * @param itemHash already assumed to be a random hash of the item
+     * @param sketch the sketch to merge
+     * @return the merged HyperLogLogSketch Datastructure
      */
-    private void add(long itemHash) {
-        int index =  (int) itemHash >>> (Long.SIZE - this.logRegNum);
-        byte zeros = (byte) (Long.numberOfTrailingZeros(itemHash) + 1);
-        if (zeros > this.registers[index])
-            this.registers[index] = zeros;
-    }
+    public Sketch<Object> merge(Sketch sketch) throws IllegalArgumentException{
+        if (sketch.getClass().isInstance(HyperLogLogSketch.class)){
+            throw new IllegalArgumentException("Sketches can only be merged with other Sketches of the same Type \n" +
+                    "otherHLL.getClass() = " + sketch.getClass() + "\n" +
+                    "otherHLL.getClass().isInstance(HyperLogLogSketch.class = false");
+        }
 
-    /**
-     *
-     * @param otherHLL
-     * @return the merged HyperLogLog Datastructure
-     */
-    public HyperLogLog merge(HyperLogLog otherHLL) {
-        if ((otherHLL.regNum != this.regNum) || (!otherHLL.getHashFunctions().equals(hashFunctions)))
+        HyperLogLogSketch otherHLL = (HyperLogLogSketch) sketch;
+
+        if ((otherHLL.getRegNum() != this.regNum) || (!otherHLL.getHashFunctions().equals(hashFunctions)))
             throw new IllegalArgumentException("attempted union of non matching HLogLog classes");
         for (int i = 0; i < this.regNum; i++)
             this.registers[i] = (byte) Integer.max(this.registers[i], otherHLL.registers[i]);
@@ -125,4 +124,26 @@ public class HyperLogLog<T> implements Sketch<T, Integer>{
             throw new IllegalArgumentException("HLogLog initialized with logSpaceSize out of range");
     }
 
+    private void writeObject(java.io.ObjectOutputStream out) throws IOException {
+
+        out.writeInt(this.regNum);
+        out.writeInt(this.logRegNum);
+        out.write(this.registers);
+        out.writeLong(this.distinctItemCount);
+        out.writeObject(this.hashFunctions);
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException{
+        this.regNum = in.readInt();
+        this.logRegNum = in.readInt();
+        for (int i = 0; i < regNum; i++) {
+            registers[i] = in.readByte();
+        }
+        this.distinctItemCount = in.readLong();
+        this.hashFunctions = (PairwiseIndependentHashFunctions) in.readObject();
+    }
+
+    private void readObjectNoData() throws ObjectStreamException {
+
+    }
 }
