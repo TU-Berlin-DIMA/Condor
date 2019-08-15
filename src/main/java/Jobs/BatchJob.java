@@ -19,28 +19,18 @@
 package Jobs;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.common.functions.IterationRuntimeContext;
 import org.apache.flink.api.common.functions.RichMapFunction;
-import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.api.common.state.ValueState;
-import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.operators.DataSource;
-import org.apache.flink.api.java.operators.MapOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.FileSystem;
-import org.apache.flink.streaming.api.TimerService;
 import org.apache.flink.util.Collector;
-import sun.util.calendar.BaseCalendar;
 
 import java.io.IOException;
-import java.sql.Time;
 import java.util.Calendar;
-import java.util.Date;
-import java.util.Timer;
 
 /**
  * Skeleton for a Flink Batch Job.
@@ -78,8 +68,6 @@ public class BatchJob {
 						}
 					}
 				});
-
-
 
 		Calendar calendar = Calendar.getInstance();
 		calendar.set(2018, 1, 1);

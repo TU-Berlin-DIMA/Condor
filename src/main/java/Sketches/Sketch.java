@@ -24,4 +24,6 @@ public interface Sketch<T, R> extends java.io.Serializable{
 	 */
 	R query(T t);
 
+	
+
 }
