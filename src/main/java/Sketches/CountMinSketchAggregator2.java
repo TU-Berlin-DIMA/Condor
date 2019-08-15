@@ -2,13 +2,9 @@ package Sketches;
 
 import Sketches.HashFunctions.PairwiseIndependentHashFunctions;
 import org.apache.flink.api.common.functions.AggregateFunction;
-import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class CountMinSketchAggregator2<T> implements AggregateFunction<T , Integer, Integer> {
 
-	private static final Logger LOG = LoggerFactory.getLogger(LocalStreamEnvironment.class);
 
 	private int height;
 	private int width;
@@ -34,7 +30,6 @@ public class CountMinSketchAggregator2<T> implements AggregateFunction<T , Integ
 	 */
 	@Override
 	public Integer createAccumulator() {
-		LOG.info("Accumulator starts");
 		hashFunctions = new PairwiseIndependentHashFunctions(height, seed);
 
 		return new Integer(0);

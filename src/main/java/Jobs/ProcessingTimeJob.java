@@ -22,8 +22,6 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
 import org.apache.flink.util.Collector;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -80,7 +78,6 @@ public class ProcessingTimeJob {
      */
     public static class AddParallelismRichMapFunction extends RichMapFunction<Tuple2<Integer, Integer>, Tuple3<Integer, Integer, Integer>> {
 
-        private static final Logger LOG = LoggerFactory.getLogger(LocalStreamEnvironment.class);
 
         ValueState<Integer> state;
 

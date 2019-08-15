@@ -2,6 +2,8 @@ package Jobs;
 
 import Sketches.CountMinSketch;
 import Sketches.CountMinSketchAggregator;
+import com.typesafe.sslconfig.util.LoggerFactory;
+import grizzled.slf4j.Logger;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.functions.RichMapFunction;
@@ -17,9 +19,6 @@ import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 
 public class CountWindowJob {
@@ -74,7 +73,6 @@ public class CountWindowJob {
      */
     public static class AddParallelismRichMapFunction extends RichMapFunction<Tuple2<Integer, Integer>, Tuple3<Integer, Integer, Integer>> {
 
-        private static final Logger LOG = LoggerFactory.getLogger(LocalStreamEnvironment.class);
 
         ValueState<Integer> state;
 

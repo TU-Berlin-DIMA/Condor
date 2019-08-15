@@ -5,17 +5,12 @@ import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.util.Random;
 
 public class CountMinSketchAggregator<T1> implements AggregateFunction<Tuple2<Integer,T1>, CountMinSketch, CountMinSketch> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(LocalStreamEnvironment.class);
 
     private int height;
     private int width;
