@@ -24,6 +24,6 @@ public interface Sketch<T, R> extends java.io.Serializable{
 	 */
 	R query(T t);
 
-	Sketch<T,R> merge(Sketch<T,R> other) throws Exception;
+	Sketch merge(Sketch other) throws Exception;
 
 }

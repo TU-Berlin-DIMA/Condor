@@ -57,7 +57,7 @@ public class EventTimeJob {
 
         SingleOutputStreamOperator<CountMinSketch> distributedSketches = timestamped.keyBy(0) // key by the partition (should always be on field 1)
                 .timeWindow(windowTime) // keyed window by Window Time
-                        .aggregate(new CountMinSketchAggregator<>(height, width, seed, keyField)); // aggregate with our Sketches
+                        .aggregate(new CountMinSketchAggregator(height, width, seed, keyField)); // aggregate with our Sketches
 
         SingleOutputStreamOperator<CountMinSketch> finalSketch = distributedSketches.timeWindowAll(windowTime) // global window
                 .reduce(new ReduceFunction<CountMinSketch>() { // Merge all sketches in the global window

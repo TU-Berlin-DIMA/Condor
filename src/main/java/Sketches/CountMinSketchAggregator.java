@@ -4,6 +4,7 @@ import Sketches.HashFunctions.PairwiseIndependentHashFunctions;
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.java.tuple.Tuple;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +13,7 @@ import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.util.Random;
 
-public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountMinSketch, CountMinSketch> {
+public class CountMinSketchAggregator<T1> implements AggregateFunction<Tuple2<Integer,T1>, CountMinSketch, CountMinSketch> {
 
     private static final Logger LOG = LoggerFactory.getLogger(LocalStreamEnvironment.class);
 
@@ -46,7 +47,7 @@ public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountM
     @Override
     public CountMinSketch createAccumulator() {
         hashFunctions = new PairwiseIndependentHashFunctions(height, seed);
-        CountMinSketch<T> tCountMinSketch = new CountMinSketch<T>(width, height, hashFunctions);
+        CountMinSketch tCountMinSketch = new CountMinSketch(width, height, hashFunctions);
 
         return tCountMinSketch;
     }
@@ -61,14 +62,14 @@ public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountM
      * @param accumulator The accumulator to add the value to
      */
     @Override
-    public CountMinSketch add(T value, CountMinSketch accumulator) {
+    public CountMinSketch add(Tuple2<Integer,T1> value, CountMinSketch accumulator) {
         count++;
-        if(value instanceof Tuple){
-            Object field = ((Tuple) value).getField(this.keyField);
+        if(value.f1 instanceof Tuple){
+            Object field = ((Tuple) value.f1).getField(this.keyField);
             accumulator.update(field);
             return accumulator;
         }
-        accumulator.update(value);
+        accumulator.update(value.f1);
         return accumulator;
     }
 
@@ -97,7 +98,6 @@ public class CountMinSketchAggregator<T> implements AggregateFunction<T , CountM
      */
     @Override
     public CountMinSketch merge(CountMinSketch a, CountMinSketch b) {
-        LOG.info("Accumulator ends: " + count);
         try {
             return a.merge(b);
         } catch (Exception e) {

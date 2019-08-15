@@ -53,7 +53,7 @@ public class CountWindowJob {
         }).map(new ProcessingTimeJob.AddParallelismRichMapFunction())
                 .keyBy(0)
                         .timeWindow(Time.seconds(1))
-                                .aggregate(new CountMinSketchAggregator<>(height, width, seed, 1));
+                                .aggregate(new CountMinSketchAggregator(height, width, seed, 1));
 
         SingleOutputStreamOperator<CountMinSketch> finalSketches = distributed.timeWindowAll(Time.seconds(1))
                 .reduce(new ReduceFunction<CountMinSketch>() {
