@@ -146,4 +146,12 @@ public class HyperLogLogSketch implements Sketch<Object>, Serializable {
     private void readObjectNoData() throws ObjectStreamException {
 
     }
+
+    @Override
+    public String toString(){
+        String s = "------- HyperLogLogSketch Information ---------- \n" +
+                "number of Registers: " + regNum + "\n" +
+                "estimated distinct items: " + this.distinctItemsEstimator();
+        return s;
+    }
 }
