@@ -19,6 +19,12 @@ public class SketchAggregator<T1> implements AggregateFunction<Tuple2<Integer,T1
     private Class<? extends Sketch> sketchClass;
     private Object[] constructorParam;
 
+    /**
+     *
+     * @param sketchClass   the Sketch.class
+     * @param params        The parameters of the Sketch as an Object array
+     * @param keyField      The keyField with which to update the Sketch. To update with the whole Tuple use -1!
+     */
     public SketchAggregator(Class<? extends Sketch> sketchClass, Object[] params, int keyField){
         this.keyField = keyField;
         this.sketchClass = sketchClass;
@@ -69,7 +75,8 @@ public class SketchAggregator<T1> implements AggregateFunction<Tuple2<Integer,T1
      */
     @Override
     public Sketch add(Tuple2<Integer,T1> value, Sketch accumulator) {
-        if(value.f1 instanceof Tuple){
+
+        if(value.f1 instanceof Tuple && keyField != -1){
             Object field = ((Tuple) value.f1).getField(this.keyField);
             accumulator.update(field);
             return accumulator;
