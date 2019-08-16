@@ -8,6 +8,8 @@ import java.io.Serializable;
 
 public class HyperLogLogSketch implements Sketch<Object>, Serializable {
 
+    // TODO: write method / constructor which selects the logRegNum according to estimated error or available memory
+
     private int regNum; //number of registers
     private int logRegNum;
     private byte[] registers;
@@ -87,7 +89,7 @@ public class HyperLogLogSketch implements Sketch<Object>, Serializable {
      */
     public long distinctItemsEstimator() {
         double alpha;
-        switch (this.logRegNum) { //set the parameters for the log log estimator
+        switch (this.logRegNum) { //set the constant alpha for the log log estimator based on the number of registers
             case 4: alpha = 0.673;
                 break;
             case 5: alpha = 0.697;
@@ -98,17 +100,22 @@ public class HyperLogLogSketch implements Sketch<Object>, Serializable {
         }
         double rawEstimate = 0;
         int zeroRegs = 0;
+        // Calculate the Harmonic mean of the m registers
         for (int i = 0; i < this.regNum; i++) {
             rawEstimate += Math.pow(2, -this.registers[i]);
             if (this.registers[i] == 0)
                 zeroRegs ++;
         }
-        rawEstimate = 1 / rawEstimate;
+        rawEstimate = 1 / rawEstimate; // final harmonic mean
+        // final estimate
         rawEstimate = rawEstimate * alpha * this.regNum * this.regNum;
         long result = Math.round(rawEstimate);
+        // if rawEstimate is below threshold of 5/2 m resort to Linear Counting (E = m * log (m/V) with V being the number of zero registers)
         if ((zeroRegs > 0) && (rawEstimate < (2.5 * this.regNum)))
             result = Math.round(this.regNum * (Math.log(this.regNum / (double) zeroRegs)));
-        else if (rawEstimate > (Integer.MAX_VALUE / 30 ))
+        // For very large cardinalities approaching the limit of the size of the registers (E > 2^32 / 30 for 32 bit registers)
+        // TODO: according to Wikipedia the
+        else if (rawEstimate > (Byte.MAX_VALUE / 30))
             result = (long) (- Math.pow(2,32) * Math.log(1 - (rawEstimate /  Math.pow(2,32))));
         this.distinctItemCount = result;
         return result;
