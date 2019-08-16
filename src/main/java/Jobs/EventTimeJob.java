@@ -41,9 +41,9 @@ public class EventTimeJob {
 
         Time windowTime = Time.minutes(1);
 
-
+        /*
         DataStream<String> line = env.readTextFile("data/timestamped.csv");
-        DataStream<Tuple4<Integer, Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
+        DataStream<Tuple3<Integer, Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
                 .map(new AddParallelismRichFlatMapFunction()) // add a variable indicating the partition of the data
                         .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
@@ -62,7 +62,7 @@ public class EventTimeJob {
 
         finalSketch.writeAsText("output/eventTimeSketches.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
-        env.execute("Flink Streaming Java API Skeleton");
+        env.execute("Flink Streaming Java API Skeleton"); */
     }
 
     /**
@@ -134,10 +134,10 @@ public class EventTimeJob {
     /**
      * The Custom TimeStampExtractor which is used to assign Timestamps and Watermarks for our data
      */
-    public static class CustomTimeStampExtractor implements AssignerWithPunctuatedWatermarks<Tuple4<Integer, Integer, Integer, Long>>{
+    public static class CustomTimeStampExtractor implements AssignerWithPunctuatedWatermarks<Tuple3<Integer, Integer, Long>>{
         /**
          * Asks this implementation if it wants to emit a watermark. This method is called right after
-         * the {@link #extractTimestamp(Tuple4, long)}   method.
+         * the {@link #extractTimestamp(Tuple3, long)}   method.
          *
          * <p>The returned watermark will be emitted only if it is non-null and its timestamp
          * is larger than that of the previously emitted watermark (to preserve the contract of
@@ -154,7 +154,7 @@ public class EventTimeJob {
          */
         @Nullable
         @Override
-        public Watermark checkAndGetNextWatermark(Tuple4<Integer, Integer, Integer, Long> lastElement, long extractedTimestamp) {
+        public Watermark checkAndGetNextWatermark(Tuple3<Integer, Integer, Long> lastElement, long extractedTimestamp) {
             return new Watermark(extractedTimestamp);
         }
 
@@ -172,8 +172,8 @@ public class EventTimeJob {
          * @return The new timestamp.
          */
         @Override
-        public long extractTimestamp(Tuple4<Integer, Integer, Integer, Long> element, long previousElementTimestamp) {
-            return element.f3;
+        public long extractTimestamp(Tuple3<Integer, Integer, Long> element, long previousElementTimestamp) {
+            return element.f2;
         }
     }
 }

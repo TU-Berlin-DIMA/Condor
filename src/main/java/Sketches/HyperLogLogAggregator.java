@@ -32,6 +32,12 @@ public class HyperLogLogAggregator<T> implements AggregateFunction<T, HyperLogLo
     @Override
     public HyperLogLogSketch merge(HyperLogLogSketch a, HyperLogLogSketch b) {
 
-        return (HyperLogLogSketch) a.merge(b);
+        try {
+            return (HyperLogLogSketch) a.merge(b);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 }

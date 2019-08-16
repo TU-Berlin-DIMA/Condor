@@ -20,7 +20,7 @@ package Jobs;
 
 
 import Sketches.BuildSketch;
-import Sketches.CountMinSketch;
+
 import Sketches.HyperLogLogSketch;
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
@@ -74,20 +74,18 @@ public class StreamingJob {
 
         int logRegNum = 10;
         long seed = 1;
+
         Object[] parameters = new Object[]{logRegNum,seed};
         Class<HyperLogLogSketch> sketchClass = HyperLogLogSketch.class;
 
         Time windowTime = Time.minutes(1);
+
         DataStream<String> line = env.readTextFile("data/timestamped.csv");
-        DataStream<Tuple4<Integer, Integer, Integer, Long>> timestamped = line.flatMap(new EventTimeJob.CreateTuplesFlatMap()) // Create the tuples from the incoming Data
-                .map(new EventTimeJob.AddParallelismRichFlatMapFunction()) // add a variable indicating the partition of the data
+        DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new EventTimeJob.CreateTuplesFlatMap()) // Create the tuples from the incoming Data
                 .assignTimestampsAndWatermarks(new EventTimeJob.CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
         SingleOutputStreamOperator<HyperLogLogSketch> finalSketch = BuildSketch.timeBased(timestamped, windowTime, sketchClass, parameters, keyField);
-
-
         finalSketch.writeAsText("output/eventTimeHLLSketch.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
-
 
         env.execute("Flink Streaming Java API Skeleton");
     }
