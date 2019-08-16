@@ -18,7 +18,9 @@
 
 package Jobs;
 
-import Sketches.*;
+
+import Sketches.BuildSketch;
+import Sketches.CountMinSketch;
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
@@ -63,30 +65,30 @@ public class StreamingJob {
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
 
-        int parallelism = env.getParallelism();
-        int seed = 1;
-        int logRegNum = 10;
+
+        int width = 10;
+        int height = 5;
+        long seed = 1;
+
+
+        int keyField = 0;
+
+        Object[] parameters = new Object[]{width,height,seed};
+        Class<CountMinSketch> cl = CountMinSketch.class;
 
         Time windowTime = Time.minutes(1);
-
         DataStream<String> line = env.readTextFile("data/timestamped.csv");
         DataStream<Tuple4<Integer, Integer, Integer, Long>> timestamped = line.flatMap(new EventTimeJob.CreateTuplesFlatMap()) // Create the tuples from the incoming Data
                 .map(new EventTimeJob.AddParallelismRichFlatMapFunction()) // add a variable indicating the partition of the data
                 .assignTimestampsAndWatermarks(new EventTimeJob.CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
-        SingleOutputStreamOperator<HyperLogLogSketch> distributedSketches = timestamped.keyBy(0) // key by the partition (should always be on field 1)
-                .timeWindow(windowTime) // keyed window by Window Time
-                .aggregate(new HyperLogLogAggregator<>(10, seed)); // aggregate with our Sketches
 
-        SingleOutputStreamOperator<HyperLogLogSketch> finalSketch = distributedSketches.timeWindowAll(windowTime) // global window
-                .reduce(new ReduceFunction<HyperLogLogSketch>() { // Merge all sketches in the global window
-                    @Override
-                    public HyperLogLogSketch reduce(HyperLogLogSketch value1, HyperLogLogSketch value2) throws Exception {
-                        return (HyperLogLogSketch) value1.merge(value2);
-                    }
-                });
+//        CountMinSketchAggregator agg = new CountMinSketchAggregator<>(height, width, seed, keyField);
+//        SingleOutputStreamOperator<CountMinSketch> finalSketch = BuildSketch.timeBased(timestamped, windowTime, agg);
+//        CountMinSketch cm = new CountMinSketch(width, height, seed);
+//        SketchAggregator agg = new SketchAggregator(cm, keyField);
+        SingleOutputStreamOperator<CountMinSketch> finalSketch = BuildSketch.timeBased(timestamped, windowTime, cl, parameters, keyField);
 
-        finalSketch.writeAsText("output/eventTimeHLLSketch.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
         env.execute("Flink Streaming Java API Skeleton");
     }

@@ -7,11 +7,8 @@ import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
 
 public class CountMinSketch<T> implements Sketch<T>, Serializable {
-
 
     private int width;
     private int height;
@@ -20,13 +17,19 @@ public class CountMinSketch<T> implements Sketch<T>, Serializable {
     private int elementsProcessed;
     private HashSet<T> Elements;
 
-    public CountMinSketch(int width, int height, PairwiseIndependentHashFunctions hashFunctions) {
+
+    public CountMinSketch(Integer width, Integer height, Long seed) {
         this.width = width;
         this.height = height;
         array = new int[height][width];
-        this.hashFunctions = hashFunctions;
+        this.hashFunctions = new PairwiseIndependentHashFunctions(height, seed);
         this.elementsProcessed = 0;
         this.Elements = new HashSet<>();
+    }
+
+    @Override
+    public CountMinSketch clone(){
+        return this.clone();
     }
 
     /**
@@ -108,6 +111,8 @@ public class CountMinSketch<T> implements Sketch<T>, Serializable {
         return Elements;
     }
 
+
+    @Override
     public CountMinSketch merge(Sketch other) throws Exception {
         if (other instanceof CountMinSketch) {
             CountMinSketch otherCM = (CountMinSketch) other;
