@@ -47,7 +47,7 @@ public class CountMinSketchAggregator<T1> implements AggregateFunction<Tuple2<In
     @Override
     public CountMinSketch createAccumulator() {
         hashFunctions = new PairwiseIndependentHashFunctions(height, seed);
-        CountMinSketch tCountMinSketch = new CountMinSketch(width, height, hashFunctions);
+        CountMinSketch tCountMinSketch = new CountMinSketch(width, height, seed);
 
         return tCountMinSketch;
     }

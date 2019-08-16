@@ -62,10 +62,13 @@ public class StreamingJob {
 
         int width = 10;
         int height = 5;
-        int seed = 1;
+        long seed = 1;
 
 
         int keyField = 0;
+
+        Object[] parameters = new Object[]{width,height,seed};
+        Class<CountMinSketch> cl = CountMinSketch.class;
 
         Time windowTime = Time.minutes(1);
         DataStream<String> line = env.readTextFile("data/timestamped.csv");
@@ -74,9 +77,9 @@ public class StreamingJob {
 
 //        CountMinSketchAggregator agg = new CountMinSketchAggregator<>(height, width, seed, keyField);
 //        SingleOutputStreamOperator<CountMinSketch> finalSketch = BuildSketch.timeBased(timestamped, windowTime, agg);
-        CountMinSketch cm = new CountMinSketch(width, height, seed);
-        SketchAggregator agg = new SketchAggregator(cm, keyField);
-        SingleOutputStreamOperator<CountMinSketch> finalSketch = BuildSketch.timeBased(timestamped, windowTime, agg, keyField);
+//        CountMinSketch cm = new CountMinSketch(width, height, seed);
+//        SketchAggregator agg = new SketchAggregator(cm, keyField);
+        SingleOutputStreamOperator<CountMinSketch> finalSketch = BuildSketch.timeBased(timestamped, windowTime, cl, parameters, keyField);
 
         finalSketch.writeAsText("output/eventTimeSketches.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
         env.execute("Flink Streaming Java API Skeleton");

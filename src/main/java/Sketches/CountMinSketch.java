@@ -7,10 +7,8 @@ import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
 
-public class CountMinSketch implements Sketch<Object, Integer>, Serializable {
+public class CountMinSketch<T>  implements Sketch<T>, Serializable {
 
 
     private int width;
@@ -18,18 +16,10 @@ public class CountMinSketch implements Sketch<Object, Integer>, Serializable {
     private int[][] array;
     private PairwiseIndependentHashFunctions hashFunctions;
     private int elementsProcessed;
-    private HashSet<Object> Elements;
+    private HashSet<T> Elements;
 
-    public CountMinSketch(int width, int height, PairwiseIndependentHashFunctions hashFunctions) {
-        this.width = width;
-        this.height = height;
-        array = new int[height][width];
-        this.hashFunctions = hashFunctions;
-        this.elementsProcessed = 0;
-        this.Elements = new HashSet<>();
-    }
 
-    public CountMinSketch(int width, int height, int seed) {
+    public CountMinSketch(Integer width, Integer height, Long seed) {
         this.width = width;
         this.height = height;
         array = new int[height][width];
@@ -38,13 +28,18 @@ public class CountMinSketch implements Sketch<Object, Integer>, Serializable {
         this.Elements = new HashSet<>();
     }
 
+    @Override
+    public CountMinSketch clone(){
+        return this.clone();
+    }
+
     /**
      * Update the sketch with a value T by increasing the count by 1.
      *
      * @param tuple
      */
     @Override
-    public void update(Object tuple) {
+    public void update(T tuple) {
 
         int[] indices = hashFunctions.hash(tuple);
         for (int i = 0; i < height; i++) {
@@ -80,7 +75,6 @@ public class CountMinSketch implements Sketch<Object, Integer>, Serializable {
      * @param tuple
      * @return The approximate count of tuple so far
      */
-    @Override
     public Integer query(Object tuple) {
         int[] indices = hashFunctions.hash(tuple);
         int min = -1;
@@ -114,10 +108,12 @@ public class CountMinSketch implements Sketch<Object, Integer>, Serializable {
         return elementsProcessed;
     }
 
-    public HashSet<Object> getElements() {
+    public HashSet<T> getElements() {
         return Elements;
     }
 
+
+    @Override
     public CountMinSketch merge(Sketch other) throws Exception {
         if (other instanceof CountMinSketch) {
             CountMinSketch otherCM = (CountMinSketch) other;

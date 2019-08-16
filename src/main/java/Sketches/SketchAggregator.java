@@ -1,6 +1,5 @@
 package Sketches;
 
-import Sketches.HashFunctions.PairwiseIndependentHashFunctions;
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -10,16 +9,20 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.ObjectStreamException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 
-public class SketchAggregator<T1, S extends Sketch> implements AggregateFunction<Tuple2<Integer,T1>, S, S> {
+public class SketchAggregator<T1> implements AggregateFunction<Tuple2<Integer,T1>, Sketch, Sketch> {
 
     private static final Logger LOG = LoggerFactory.getLogger(LocalStreamEnvironment.class);
-    private S sketch;
     private int keyField;
+    private Class<? extends Sketch> sketchClass;
+    private Object[] constructorParam;
 
-    public SketchAggregator(S sketch, int keyField){
+    public SketchAggregator(Class<? extends Sketch> sketchClass, Object[] params, int keyField){
         this.keyField = keyField;
-        this.sketch = sketch;
+        this.sketchClass = sketchClass;
+        this.constructorParam = params;
     }
     /**
      * Creates a new accumulator, starting a new aggregate.
@@ -34,8 +37,25 @@ public class SketchAggregator<T1, S extends Sketch> implements AggregateFunction
      * @return A new accumulator, corresponding to an empty aggregate.
      */
     @Override
-    public S createAccumulator() {
-        return sketch;
+    public Sketch createAccumulator() {
+        Class<?>[] parameterClasses = new Class[constructorParam.length];
+        for (int i = 0; i < constructorParam.length; i++) {
+            parameterClasses[i] = constructorParam[i].getClass();
+        }
+        try {
+            Constructor<? extends Sketch> constructor = sketchClass.getConstructor(parameterClasses);
+            Sketch sketch = constructor.newInstance(constructorParam);
+            return sketch;
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
@@ -48,7 +68,7 @@ public class SketchAggregator<T1, S extends Sketch> implements AggregateFunction
      * @param accumulator The accumulator to add the value to
      */
     @Override
-    public S add(Tuple2<Integer,T1> value, S accumulator) {
+    public Sketch add(Tuple2<Integer,T1> value, Sketch accumulator) {
         if(value.f1 instanceof Tuple){
             Object field = ((Tuple) value.f1).getField(this.keyField);
             accumulator.update(field);
@@ -65,7 +85,7 @@ public class SketchAggregator<T1, S extends Sketch> implements AggregateFunction
      * @return The final aggregation result.
      */
     @Override
-    public S getResult(S accumulator) {
+    public Sketch getResult(Sketch accumulator) {
         return accumulator;
     }
 
@@ -81,9 +101,9 @@ public class SketchAggregator<T1, S extends Sketch> implements AggregateFunction
      * @return The accumulator with the merged state
      */
     @Override
-    public S merge(S a, S b) {
+    public Sketch merge(Sketch a, Sketch b) {
         try {
-            return (S) a.merge(b);
+            return a.merge(b);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -92,12 +112,14 @@ public class SketchAggregator<T1, S extends Sketch> implements AggregateFunction
 
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
         out.writeInt(keyField);
-        out.writeObject(sketch);
+        out.writeObject(constructorParam);
+        out.writeObject(sketchClass);
     }
 
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException{
         keyField = in.readInt();
-        sketch = (S) in.readObject();
+        constructorParam = (Object[]) in.readObject();
+        sketchClass = (Class<? extends Sketch>) in.readObject();
     }
 
     private void readObjectNoData() throws ObjectStreamException {

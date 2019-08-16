@@ -28,8 +28,8 @@ public final class BuildSketch {
                 });
     }
 
-    public static <T, S extends Sketch> SingleOutputStreamOperator<S> timeBased(DataStream<T> inputStream, Time windowTime, SketchAggregator agg, int keyField){
-
+    public static <T, S extends Sketch> SingleOutputStreamOperator<S> timeBased(DataStream<T> inputStream, Time windowTime, Class<S> sketchClass,Object[] parameters, int keyField){
+        SketchAggregator agg = new SketchAggregator(sketchClass, parameters, keyField);
 
         SingleOutputStreamOperator<S> firstWindow = inputStream
                 .map(new AddParallelismTuple())
