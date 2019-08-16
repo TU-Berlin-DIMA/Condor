@@ -65,7 +65,7 @@ public class StreamingJob {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
-        int keyField = 0;
+        int keyField = -1;
 
 //        int width = 10;
 //        int height = 5;
@@ -85,6 +85,7 @@ public class StreamingJob {
                 .assignTimestampsAndWatermarks(new EventTimeJob.CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
         SingleOutputStreamOperator<HyperLogLogSketch> finalSketch = BuildSketch.timeBased(timestamped, windowTime, sketchClass, parameters, keyField);
+
         finalSketch.writeAsText("output/eventTimeHLLSketch.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
         env.execute("Flink Streaming Java API Skeleton");
