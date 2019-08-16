@@ -21,6 +21,8 @@ package Jobs;
 
 import Sketches.BuildSketch;
 import Sketches.CountMinSketch;
+import Sketches.HyperLogLogAggregator;
+import Sketches.HyperLogLogSketch;
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
@@ -66,29 +68,22 @@ public class StreamingJob {
 
 
 
-        int width = 10;
-        int height = 5;
+        int logRegNum = 10;
         long seed = 1;
-
-
-        int keyField = 0;
-
-        Object[] parameters = new Object[]{width,height,seed};
-        Class<CountMinSketch> cl = CountMinSketch.class;
-
         Time windowTime = Time.minutes(1);
+        int keyField = 1;
+        Object[] parameters = new Object[]{logRegNum,seed};
+        Class<HyperLogLogSketch> hll = HyperLogLogSketch.class;
+
+
         DataStream<String> line = env.readTextFile("data/timestamped.csv");
-        DataStream<Tuple4<Integer, Integer, Integer, Long>> timestamped = line.flatMap(new EventTimeJob.CreateTuplesFlatMap()) // Create the tuples from the incoming Data
-                .map(new EventTimeJob.AddParallelismRichFlatMapFunction()) // add a variable indicating the partition of the data
+        DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new EventTimeJob.CreateTuplesFlatMap()) // Create the tuples from the incoming Data
                 .assignTimestampsAndWatermarks(new EventTimeJob.CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
+        SingleOutputStreamOperator<HyperLogLogSketch> finalSketch = BuildSketch.timeBased(timestamped, windowTime, hll, parameters, keyField);
 
-//        CountMinSketchAggregator agg = new CountMinSketchAggregator<>(height, width, seed, keyField);
-//        SingleOutputStreamOperator<CountMinSketch> finalSketch = BuildSketch.timeBased(timestamped, windowTime, agg);
-//        CountMinSketch cm = new CountMinSketch(width, height, seed);
-//        SketchAggregator agg = new SketchAggregator(cm, keyField);
-        SingleOutputStreamOperator<CountMinSketch> finalSketch = BuildSketch.timeBased(timestamped, windowTime, cl, parameters, keyField);
 
+        finalSketch.writeAsText("output/hllTest.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
         env.execute("Flink Streaming Java API Skeleton");
     }
