@@ -1,8 +1,6 @@
 package Sketches;
 
-import Sketches.HashFunctions.PairwiseIndependentHashFunctions;
 import org.apache.flink.api.common.functions.AggregateFunction;
-import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
@@ -11,32 +9,26 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.ObjectStreamException;
-import java.util.Random;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 
-public class CountMinSketchAggregator<T1> implements AggregateFunction<Tuple2<Integer,T1>, CountMinSketch, CountMinSketch> {
+public class SketchAggregator<T1> implements AggregateFunction<Tuple2<Integer,T1>, Sketch, Sketch> {
 
     private static final Logger LOG = LoggerFactory.getLogger(LocalStreamEnvironment.class);
-
-    private int height;
-    private int width;
-    private long seed;
-    private int count;
     private int keyField;
-    private PairwiseIndependentHashFunctions hashFunctions;
+    private Class<? extends Sketch> sketchClass;
+    private Object[] constructorParam;
 
-
-    public CountMinSketchAggregator(int height, int width, long s, int k) throws IOException {
-        this.keyField = k;
-        this.height = height;
-        this.width = width;
-        this.seed = s;
-        this.count = 0;
+    public SketchAggregator(Class<? extends Sketch> sketchClass, Object[] params, int keyField){
+        this.keyField = keyField;
+        this.sketchClass = sketchClass;
+        this.constructorParam = params;
     }
     /**
      * Creates a new accumulator, starting a new aggregate.
      *
      * <p>The new accumulator is typically meaningless unless a value is added
-     * via {@link #add(Object, CountMinSketch)}
+     * via
      *
      * <p>The accumulator is the state of a running aggregation. When a program has multiple
      * aggregates in progress (such as per key and window), the state (per key and window)
@@ -45,11 +37,25 @@ public class CountMinSketchAggregator<T1> implements AggregateFunction<Tuple2<In
      * @return A new accumulator, corresponding to an empty aggregate.
      */
     @Override
-    public CountMinSketch createAccumulator() {
-        hashFunctions = new PairwiseIndependentHashFunctions(height, seed);
-        CountMinSketch tCountMinSketch = new CountMinSketch(width, height, seed);
-
-        return tCountMinSketch;
+    public Sketch createAccumulator() {
+        Class<?>[] parameterClasses = new Class[constructorParam.length];
+        for (int i = 0; i < constructorParam.length; i++) {
+            parameterClasses[i] = constructorParam[i].getClass();
+        }
+        try {
+            Constructor<? extends Sketch> constructor = sketchClass.getConstructor(parameterClasses);
+            Sketch sketch = constructor.newInstance(constructorParam);
+            return sketch;
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
@@ -62,8 +68,7 @@ public class CountMinSketchAggregator<T1> implements AggregateFunction<Tuple2<In
      * @param accumulator The accumulator to add the value to
      */
     @Override
-    public CountMinSketch add(Tuple2<Integer,T1> value, CountMinSketch accumulator) {
-        count++;
+    public Sketch add(Tuple2<Integer,T1> value, Sketch accumulator) {
         if(value.f1 instanceof Tuple){
             Object field = ((Tuple) value.f1).getField(this.keyField);
             accumulator.update(field);
@@ -80,8 +85,7 @@ public class CountMinSketchAggregator<T1> implements AggregateFunction<Tuple2<In
      * @return The final aggregation result.
      */
     @Override
-    public CountMinSketch getResult(CountMinSketch accumulator) {
-
+    public Sketch getResult(Sketch accumulator) {
         return accumulator;
     }
 
@@ -97,7 +101,7 @@ public class CountMinSketchAggregator<T1> implements AggregateFunction<Tuple2<In
      * @return The accumulator with the merged state
      */
     @Override
-    public CountMinSketch merge(CountMinSketch a, CountMinSketch b) {
+    public Sketch merge(Sketch a, Sketch b) {
         try {
             return a.merge(b);
         } catch (Exception e) {
@@ -107,21 +111,15 @@ public class CountMinSketchAggregator<T1> implements AggregateFunction<Tuple2<In
     }
 
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
-        out.writeInt(height);
-        out.writeInt(width);
-        out.writeInt(count);
         out.writeInt(keyField);
-        out.writeLong(seed);
-        out.writeObject(hashFunctions);
+        out.writeObject(constructorParam);
+        out.writeObject(sketchClass);
     }
 
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException{
-        height = in.readInt();
-        width = in.readInt();
-        count = in.readInt();
         keyField = in.readInt();
-        seed = in.readLong();
-        hashFunctions = (PairwiseIndependentHashFunctions) in.readObject();
+        constructorParam = (Object[]) in.readObject();
+        sketchClass = (Class<? extends Sketch>) in.readObject();
     }
 
     private void readObjectNoData() throws ObjectStreamException {

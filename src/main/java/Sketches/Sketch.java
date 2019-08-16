@@ -16,7 +16,6 @@ public interface Sketch<T> extends java.io.Serializable{
 	 */
 	void update(T t);
 
-
 	/**
 	 * Function to Merge two Sketches
 	 * @param other
