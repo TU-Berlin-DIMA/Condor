@@ -20,7 +20,6 @@ public class SketchAggregator<T1, S extends Sketch> implements AggregateFunction
     public SketchAggregator(S sketch, int keyField){
         this.keyField = keyField;
         this.sketch = sketch;
-        Class<? extends Sketch> c = this.sketch.getClass();
     }
     /**
      * Creates a new accumulator, starting a new aggregate.

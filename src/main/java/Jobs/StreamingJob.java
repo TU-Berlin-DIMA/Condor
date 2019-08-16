@@ -21,6 +21,7 @@ package Jobs;
 import Sketches.BuildSketch;
 import Sketches.CountMinSketch;
 import Sketches.CountMinSketchAggregator;
+import Sketches.SketchAggregator;
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.java.tuple.Tuple;
@@ -74,7 +75,8 @@ public class StreamingJob {
 //        CountMinSketchAggregator agg = new CountMinSketchAggregator<>(height, width, seed, keyField);
 //        SingleOutputStreamOperator<CountMinSketch> finalSketch = BuildSketch.timeBased(timestamped, windowTime, agg);
         CountMinSketch cm = new CountMinSketch(width, height, seed);
-        SingleOutputStreamOperator<CountMinSketch> finalSketch = BuildSketch.timeBased(timestamped, windowTime, cm, keyField);
+        SketchAggregator agg = new SketchAggregator(cm, keyField);
+        SingleOutputStreamOperator<CountMinSketch> finalSketch = BuildSketch.timeBased(timestamped, windowTime, agg, keyField);
 
         finalSketch.writeAsText("output/eventTimeSketches.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
         env.execute("Flink Streaming Java API Skeleton");
