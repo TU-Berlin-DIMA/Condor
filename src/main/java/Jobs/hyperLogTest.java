@@ -7,7 +7,7 @@ public class hyperLogTest {
 
     public static void main(String[] args){
 
-        HyperLogLogSketch hll = new HyperLogLogSketch(10, 1);
+        HyperLogLogSketch hll = null;
 
         Tuple2<Integer, Integer>[] data = new Tuple2[10];
 

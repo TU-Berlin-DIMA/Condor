@@ -19,7 +19,7 @@ public class HyperLogLogSketch implements Sketch<Object>, Serializable {
      *        Going beyond 16 would make the data structure big for no good reason.
      *        Setting logRegNum in at 10-12 should give roughly 2% accuracy most of the time
      */
-    public HyperLogLogSketch(int logRegNum, long seed) {
+    public HyperLogLogSketch(Integer logRegNum, Long seed) {
         HyperLogLogSketch.checkSpaceValid(logRegNum);
         this.regNum = 1 << logRegNum;
         this.registers = new byte[this.regNum];

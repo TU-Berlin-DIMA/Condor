@@ -14,7 +14,7 @@ public class HyperLogLogAggregator<T> implements AggregateFunction<T, HyperLogLo
     @Override
     public HyperLogLogSketch createAccumulator() {
 
-        return new HyperLogLogSketch(logRegNum, seed);
+        return null;
     }
 
     @Override
