@@ -92,19 +92,27 @@ public class EquiWidthHistogram<T extends Number> implements Sketch<T> {
         if (upperBound - lowerBound <= 0){
             throw new IllegalArgumentException("lower bound has to be smaller than upper bound!");
         }
-        int indexLB = (int) ((lowerBound - this.lowerBound) / bucketLength); // the index of the leftmost bucket of the query range
-        int indexUB = (int) ((upperBound - this.lowerBound) / bucketLength); // the index of the rightmost bucket of the query range
+        if (upperBound < this.lowerBound){
+            return 0;
+        }
+        int indexLB = (int) Math.floor((lowerBound - this.lowerBound) / bucketLength); // the index of the leftmost bucket of the query range
+        int indexUB = (int) Math.floor((upperBound - this.lowerBound) / bucketLength); // the index of the rightmost bucket of the query range
         double leftMostBucketShare = 0, rightMostBucketShare = 0;
         if (indexLB >= 0 && indexLB <numBuckets){
             double bucketUB = this.lowerBound + (indexLB+1) * bucketLength;
             leftMostBucketShare = ((bucketUB - lowerBound) / bucketLength) * frequency[indexLB]; //compute the frequency of the part of the leftmost bucket
+            indexLB++;
+        }else {
+            indexLB = 0;
         }
         if (indexUB >= 0 && indexUB < numBuckets){
             double bucketUB = this.lowerBound + (indexUB+1) * bucketLength;
-            rightMostBucketShare = ((1-(bucketUB - upperBound) / bucketLength)) * frequency[indexLB]; // compute the frequency of the part of the rightmost bucket
+            rightMostBucketShare = ((1-(bucketUB - upperBound) / bucketLength)) * frequency[indexUB]; // compute the frequency of the part of the rightmost bucket
+        } else {
+            indexUB = numBuckets;
         }
         double resultFrequency = leftMostBucketShare + rightMostBucketShare;
-        for (int i = indexLB + 1; i < indexUB; i++) {
+        for (int i = indexLB; i < indexUB; i++) {
             resultFrequency += frequency[i];
         }
         return resultFrequency;

@@ -54,7 +54,7 @@ public class EquiWidthHistogramTest {
         DataStream<Double> queryResult = finalSketch.map(new MapFunction<EquiWidthHistogram, Double>() {
             @Override
             public Double map(EquiWidthHistogram value) throws Exception {
-                return value.rangeQuery(2d, 4d);
+                return value.rangeQuery(18, 30d);
             }
         });
 
