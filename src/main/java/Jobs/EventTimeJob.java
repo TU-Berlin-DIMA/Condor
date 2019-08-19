@@ -113,7 +113,7 @@ public class EventTimeJob {
     /**
      * FlatMap to create Tuples from the incoming data
      */
-    public static class CreateTuplesFlatMap implements FlatMapFunction<String, Tuple3<Integer, Integer, Long>>{
+    static class CreateTuplesFlatMap implements FlatMapFunction<String, Tuple3<Integer, Integer, Long>>{
         @Override
         public void flatMap(String value, Collector<Tuple3<Integer, Integer, Long>> out) throws Exception {
             String[] tuples = value.split(",");
