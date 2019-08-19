@@ -34,8 +34,8 @@ public class EquiWidthHistogramTest {
         int keyField = 0;
 
         Double lowerBound = 0d;
-        Double upperBound = 27d;
-        Integer numBuckets = 13;
+        Double upperBound = 28d;
+        Integer numBuckets = 14;
 
         Object[] parameters = new Object[]{lowerBound, upperBound, numBuckets};
         Class<EquiWidthHistogram> sketchClass = EquiWidthHistogram.class;
@@ -54,7 +54,7 @@ public class EquiWidthHistogramTest {
         DataStream<Double> queryResult = finalSketch.map(new MapFunction<EquiWidthHistogram, Double>() {
             @Override
             public Double map(EquiWidthHistogram value) throws Exception {
-                return value.rangeQuery(10d, 14d);
+                return value.rangeQuery(2d, 4d);
             }
         });
 

@@ -1,6 +1,9 @@
 package Histograms;
 
 import Sketches.Sketch;
+import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Simple Equi-Width Histogram with given bucket boundaries.
@@ -8,6 +11,8 @@ import Sketches.Sketch;
  * @author joschavonhein
  */
 public class EquiWidthHistogram<T extends Number> implements Sketch<T> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(EquiWidthHistogram.class);
 
     double lowerBound, upperBound;
     int numBuckets;
@@ -87,16 +92,16 @@ public class EquiWidthHistogram<T extends Number> implements Sketch<T> {
         if (upperBound - lowerBound <= 0){
             throw new IllegalArgumentException("lower bound has to be smaller than upper bound!");
         }
-        int indexLB = (int) ((lowerBound - this.lowerBound) * bucketLength); // the index of the leftmost bucket of the query range
-        int indexUB = (int) ((upperBound - this.lowerBound) * bucketLength); // the index of the rightmost bucket of the query range
+        int indexLB = (int) ((lowerBound - this.lowerBound) / bucketLength); // the index of the leftmost bucket of the query range
+        int indexUB = (int) ((upperBound - this.lowerBound) / bucketLength); // the index of the rightmost bucket of the query range
         double leftMostBucketShare = 0, rightMostBucketShare = 0;
         if (indexLB >= 0 && indexLB <numBuckets){
-            double bucketUB = this.lowerBound * (indexLB+1) * bucketLength;
-            leftMostBucketShare = (bucketUB - lowerBound) / bucketLength *frequency[indexLB]; //compute the frequency of the part of the leftmost bucket
+            double bucketUB = this.lowerBound + (indexLB+1) * bucketLength;
+            leftMostBucketShare = ((bucketUB - lowerBound) / bucketLength) * frequency[indexLB]; //compute the frequency of the part of the leftmost bucket
         }
         if (indexUB >= 0 && indexUB < numBuckets){
-            double bucketUB = this.lowerBound * (indexUB+1) * bucketLength;
-            rightMostBucketShare = (bucketUB - lowerBound) / bucketLength *frequency[indexLB]; // compute the frequency of the part of the rightmost bucket
+            double bucketUB = this.lowerBound + (indexUB+1) * bucketLength;
+            rightMostBucketShare = ((1-(bucketUB - upperBound) / bucketLength)) * frequency[indexLB]; // compute the frequency of the part of the rightmost bucket
         }
         double resultFrequency = leftMostBucketShare + rightMostBucketShare;
         for (int i = indexLB + 1; i < indexUB; i++) {
