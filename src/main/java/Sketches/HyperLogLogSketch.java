@@ -6,6 +6,12 @@ import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 
+/**
+ * Implementation of the classical HyperLogLog Sketch for count distinct queries on data streams.
+ * This implementation uses 64 bit hash values and should therefore be able to handle up to 2^64 / 30
+ * distinct items with adequate accuracy (given acceptable number of registers)
+ * @author joschavonhein
+ */
 public class HyperLogLogSketch implements Sketch<Object>, Serializable {
 
     // TODO: write method / constructor which selects the logRegNum according to estimated error or available memory
@@ -30,6 +36,10 @@ public class HyperLogLogSketch implements Sketch<Object>, Serializable {
         this.hashFunctions = new PairwiseIndependentHashFunctions(2, seed);
     }
 
+    /**
+     * Method which updates the sketch with the input object
+     * @param t Tuple, Field or Object with which to update the sketch
+     */
     @Override
     public void update(Object t) {
 
@@ -48,7 +58,7 @@ public class HyperLogLogSketch implements Sketch<Object>, Serializable {
      * @param sketch the sketch to merge
      * @return the merged HyperLogLogSketch Datastructure
      */
-    public Sketch<Object> merge(Sketch sketch) throws Exception {
+    public HyperLogLogSketch merge(Sketch sketch) throws Exception {
         if (sketch.getClass().isInstance(HyperLogLogSketch.class)){
             throw new IllegalArgumentException("Sketches can only be merged with other Sketches of the same Type \n" +
                     "otherHLL.getClass() = " + sketch.getClass() + "\n" +
@@ -114,8 +124,6 @@ public class HyperLogLogSketch implements Sketch<Object>, Serializable {
         // if rawEstimate is below threshold of 5/2 m resort to Linear Counting (E = m * log (m/V) with V being the number of zero registers)
         if ((zeroRegs > 0) && (rawEstimate < (2.5 * this.regNum)))
             result = Math.round(this.regNum * (Math.log(this.regNum / (double) zeroRegs)));
-        // For very large cardinalities approaching the limit of the size of the registers (E > 2^32 / 30 for 32 bit registers)
-        // TODO: according to Wikipedia the
         else if (rawEstimate > (Long.MAX_VALUE / 30))
             throw new Exception("The Estimate approaches Long.MAX_VALUE which possible amount of hash values. This will lead to a bad estimator. \n" +
                     "In order to better estimate that many distinct values change increase the possible amount of hash values!");

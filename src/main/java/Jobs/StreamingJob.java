@@ -65,7 +65,7 @@ public class StreamingJob {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
-        int keyField = -1;
+        int keyField = 0;
 
 //        int width = 10;
 //        int height = 5;
