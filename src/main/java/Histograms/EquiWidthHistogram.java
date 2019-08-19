@@ -16,8 +16,8 @@ public class EquiWidthHistogram<T extends Number> implements Sketch<T> {
 
     /**
      * Creates an equi-width histogram with the given boundaries and number of buckets
-     * @param lowerBound lower bound of the Histogram
-     * @param upperBound upper bound of the Histogram
+     * @param lowerBound lower bound of the Histogram inclusive
+     * @param upperBound upper bound of the Histogram exclusive
      * @param numBuckets number of Buckets
      * @throws IllegalArgumentException
      */
@@ -35,7 +35,7 @@ public class EquiWidthHistogram<T extends Number> implements Sketch<T> {
 
     @Override
     public void update(T number) {
-        double input = (double) number;
+        double input = number.doubleValue();
         if (input > upperBound || input < lowerBound){
             throw new IllegalArgumentException("input is out of Bounds!");
         }
@@ -103,5 +103,17 @@ public class EquiWidthHistogram<T extends Number> implements Sketch<T> {
             resultFrequency += frequency[i];
         }
         return resultFrequency;
+    }
+
+    @Override
+    public String toString(){
+        String s = "Equi-Width Histogram properties:\n" +
+                "number of Buckets: " + numBuckets +
+                "\n lower Bound: " + lowerBound + " - upper Bound: " + upperBound + "\n Frequencies: \n |";
+
+        for (int i = 0; i < numBuckets; i++) {
+            s += frequency[i] + "|";
+        }
+        return s + "\n\n";
     }
 }

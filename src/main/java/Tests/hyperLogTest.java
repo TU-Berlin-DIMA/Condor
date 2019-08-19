@@ -1,4 +1,4 @@
-package Jobs;
+package Tests;
 
 import Sketches.HyperLogLogSketch;
 import org.apache.flink.api.java.tuple.Tuple2;

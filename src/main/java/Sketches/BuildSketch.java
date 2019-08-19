@@ -29,7 +29,7 @@ public final class BuildSketch {
                     public Sketch reduce(Sketch value1, Sketch value2) throws Exception {
                         return value1.merge(value2);
                     }
-                });
+                }).returns(sketchClass);
         return reduce;
     }
 
@@ -47,7 +47,7 @@ public final class BuildSketch {
                     public Sketch reduce(Sketch value1, Sketch value2) throws Exception {
                         return value1.merge(value2);
                     }
-                });
+                }).returns(sketchClass);
         return reduce;
     }
 
