@@ -30,6 +30,27 @@ public class SampleElement<T> implements Serializable, Comparable<SampleElement>
 
     @Override
     public int compareTo(SampleElement o) {
-        return (int) (this.timeStamp - o.timeStamp);
+        int diff = (int) (this.timeStamp - o.timeStamp);
+        if(diff == 0 && !o.getValue().equals(this.value)){
+                return -1;
+        }
+        return diff;
     }
+
+    @Override
+    public String toString() {
+        return new String("(" + value.toString() + " | " + timeStamp + ")");
+    }
+
+//    @Override
+//    public boolean equals(Object obj){
+//
+//        if (obj instanceof SampleElement){
+//            if (this.compareTo((SampleElement) obj) == 0){
+//                return ((SampleElement) obj).getValue().equals(this.value);
+//            }
+//        }
+//        return false;
+//    }
+
 }

@@ -1,47 +1,18 @@
 package Sampling;
 
 import Sketches.Sketch;
-import org.apache.flink.api.common.functions.RichMapFunction;
-import org.apache.flink.api.common.time.Time;
-import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.streaming.api.TimeCharacteristic;
-import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-
 import java.io.Serializable;
-import java.util.LinkedList;
-import java.util.PriorityQueue;
-import java.util.Queue;
+import java.util.*;
 
 public class FiFoSampler<T> implements Sketch<T>, Serializable {
-    private PriorityQueue<SampleElement<T>> sample;
+    private LinkedList<T> sample;
     private int sampleSize;
-    private long expireTime;
-    private StreamExecutionEnvironment env;
-    private boolean eventTime;
 
-    public FiFoSampler(Integer sampleSize, StreamExecutionEnvironment env) {
-        this.sample = new PriorityQueue<>();
+    public FiFoSampler(Integer sampleSize) {
+        this.sample = new LinkedList<>();
         this.sampleSize = sampleSize;
-        this.expireTime = -1;
-        this.env = env;
-        if (env.getStreamTimeCharacteristic() == TimeCharacteristic.EventTime){
-            this.eventTime = true;
-        } else{
-            this.eventTime = false;
-        }
     }
 
-    public FiFoSampler(Integer sampleSize, Time expireTime, StreamExecutionEnvironment env) {
-        this.sample = new PriorityQueue<>();
-        this.sampleSize = sampleSize;
-        this.expireTime = expireTime.toMilliseconds();
-        this.env = env;
-        if (env.getStreamTimeCharacteristic() == TimeCharacteristic.EventTime){
-            this.eventTime = true;
-        } else{
-            this.eventTime = false;
-        }
-    }
 
     /**
      * Update the sketch with a value T
@@ -50,11 +21,21 @@ public class FiFoSampler<T> implements Sketch<T>, Serializable {
      */
     @Override
     public void update(T element) {
-//        if (eventTime){
-//            Tuple3 t = new Tuple3();
-//            RichMapFunction
-//        }
-//        sample.add(new SampleElement<>(element, ))
+        if (sample.size() < sampleSize) {
+            sample.addLast(element);
+        } else {
+            sample.pollFirst();
+            sample.addLast(element);
+        }
+
+    }
+
+    public LinkedList<T> getSample() {
+        return sample;
+    }
+
+    public int getSampleSize() {
+        return sampleSize;
     }
 
     /**
@@ -65,7 +46,35 @@ public class FiFoSampler<T> implements Sketch<T>, Serializable {
      * @throws Exception
      */
     @Override
-    public Sketch merge(Sketch other) throws Exception {
-        return null;
+    public FiFoSampler merge(Sketch other) throws Exception {
+        if (other instanceof FiFoSampler
+                && ((FiFoSampler) other).getSampleSize() == this.sampleSize) {
+
+            LinkedList<T> otherSample = ((FiFoSampler) other).getSample();
+            LinkedList<T> mergeResult = new LinkedList<>();
+            while (mergeResult.size() != sampleSize && !(otherSample.isEmpty() && this.sample.isEmpty())) {
+                if (!this.sample.isEmpty()){
+                    mergeResult.addLast(this.sample.pollLast());
+                } if (mergeResult.size() != sampleSize && !otherSample.isEmpty()){
+                    mergeResult.addLast(otherSample.pollLast());
+                }
+            }
+            this.sample = mergeResult;
+        } else {
+            throw new Exception("FiFoSamplers to merge have to be the same size");
+        }
+        return this;
+    }
+
+    @Override
+    public String toString(){
+        String s = new String("FiFo sample size: " + this.sampleSize+"\n");
+        Iterator<T> iterator = this.sample.iterator();
+        while (iterator.hasNext()){
+            s += iterator.next().toString()+", ";
+        }
+        s = s.substring(0,s.length()-2);
+        s += "\n";
+        return s;
     }
 }

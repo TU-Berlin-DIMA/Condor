@@ -1,5 +1,6 @@
 package Jobs;
 
+import Sketches.BuildSketch;
 import Sketches.CountMinSketch;
 import Sketches.CountMinSketchAggregator;
 import org.apache.flink.api.common.functions.*;
@@ -36,79 +37,26 @@ public class EventTimeJob {
 
         int width = 10;
         int height = 5;
-        int seed = 1;
-        int keyField = 2;
-
+        long seed = 1;
+        int keyField = 0;
+        Object[] parameters = new Object[]{width,height,seed};
         Time windowTime = Time.minutes(1);
+        Class<CountMinSketch> sketchClass = CountMinSketch.class;
 
-        /*
         DataStream<String> line = env.readTextFile("data/timestamped.csv");
-        DataStream<Tuple3<Integer, Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
-                .map(new AddParallelismRichFlatMapFunction()) // add a variable indicating the partition of the data
-                        .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
+        DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
+                .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
-        SingleOutputStreamOperator<CountMinSketch> distributedSketches = timestamped.keyBy(0) // key by the partition (should always be on field 1)
-                .timeWindow(windowTime) // keyed window by Window Time
-                        .aggregate(new CountMinSketchAggregator(height, width, seed, keyField)); // aggregate with our Sketches
+        SingleOutputStreamOperator<CountMinSketch> finalSketch = BuildSketch.timeBased(timestamped, windowTime, sketchClass, parameters, keyField);
 
-        SingleOutputStreamOperator<CountMinSketch> finalSketch = distributedSketches.timeWindowAll(windowTime) // global window
-                .reduce(new ReduceFunction<CountMinSketch>() { // Merge all sketches in the global window
-                    @Override
-                    public CountMinSketch reduce(CountMinSketch value1, CountMinSketch value2) throws Exception {
-                        return value1.merge(value2);
-                    }
-                });
 
 
         finalSketch.writeAsText("output/eventTimeSketches.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
-        env.execute("Flink Streaming Java API Skeleton"); */
+        env.execute("Flink Streaming Java API Skeleton");
     }
 
-    /**
-     *  Stateful map function to add the parallelism variable
-     */
-    public static class AddParallelismRichFlatMapFunction extends RichMapFunction<Tuple3<Integer, Integer, Long>, Tuple4<Integer, Integer, Integer, Long>> {
 
-        private static final Logger LOG = LoggerFactory.getLogger(LocalStreamEnvironment.class);
-
-        ValueState<Integer> state;
-
-        @Override
-        public void open(Configuration parameters) throws Exception {
-            state = new ValueState<Integer>() {
-                int value;
-
-                @Override
-                public Integer value() throws IOException {
-                    return value;
-                }
-
-                @Override
-                public void update(Integer value) throws IOException {
-                    this.value = value;
-                }
-
-                @Override
-                public void clear() {
-                    value = 0;
-                }
-            };
-            state.update(0);
-        }
-
-        @Override
-        public Tuple4<Integer, Integer, Integer, Long> map(Tuple3<Integer, Integer, Long> value) throws Exception {
-
-            int currentNode = state.value();
-            int next = currentNode +1;
-            next = next % this.getRuntimeContext().getNumberOfParallelSubtasks();
-            state.update(next);
-
-            return new Tuple4<>(currentNode, value.f0, value.f1, value.f2);
-
-        }
-    }
 
     /**
      * FlatMap to create Tuples from the incoming data
