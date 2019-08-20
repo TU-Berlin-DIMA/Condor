@@ -74,65 +74,85 @@ public class NormalValuedBucket4LT {
             return root; // if bounds contain bucket bounds completely simply return the root
         }
         int frequency = 0;
+        double distance = (upperBound-lowerBound) / 8d;
 
         double leftIndex = Math.min((queryLowerBound - lowerBound) * 8 / (upperBound-lowerBound), 0d);
         double rightIndex = Math.max((queryUpperBound - lowerBound) * 8 / (upperBound-lowerBound), 8d); // real valued right index exclusive
 
         // get the respective deltas
         int delta2_1 = lowerLevels >> 26;
-        int delta3_1 = (lowerLevels >> 21) & 31;
-        int delta3_3 = (lowerLevels >> 16) & 31;
-        int delta4_1 = (lowerLevels >> 12) & 15;
-        int delta4_3 = (lowerLevels >> 12) & 15;
-        int delta4_5 = (lowerLevels >> 12) & 15;
-        int delta4_7 = (lowerLevels >> 12) & 15;
         int count2_1 = (int) Math.round(delta2_1 / Math.pow(2, 6) * root);
-        int count3_1 = (int) Math.round(delta3_1 / Math.pow(2, 5) * count2_1);
-        int count3_3 = (int) Math.round(delta3_3 / Math.pow(2, 5) * (root - count2_1));
-        int count4_1 = (int) Math.round(delta4_1 / Math.pow(2, 4) * count3_1);
-        int count4_3 = (int) Math.round(delta4_3 / Math.pow(2, 4) * (count2_1 - count3_1));
-        int count4_5 = (int) Math.round(delta4_5 / Math.pow(2, 4) * count3_3);
-        int count4_7 = (int) Math.round(delta4_7 / Math.pow(2, 4) * (root - count2_1 - count3_3));
-
         if (leftIndex == 0 && rightIndex >= 4){
             frequency += count2_1;
-            if (rightIndex >= 6){
-                frequency+= count3_1;
-                if (rightIndex >= 7){
-                    frequency += count4_7;
-                    frequency +=  (root - count2_1 - count3_3) * (rightIndex-7);
-                    return frequency;   // case: buckets 0-6 + part of 7
-                }
-                frequency += count4_7 * (rightIndex-6);
-                return frequency;   // case: buckets 0-5 + part of 6
-            }
-            if(rightIndex >=5){
-                frequency += count4_5;
-                frequency += (count3_3 - count4_5) * (rightIndex-5);
-                return frequency; // case: buckets 0-4 + part of 5
-            }
-            frequency += count4_5 * (rightIndex-4);
-            return frequency; // case: buckets 0-3 + part of 4
-        } else if (leftIndex < 4 && rightIndex == 8){
-            frequency += root - count2_1;
-            if (leftIndex < 2){
+            frequency += getFrequency((int) Math.ceil(distance*4) + lowerBound, queryUpperBound);
+        }else if (leftIndex < 4 && rightIndex == 8){
+            frequency += root-count2_1;
+            frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*4) + lowerBound);
+        }else {
+            int delta3_1 = (lowerLevels >> 21) & 31;
+            int delta3_3 = (lowerLevels >> 16) & 31;
+            int count3_1 = (int) Math.round(delta3_1 / Math.pow(2, 5) * count2_1);
+            int count3_3 = (int) Math.round(delta3_3 / Math.pow(2, 5) * (root - count2_1));
+            if (leftIndex == 0 && rightIndex > 2){
+                frequency += count3_1;
+                frequency += getFrequency((int) Math.ceil(distance*2) + lowerBound, queryUpperBound);
+            }else if (leftIndex < 2 && rightIndex >= 4){
                 frequency += count2_1 - count3_1;
-                if (leftIndex < 1){
+                frequency += getFrequency((int) Math.ceil(distance*4) + lowerBound, queryUpperBound);
+                frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*2) + lowerBound);
+            }else if (leftIndex < 4 && rightIndex >= 6){
+                frequency += count3_3;
+                frequency += getFrequency((int) Math.ceil(distance*6) + lowerBound, queryUpperBound);
+                frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*4) + lowerBound);
+            }else if (leftIndex < 6 && rightIndex == 8){
+                frequency += root - count2_1 - count3_3;
+                frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*6) + lowerBound);
+            }else {
+                int delta4_1 = (lowerLevels >> 12) & 15;
+                int delta4_3 = (lowerLevels >> 12) & 15;
+                int delta4_5 = (lowerLevels >> 12) & 15;
+                int delta4_7 = (lowerLevels >> 12) & 15;
+                int count4_1 = (int) Math.round(delta4_1 / Math.pow(2, 4) * count3_1);
+                int count4_3 = (int) Math.round(delta4_3 / Math.pow(2, 4) * (count2_1 - count3_1));
+                int count4_5 = (int) Math.round(delta4_5 / Math.pow(2, 4) * count3_3);
+                int count4_7 = (int) Math.round(delta4_7 / Math.pow(2, 4) * (root - count2_1 - count3_3));
+
+                if (leftIndex == 0 && rightIndex >= 1){
+                    frequency += count4_1;
+                    frequency += getFrequency((int) Math.ceil(distance) + lowerBound, queryUpperBound);
+                }else if (leftIndex < 1 && rightIndex >= 2){
                     frequency += count3_1 - count4_1;
-                    frequency += (1-leftIndex) * count4_1;
-                    return frequency; // case: buckets 1-7 + part of 0
+                    frequency += getFrequency((int) Math.ceil(distance * 2) + lowerBound, queryUpperBound);
+                    frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance) + lowerBound);
+                }else if (leftIndex < 2 && rightIndex >= 3){
+                    frequency += count4_3;
+                    frequency += getFrequency((int) Math.ceil(distance * 3) + lowerBound, queryUpperBound);
+                    frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*2) + lowerBound);
+                }else if (leftIndex < 3 && rightIndex >= 4){
+                    frequency += count2_1 - count3_1 - count4_3;
+                    frequency += getFrequency((int) Math.ceil(distance * 4) + lowerBound, queryUpperBound);
+                    frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*3) + lowerBound);
+                }else if (leftIndex < 4 && rightIndex >= 5){
+                    frequency += count4_5;
+                    frequency += getFrequency((int) Math.ceil(distance * 5) + lowerBound, queryUpperBound);
+                    frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*4) + lowerBound);
+                }else if (leftIndex < 5 && rightIndex >= 6){
+                    frequency += count3_3 - count4_5;
+                    frequency += getFrequency((int) Math.ceil(distance * 6) + lowerBound, queryUpperBound);
+                    frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*5) + lowerBound);
+                }else if (leftIndex < 6 && rightIndex >= 7){
+                    frequency += count4_7;
+                    frequency += getFrequency((int) Math.ceil(distance * 2) + lowerBound, queryUpperBound);
+                    frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*6) + lowerBound);
+                }else if (leftIndex < 7 && rightIndex == 8){
+                    frequency += root - count2_1 - count3_3 - count4_7;
+                    frequency += getFrequency((int) Math.ceil(distance * 7) + lowerBound, queryUpperBound);
+                    frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*7) + lowerBound);
+                }else {
+                    // TODO: use count[] in order to exploit the indices!
                 }
-                frequency += (2-leftIndex) * (count3_1 - count4_1);
-                return  frequency; // case: buckets 2-7 + part of 1
             }
-            if (leftIndex < 3){
-                frequency += count2_1 - count3_1 - count4_3;
-                frequency += (3 - leftIndex) * count4_3;
-                return frequency; // case: buckets 3-7 + part of 2
-            }
-            frequency += (4 - leftIndex) * (count2_1 - count3_1 - count4_3);
-            return frequency; // case: buckets 4-7 + part of 3
-        } 
+        }
 
         return frequency;
     }
