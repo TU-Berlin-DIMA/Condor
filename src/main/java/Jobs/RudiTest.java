@@ -1,113 +1,55 @@
 package Jobs;
 
+import Sampling.FiFoSampler;
+import Sampling.FiFoSamplerOld;
 import Sketches.BuildSketch;
 import Sketches.CountMinSketch;
-import Sketches.CountMinSketchAggregator;
-import Sketches.HyperLogLogSketch;
 import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.common.functions.ReduceFunction;
-import org.apache.flink.api.common.functions.RichMapFunction;
-import org.apache.flink.api.common.state.ValueState;
-import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.api.java.tuple.Tuple4;
-import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
-import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 
-public class CountWindowJob {
+public class RudiTest {
     public static void main(String[] args) throws Exception {
 
         // set up the streaming execution environment
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
-        int keyField = 0;
 
-        int width = 10;
-        int height = 5;
-        long seed = 1;
-        Object[] parameters = new Object[]{width,height,seed};
-        Class<CountMinSketch> sketchClass = CountMinSketch.class;
-
-//        int logRegNum = 10;
-//        long seed = 1;
-//
-//        Object[] parameters = new Object[]{logRegNum,seed};
-//        Class<HyperLogLogSketch> sketchClass = HyperLogLogSketch.class;
-
-        long windowSize = 20000;
+        // int parallelism = env.getParallelism();
+        int sampleSize = 10;
+        Object[] parameters = new Object[]{sampleSize, env.getStreamTimeCharacteristic()};
+        Time windowTime = Time.minutes(1);
+        Class<FiFoSamplerOld> sketchClass = FiFoSamplerOld.class;
 
         DataStream<String> line = env.readTextFile("data/timestamped.csv");
         DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
                 .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
-        SingleOutputStreamOperator<CountMinSketch> finalSketch = BuildSketch.countBased(timestamped, windowSize, sketchClass, parameters, keyField);
-        finalSketch.writeAsText("output/countCountMinSketch.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+        //SingleOutputStreamOperator<FiFoSampler> finalSketch = BuildSketch.timeBased(timestamped, windowTime, sketchClass, parameters, -1);
+        SingleOutputStreamOperator<FiFoSamplerOld> finalSketch = BuildSketch.sampleTimeBased(timestamped, windowTime, sketchClass, parameters, -1);
+
+        finalSketch.writeAsText("output/rudiTest.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
         env.execute("Flink Streaming Java API Skeleton");
     }
 
-    /**
-     *  Stateful map function to add the parallelism variable
-     */
-    public static class AddParallelismRichFlatMapFunction extends RichMapFunction<Tuple3<Integer, Integer, Long>, Tuple4<Integer, Integer, Integer, Long>> {
 
-        ValueState<Integer> state;
-
-        @Override
-        public void open(Configuration parameters) throws Exception {
-            state = new ValueState<Integer>() {
-                int value;
-
-                @Override
-                public Integer value() throws IOException {
-                    return value;
-                }
-
-                @Override
-                public void update(Integer value) throws IOException {
-                    this.value = value;
-                }
-
-                @Override
-                public void clear() {
-                    value = 0;
-                }
-            };
-            state.update(0);
-        }
-
-        @Override
-        public Tuple4<Integer, Integer, Integer, Long> map(Tuple3<Integer, Integer, Long> value) throws Exception {
-
-            int currentNode = state.value();
-            int next = currentNode +1;
-            next = next % this.getRuntimeContext().getNumberOfParallelSubtasks();
-            state.update(next);
-
-            return new Tuple4<>(currentNode, value.f0, value.f1, value.f2);
-
-        }
-    }
 
     /**
      * FlatMap to create Tuples from the incoming data
      */
-    public static class CreateTuplesFlatMap implements FlatMapFunction<String, Tuple3<Integer, Integer, Long>>{
+    static class CreateTuplesFlatMap implements FlatMapFunction<String, Tuple3<Integer, Integer, Long>> {
         @Override
         public void flatMap(String value, Collector<Tuple3<Integer, Integer, Long>> out) throws Exception {
             String[] tuples = value.split(",");
@@ -128,7 +70,7 @@ public class CountWindowJob {
     /**
      * The Custom TimeStampExtractor which is used to assign Timestamps and Watermarks for our data
      */
-    public static class CustomTimeStampExtractor implements AssignerWithPunctuatedWatermarks<Tuple3<Integer, Integer, Long>>{
+    public static class CustomTimeStampExtractor implements AssignerWithPunctuatedWatermarks<Tuple3<Integer, Integer, Long>> {
         /**
          * Asks this implementation if it wants to emit a watermark. This method is called right after
          * the {@link #extractTimestamp(Tuple3, long)}   method.

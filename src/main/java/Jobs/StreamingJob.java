@@ -21,6 +21,7 @@ package Jobs;
 
 import Sketches.BuildSketch;
 
+import Sketches.CountMinSketch;
 import Sketches.HyperLogLogSketch;
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
@@ -67,26 +68,25 @@ public class StreamingJob {
 
         int keyField = 0;
 
-//        int width = 10;
-//        int height = 5;
-//        long seed = 1;
-//        Object[] parameters = new Object[]{width,height,seed};
-
-        int logRegNum = 10;
+        int width = 10;
+        int height = 5;
         long seed = 1;
-
-        Object[] parameters = new Object[]{logRegNum,seed};
-        Class<HyperLogLogSketch> sketchClass = HyperLogLogSketch.class;
+        Object[] parameters = new Object[]{width,height,seed};
+        Class<CountMinSketch> sketchClass = CountMinSketch.class;
+//        int logRegNum = 10;
+//        long seed = 1;
+//
+//        Object[] parameters = new Object[]{logRegNum,seed};
+//        Class<HyperLogLogSketch> sketchClass = HyperLogLogSketch.class;
 
         Time windowTime = Time.minutes(1);
 
         DataStream<String> line = env.readTextFile("data/timestamped.csv");
-        DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new EventTimeJob.CreateTuplesFlatMap()) // Create the tuples from the incoming Data
-                .assignTimestampsAndWatermarks(new EventTimeJob.CustomTimeStampExtractor()); // extract the timestamps and add watermarks
+        DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
+                .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
+        SingleOutputStreamOperator<CountMinSketch> finalSketch = BuildSketch.timeBased(timestamped, windowTime, sketchClass, parameters, keyField);
 
-        SingleOutputStreamOperator<HyperLogLogSketch> finalSketch = BuildSketch.timeBased(timestamped, windowTime, sketchClass, parameters, keyField);
-
-        finalSketch.writeAsText("output/eventTimeHLLSketch.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+        finalSketch.writeAsText("output/eventTimeSketch.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
         env.execute("Flink Streaming Java API Skeleton");
     }
@@ -158,10 +158,10 @@ public class StreamingJob {
     /**
      * The Custom TimeStampExtractor which is used to assign Timestamps and Watermarks for our data
      */
-    public static class CustomTimeStampExtractor implements AssignerWithPunctuatedWatermarks<Tuple4<Integer, Integer, Integer, Long>>{
+    public static class CustomTimeStampExtractor implements AssignerWithPunctuatedWatermarks<Tuple3< Integer, Integer, Long>>{
         /**
          * Asks this implementation if it wants to emit a watermark. This method is called right after
-         * the {@link #extractTimestamp(Tuple4, long)}   method.
+         * the    method.
          *
          * <p>The returned watermark will be emitted only if it is non-null and its timestamp
          * is larger than that of the previously emitted watermark (to preserve the contract of
@@ -178,7 +178,7 @@ public class StreamingJob {
          */
         @Nullable
         @Override
-        public Watermark checkAndGetNextWatermark(Tuple4<Integer, Integer, Integer, Long> lastElement, long extractedTimestamp) {
+        public Watermark checkAndGetNextWatermark(Tuple3< Integer, Integer, Long> lastElement, long extractedTimestamp) {
             return new Watermark(extractedTimestamp);
         }
 
@@ -196,8 +196,8 @@ public class StreamingJob {
          * @return The new timestamp.
          */
         @Override
-        public long extractTimestamp(Tuple4<Integer, Integer, Integer, Long> element, long previousElementTimestamp) {
-            return element.f3;
+        public long extractTimestamp(Tuple3< Integer, Integer, Long> element, long previousElementTimestamp) {
+            return element.f2;
         }
     }
 }
