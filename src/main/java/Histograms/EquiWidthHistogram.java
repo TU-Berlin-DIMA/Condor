@@ -1,6 +1,9 @@
 package Histograms;
 
 import Sketches.Sketch;
+import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Simple Equi-Width Histogram with given bucket boundaries.
@@ -9,6 +12,8 @@ import Sketches.Sketch;
  */
 public class EquiWidthHistogram<T extends Number> implements Sketch<T> {
 
+    private static final Logger LOG = LoggerFactory.getLogger(EquiWidthHistogram.class);
+
     double lowerBound, upperBound;
     int numBuckets;
     int[] frequency;
@@ -16,8 +21,8 @@ public class EquiWidthHistogram<T extends Number> implements Sketch<T> {
 
     /**
      * Creates an equi-width histogram with the given boundaries and number of buckets
-     * @param lowerBound lower bound of the Histogram
-     * @param upperBound upper bound of the Histogram
+     * @param lowerBound lower bound of the Histogram inclusive
+     * @param upperBound upper bound of the Histogram exclusive
      * @param numBuckets number of Buckets
      * @throws IllegalArgumentException
      */
@@ -35,7 +40,7 @@ public class EquiWidthHistogram<T extends Number> implements Sketch<T> {
 
     @Override
     public void update(T number) {
-        double input = (double) number;
+        double input = number.doubleValue();
         if (input > upperBound || input < lowerBound){
             throw new IllegalArgumentException("input is out of Bounds!");
         }
@@ -87,21 +92,41 @@ public class EquiWidthHistogram<T extends Number> implements Sketch<T> {
         if (upperBound - lowerBound <= 0){
             throw new IllegalArgumentException("lower bound has to be smaller than upper bound!");
         }
-        int indexLB = (int) ((lowerBound - this.lowerBound) * bucketLength); // the index of the leftmost bucket of the query range
-        int indexUB = (int) ((upperBound - this.lowerBound) * bucketLength); // the index of the rightmost bucket of the query range
+        if (upperBound < this.lowerBound){
+            return 0;
+        }
+        int indexLB = (int) Math.floor((lowerBound - this.lowerBound) / bucketLength); // the index of the leftmost bucket of the query range
+        int indexUB = (int) Math.floor((upperBound - this.lowerBound) / bucketLength); // the index of the rightmost bucket of the query range
         double leftMostBucketShare = 0, rightMostBucketShare = 0;
         if (indexLB >= 0 && indexLB <numBuckets){
-            double bucketUB = this.lowerBound * (indexLB+1) * bucketLength;
-            leftMostBucketShare = (bucketUB - lowerBound) / bucketLength *frequency[indexLB]; //compute the frequency of the part of the leftmost bucket
+            double bucketUB = this.lowerBound + (indexLB+1) * bucketLength;
+            leftMostBucketShare = ((bucketUB - lowerBound) / bucketLength) * frequency[indexLB]; //compute the frequency of the part of the leftmost bucket
+            indexLB++;
+        }else {
+            indexLB = 0;
         }
         if (indexUB >= 0 && indexUB < numBuckets){
-            double bucketUB = this.lowerBound * (indexUB+1) * bucketLength;
-            rightMostBucketShare = (bucketUB - lowerBound) / bucketLength *frequency[indexLB]; // compute the frequency of the part of the rightmost bucket
+            double bucketUB = this.lowerBound + (indexUB+1) * bucketLength;
+            rightMostBucketShare = ((1-(bucketUB - upperBound) / bucketLength)) * frequency[indexUB]; // compute the frequency of the part of the rightmost bucket
+        } else {
+            indexUB = numBuckets;
         }
         double resultFrequency = leftMostBucketShare + rightMostBucketShare;
-        for (int i = indexLB + 1; i < indexUB; i++) {
+        for (int i = indexLB; i < indexUB; i++) {
             resultFrequency += frequency[i];
         }
         return resultFrequency;
+    }
+
+    @Override
+    public String toString(){
+        String s = "Equi-Width Histogram properties:\n" +
+                "number of Buckets: " + numBuckets +
+                "\n lower Bound: " + lowerBound + " - upper Bound: " + upperBound + "\n Frequencies: \n |";
+
+        for (int i = 0; i < numBuckets; i++) {
+            s += frequency[i] + "|";
+        }
+        return s + "\n\n";
     }
 }
