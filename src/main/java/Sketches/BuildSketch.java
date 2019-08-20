@@ -33,16 +33,16 @@ public final class BuildSketch {
         return reduce;
     }
 
-    public static <T, S extends Sketch> SingleOutputStreamOperator<S> countBased(DataStream<T> inputStream, long windowSize, StreamExecutionEnvironment env, Class<S> sketchClass, Object[] parameters, int keyField){
+    public static <T, S extends Sketch> SingleOutputStreamOperator<S> countBased(DataStream<T> inputStream, long windowSize, Class<S> sketchClass, Object[] parameters, int keyField){
         SketchAggregator agg = new SketchAggregator(sketchClass, parameters, keyField);
-        int n = inputStream.getExecutionEnvironment().getParallelism();
+        int parallelism = inputStream.getExecutionEnvironment().getParallelism();
 
         SingleOutputStreamOperator reduce = inputStream
                 .map(new AddParallelismTuple())
                 .keyBy(0)
-                .countWindow(windowSize/inputStream.getExecutionEnvironment().getParallelism())
+                .countWindow(windowSize/parallelism)
                 .aggregate(agg)
-                .countWindowAll(env.getParallelism())
+                .countWindowAll(parallelism)
                 .reduce(new ReduceFunction<S>() { // Merge all sketches in the global window
                     @Override
                     public Sketch reduce(Sketch value1, Sketch value2) throws Exception {
