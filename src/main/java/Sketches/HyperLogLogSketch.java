@@ -38,13 +38,13 @@ public class HyperLogLogSketch implements Sketch<Object>, Serializable {
 
     /**
      * Method which updates the sketch with the input object
-     * @param t Tuple, Field or Object with which to update the sketch
+     * @param element Tuple, Field or Object with which to update the sketch
      */
     @Override
-    public void update(Object t) {
+    public void update(Object element) {
 
-        long hash = hashFunctions.hash(t)[0];
-        long firstBits = ((long) hashFunctions.hash(t)[1]) << 32;
+        long hash = hashFunctions.hash(element)[0];
+        long firstBits = ((long) hashFunctions.hash(element)[1]) << 32;
         hash += firstBits;
 
         int index = (int)(hash >>> (Long.SIZE - this.logRegNum));

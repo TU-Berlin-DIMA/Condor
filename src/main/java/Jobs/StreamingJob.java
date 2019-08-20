@@ -84,8 +84,7 @@ public class StreamingJob {
         DataStream<String> line = env.readTextFile("data/timestamped.csv");
         DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
                 .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
-        
-        SingleOutputStreamOperator finalSketch = BuildSketch.timeBased(timestamped, windowTime, sketchClass, parameters, keyField);
+        SingleOutputStreamOperator<CountMinSketch> finalSketch = BuildSketch.timeBased(timestamped, windowTime, sketchClass, parameters, keyField);
 
         finalSketch.writeAsText("output/eventTimeSketch.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 

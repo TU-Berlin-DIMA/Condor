@@ -35,19 +35,19 @@ public class CountMinSketch<T> implements Sketch<T>, Serializable {
     /**
      * Update the sketch with a value T by increasing the count by 1.
      *
-     * @param tuple
+     * @param element
      */
     @Override
-    public void update(T tuple) {
+    public void update(T element) {
 
-        int[] indices = hashFunctions.hash(tuple);
+        int[] indices = hashFunctions.hash(element);
         for (int i = 0; i < height; i++) {
 
             int pos = indices[i] % width;
             //System.out.println(this + " "+ tuple+" "+pos+" "+indices[i]);
             array[i][indices[i] % width]++;
         }
-        Elements.add(tuple);
+        Elements.add(element);
         elementsProcessed++;
     }
 
