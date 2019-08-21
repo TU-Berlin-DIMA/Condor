@@ -82,9 +82,9 @@ public class NormalValuedBucket4LT {
         double leftIndex = Math.min((queryLowerBound - lowerBound) * 8 / (upperBound-lowerBound), 0d);
         double rightIndex = Math.max((queryUpperBound - lowerBound) * 8 / (upperBound-lowerBound), 8d); // real valued right index exclusive
 
-        // get the respective deltas
-        int delta2_1 = lowerLevels >> 26;
+        int delta2_1 = lowerLevels >> 26; // extract delta of second level - six bits
         int[] countL2 = new int[2];
+        // compute the counts of the second level
         countL2[0] = (int) Math.round(delta2_1 / Math.pow(2, 6) * root);
         countL2[1] = root - countL2[0];
         if (leftIndex == 0 && rightIndex >= 4){ // first second level bucket fully contained in query range
@@ -94,8 +94,10 @@ public class NormalValuedBucket4LT {
             frequency += countL2[1];
             frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*4) + lowerBound);
         }else {
+            // extract deltas of level 3 (5 bits each)
             int delta3_1 = (lowerLevels >> 21) & 31;
             int delta3_3 = (lowerLevels >> 16) & 31;
+            // compute the counts of the third level
             int[] countL3 = new int[4];
             countL3[0] = (int) Math.round(delta3_1 / Math.pow(2, 5) * countL2[0]);
             countL3[1] = countL2[0] - countL3[0];
@@ -112,10 +114,12 @@ public class NormalValuedBucket4LT {
                     }
                 }
             } else {
+                // extract the deltas of level 4 (4 bits each)
                 int delta4_1 = (lowerLevels >> 12) & 15;
-                int delta4_3 = (lowerLevels >> 12) & 15;
-                int delta4_5 = (lowerLevels >> 12) & 15;
-                int delta4_7 = (lowerLevels >> 12) & 15;
+                int delta4_3 = (lowerLevels >> 8) & 15;
+                int delta4_5 = (lowerLevels >> 4) & 15;
+                int delta4_7 = lowerLevels & 15;
+                // compute the counts of the fourth level
                 int[] countL4 = new int[8];
                 countL4[0] = (int) Math.round(delta4_1 / Math.pow(2, 4) * countL3[0]);
                 countL4[1] = countL3[0] - countL4[0];
