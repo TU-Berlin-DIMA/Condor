@@ -37,11 +37,11 @@ public class NormalValuedBucket4LT {
         int delta3_3 = (int) Math.round(((double)(count3_3)/(root - count2_1)) * (Math.pow(2, 5)-1)); // compute the first delta on the third level
         lowerLevels += delta3_3 << 16; // store delta3_1 in the bits 11 to 16
         int delta4_1 = (int) Math.round(((double)(frequencies[0])/count3_1) * (Math.pow(2, 4)-1)); // compute the first delta on the fourth level
-        lowerLevels += delta4_1 << 20; // store delta4_1 in the bits 16 to 20
+        lowerLevels += delta4_1 << 12; // store delta4_1 in the bits 16 to 20
         int delta4_3 = (int) Math.round(((double)(frequencies[2])/(count2_1 - count3_1)) * (Math.pow(2, 4)-1)); // compute the first delta on the fourth level
-        lowerLevels += delta4_3 << 24; // store delta4_1 in the bits 16 to 20
+        lowerLevels += delta4_3 << 8; // store delta4_1 in the bits 16 to 20
         int delta4_5 = (int) Math.round(((double)(frequencies[4])/count3_3) * (Math.pow(2, 4)-1)); // compute the first delta on the fourth level
-        lowerLevels += delta4_5 << 28; // store delta4_1 in the bits 16 to 20
+        lowerLevels += delta4_5 << 4; // store delta4_1 in the bits 16 to 20
         int delta4_7 = (int) Math.round(((double)(frequencies[6])/(root - count2_1 - count3_3)) * (Math.pow(2, 4)-1)); // compute the first delta on the fourth level
         lowerLevels += delta4_7;
     }
@@ -70,19 +70,21 @@ public class NormalValuedBucket4LT {
         if (queryUpperBound < queryLowerBound){
             throw new IllegalArgumentException("upper Bound cannot be smaller than lower Bound!");
         }
-        if (queryLowerBound < lowerBound && queryUpperBound > upperBound){
+        if (queryLowerBound <= lowerBound && queryUpperBound >= upperBound){
             return root; // if bounds contain bucket bounds completely simply return the root
         }
-        if (queryLowerBound == queryUpperBound){
+        if (queryLowerBound == queryUpperBound || queryLowerBound > this.upperBound || queryUpperBound < this.lowerBound){
             return 0; // if bounds are equal -> end of recursive calls
         }
         int frequency = 0;
-        double distance = (upperBound-lowerBound) / 8d;
+        double distance = (upperBound-lowerBound+1) / 8d;
+        int newQueryLowerBound = queryLowerBound;
+        int newQueryUpperbound = queryUpperBound;
 
-        double leftIndex = Math.min((queryLowerBound - lowerBound) * 8 / (upperBound-lowerBound), 0d);
-        double rightIndex = Math.max((queryUpperBound - lowerBound) * 8 / (upperBound-lowerBound), 8d); // real valued right index exclusive
+        double leftIndex = Math.max((queryLowerBound - lowerBound) * 8 / (upperBound-lowerBound), 0d);
+        double rightIndex = Math.min((queryUpperBound - lowerBound) * 8 / (upperBound-lowerBound), 8d); // real valued right index exclusive
 
-        int delta2_1 = lowerLevels >> 26; // extract delta of second level - six bits
+        int delta2_1 = lowerLevels >>> 26; // extract delta of second level - six bits
         int[] countL2 = new int[2];
         // compute the counts of the second level
         countL2[0] = (int) Math.round(delta2_1 / Math.pow(2, 6) * root);
@@ -95,8 +97,8 @@ public class NormalValuedBucket4LT {
             frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*4) + lowerBound);
         }else {
             // extract deltas of level 3 (5 bits each)
-            int delta3_1 = (lowerLevels >> 21) & 31;
-            int delta3_3 = (lowerLevels >> 16) & 31;
+            int delta3_1 = (lowerLevels >>> 21) & 31;
+            int delta3_3 = (lowerLevels >>> 16) & 31;
             // compute the counts of the third level
             int[] countL3 = new int[4];
             countL3[0] = (int) Math.round(delta3_1 / Math.pow(2, 5) * countL2[0]);
@@ -109,15 +111,17 @@ public class NormalValuedBucket4LT {
                 for (int i = 0; i < 4; i++) {
                     if (leftIndex <= i * 2 && rightIndex >= i * 2 + 2) {
                         frequency += countL3[i];
-                        frequency += getFrequency((int) Math.ceil(distance * (i * 2 + 2)) + lowerBound, queryUpperBound);
-                        frequency += getFrequency(queryLowerBound, (int) Math.floor(distance * (i * 2)) + lowerBound);
+                        newQueryLowerBound = Math.max(newQueryLowerBound, (int) Math.ceil(distance * (i * 2 + 2)) + lowerBound);
+                        newQueryUpperbound = Math.min(newQueryUpperbound, (int) Math.floor(distance * (i * 2)) + lowerBound);
                     }
                 }
+                frequency += getFrequency(queryLowerBound, newQueryUpperbound);
+                frequency += getFrequency(newQueryLowerBound, queryUpperBound);
             } else {
                 // extract the deltas of level 4 (4 bits each)
-                int delta4_1 = (lowerLevels >> 12) & 15;
-                int delta4_3 = (lowerLevels >> 8) & 15;
-                int delta4_5 = (lowerLevels >> 4) & 15;
+                int delta4_1 = (lowerLevels >>> 12) & 15;
+                int delta4_3 = (lowerLevels >>> 8) & 15;
+                int delta4_5 = (lowerLevels >>> 4) & 15;
                 int delta4_7 = lowerLevels & 15;
                 // compute the counts of the fourth level
                 int[] countL4 = new int[8];
@@ -134,10 +138,12 @@ public class NormalValuedBucket4LT {
                     for (int i = 0; i < 8; i++) {
                         if (leftIndex < i && rightIndex > i+1){
                             frequency += countL4[i];
-                            frequency += getFrequency((int) Math.ceil(distance * (i+1)) + lowerBound, queryUpperBound);
-                            frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance * (i)) + lowerBound);
+                            newQueryLowerBound = Math.max(newQueryLowerBound, (int) Math.ceil(distance * (i -1)) + lowerBound);
+                            newQueryUpperbound = Math.min(newQueryUpperbound, (int) Math.floor(distance * i) + lowerBound);
                         }
                     }
+                    frequency += getFrequency(lowerBound, newQueryUpperbound);
+                    frequency += getFrequency(newQueryLowerBound, upperBound);
                 }else {
                     int bucketIndex = (int) Math.floor(leftIndex);
                     frequency += (rightIndex - leftIndex) * countL4[bucketIndex]; // add partial buckets to frequency
