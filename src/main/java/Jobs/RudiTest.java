@@ -28,7 +28,7 @@ public class RudiTest {
 
 
         // int parallelism = env.getParallelism();
-        int sampleSize = 10;
+        int sampleSize = 20;
         Object[] parameters = new Object[]{sampleSize};
         Time windowTime = Time.minutes(1);
         Class<ReservoirSampler> sketchClass = ReservoirSampler.class;
@@ -37,8 +37,8 @@ public class RudiTest {
         DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
                 .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
-        //SingleOutputStreamOperator<FiFoSampler> finalSketch = BuildSketch.timeBased(timestamped, windowTime, sketchClass, parameters, -1);
-        SingleOutputStreamOperator<ReservoirSampler> finalSketch = BuildSketch.sampleTimeBased(timestamped, windowTime, sketchClass, parameters, -1);
+        SingleOutputStreamOperator<ReservoirSampler> finalSketch = BuildSketch.timeBased(timestamped, windowTime, sketchClass, parameters, 0);
+        //SingleOutputStreamOperator<ReservoirSampler> finalSketch = BuildSketch.sampleTimeBased(timestamped, windowTime, sketchClass, parameters, -1);
 
         finalSketch.writeAsText("output/rudiTest.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
