@@ -73,6 +73,9 @@ public class NormalValuedBucket4LT {
         if (queryLowerBound < lowerBound && queryUpperBound > upperBound){
             return root; // if bounds contain bucket bounds completely simply return the root
         }
+        if (queryLowerBound == queryUpperBound){
+            return 0; // if bounds are equal -> end of recursive calls
+        }
         int frequency = 0;
         double distance = (upperBound-lowerBound) / 8d;
 
@@ -81,79 +84,63 @@ public class NormalValuedBucket4LT {
 
         // get the respective deltas
         int delta2_1 = lowerLevels >> 26;
-        int count2_1 = (int) Math.round(delta2_1 / Math.pow(2, 6) * root);
-        if (leftIndex == 0 && rightIndex >= 4){
-            frequency += count2_1;
+        int[] countL2 = new int[2];
+        countL2[0] = (int) Math.round(delta2_1 / Math.pow(2, 6) * root);
+        countL2[1] = root - countL2[0];
+        if (leftIndex == 0 && rightIndex >= 4){ // first second level bucket fully contained in query range
+            frequency += countL2[0];
             frequency += getFrequency((int) Math.ceil(distance*4) + lowerBound, queryUpperBound);
-        }else if (leftIndex < 4 && rightIndex == 8){
-            frequency += root-count2_1;
+        }else if (leftIndex < 4 && rightIndex == 8){ // second second level bucket fully contained in query range
+            frequency += countL2[1];
             frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*4) + lowerBound);
         }else {
             int delta3_1 = (lowerLevels >> 21) & 31;
             int delta3_3 = (lowerLevels >> 16) & 31;
-            int count3_1 = (int) Math.round(delta3_1 / Math.pow(2, 5) * count2_1);
-            int count3_3 = (int) Math.round(delta3_3 / Math.pow(2, 5) * (root - count2_1));
-            if (leftIndex == 0 && rightIndex > 2){
-                frequency += count3_1;
-                frequency += getFrequency((int) Math.ceil(distance*2) + lowerBound, queryUpperBound);
-            }else if (leftIndex < 2 && rightIndex >= 4){
-                frequency += count2_1 - count3_1;
-                frequency += getFrequency((int) Math.ceil(distance*4) + lowerBound, queryUpperBound);
-                frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*2) + lowerBound);
-            }else if (leftIndex < 4 && rightIndex >= 6){
-                frequency += count3_3;
-                frequency += getFrequency((int) Math.ceil(distance*6) + lowerBound, queryUpperBound);
-                frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*4) + lowerBound);
-            }else if (leftIndex < 6 && rightIndex == 8){
-                frequency += root - count2_1 - count3_3;
-                frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*6) + lowerBound);
-            }else {
+            int[] countL3 = new int[4];
+            countL3[0] = (int) Math.round(delta3_1 / Math.pow(2, 5) * countL2[0]);
+            countL3[1] = countL2[0] - countL3[0];
+            countL3[2] = (int) Math.round(delta3_3 / Math.pow(2, 5) * countL2[1]);
+            countL3[3] = countL2[1] - countL3[2];
+
+            if ((Math.floor(rightIndex)-Math.ceil(leftIndex)) >= 3 ||
+                    ((Math.floor(rightIndex)-Math.ceil(leftIndex)) >= 2 && Math.floor(rightIndex) % 2 == 0 )) { // A full 3rd level bucket can be added to frequency
+                for (int i = 0; i < 4; i++) {
+                    if (leftIndex <= i * 2 && rightIndex >= i * 2 + 2) {
+                        frequency += countL3[i];
+                        frequency += getFrequency((int) Math.ceil(distance * (i * 2 + 2)) + lowerBound, queryUpperBound);
+                        frequency += getFrequency(queryLowerBound, (int) Math.floor(distance * (i * 2)) + lowerBound);
+                    }
+                }
+            } else {
                 int delta4_1 = (lowerLevels >> 12) & 15;
                 int delta4_3 = (lowerLevels >> 12) & 15;
                 int delta4_5 = (lowerLevels >> 12) & 15;
                 int delta4_7 = (lowerLevels >> 12) & 15;
-                int count4_1 = (int) Math.round(delta4_1 / Math.pow(2, 4) * count3_1);
-                int count4_3 = (int) Math.round(delta4_3 / Math.pow(2, 4) * (count2_1 - count3_1));
-                int count4_5 = (int) Math.round(delta4_5 / Math.pow(2, 4) * count3_3);
-                int count4_7 = (int) Math.round(delta4_7 / Math.pow(2, 4) * (root - count2_1 - count3_3));
+                int[] countL4 = new int[8];
+                countL4[0] = (int) Math.round(delta4_1 / Math.pow(2, 4) * countL3[0]);
+                countL4[1] = countL3[0] - countL4[0];
+                countL4[2] = (int) Math.round(delta4_3 / Math.pow(2, 4) * countL3[1]);
+                countL4[3] = countL3[1] - countL4[2];
+                countL4[4] = (int) Math.round(delta4_5 / Math.pow(2, 4) * countL3[2]);
+                countL4[5] = countL3[2] - countL4[4];
+                countL4[6] = (int) Math.round(delta4_7 / Math.pow(2, 4) * countL3[3]);
+                countL4[7] = countL3[3] - countL4[6];
 
-                if (leftIndex == 0 && rightIndex >= 1){
-                    frequency += count4_1;
-                    frequency += getFrequency((int) Math.ceil(distance) + lowerBound, queryUpperBound);
-                }else if (leftIndex < 1 && rightIndex >= 2){
-                    frequency += count3_1 - count4_1;
-                    frequency += getFrequency((int) Math.ceil(distance * 2) + lowerBound, queryUpperBound);
-                    frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance) + lowerBound);
-                }else if (leftIndex < 2 && rightIndex >= 3){
-                    frequency += count4_3;
-                    frequency += getFrequency((int) Math.ceil(distance * 3) + lowerBound, queryUpperBound);
-                    frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*2) + lowerBound);
-                }else if (leftIndex < 3 && rightIndex >= 4){
-                    frequency += count2_1 - count3_1 - count4_3;
-                    frequency += getFrequency((int) Math.ceil(distance * 4) + lowerBound, queryUpperBound);
-                    frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*3) + lowerBound);
-                }else if (leftIndex < 4 && rightIndex >= 5){
-                    frequency += count4_5;
-                    frequency += getFrequency((int) Math.ceil(distance * 5) + lowerBound, queryUpperBound);
-                    frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*4) + lowerBound);
-                }else if (leftIndex < 5 && rightIndex >= 6){
-                    frequency += count3_3 - count4_5;
-                    frequency += getFrequency((int) Math.ceil(distance * 6) + lowerBound, queryUpperBound);
-                    frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*5) + lowerBound);
-                }else if (leftIndex < 6 && rightIndex >= 7){
-                    frequency += count4_7;
-                    frequency += getFrequency((int) Math.ceil(distance * 2) + lowerBound, queryUpperBound);
-                    frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*6) + lowerBound);
-                }else if (leftIndex < 7 && rightIndex == 8){
-                    frequency += root - count2_1 - count3_3 - count4_7;
-                    frequency += getFrequency((int) Math.ceil(distance * 7) + lowerBound, queryUpperBound);
-                    frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*7) + lowerBound);
+                if ((Math.floor(rightIndex)-Math.ceil(leftIndex)) >= 1){ // A full 4th level bucket can be added to frequency
+                    for (int i = 0; i < 8; i++) {
+                        if (leftIndex < i && rightIndex > i+1){
+                            frequency += countL4[i];
+                            frequency += getFrequency((int) Math.ceil(distance * (i+1)) + lowerBound, queryUpperBound);
+                            frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance * (i)) + lowerBound);
+                        }
+                    }
                 }else {
-                    // TODO: use count[] in order to exploit the indices!
+                    int bucketIndex = (int) Math.floor(leftIndex);
+                    frequency += (rightIndex - leftIndex) * countL4[bucketIndex]; // add partial buckets to frequency
                 }
+
             }
         }
-
         return frequency;
     }
 }
