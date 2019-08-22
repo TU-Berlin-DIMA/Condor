@@ -9,6 +9,11 @@ public class FiFoSampler<T> implements Sketch<T>, Serializable {
     private int sampleSize;
     private int merged;
 
+    /**
+     * Construct an empty FiFoSampler
+     *
+     * @param sampleSize maximal size of the sampler
+     */
     public FiFoSampler(Integer sampleSize) {
         this.sample = new LinkedList<>();
         this.sampleSize = sampleSize;
