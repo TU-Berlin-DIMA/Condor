@@ -41,10 +41,11 @@ public class EquiWidthHistogram<T extends Number> implements Sketch<T> {
     @Override
     public void update(T number) {
         double input = number.doubleValue();
-        if (input > upperBound || input < lowerBound){
+        if (input >= upperBound || input < lowerBound){
             throw new IllegalArgumentException("input is out of Bounds!");
         }
         int index = (int) ((input - lowerBound) / bucketLength);
+
         frequency[index]++;
     }
 

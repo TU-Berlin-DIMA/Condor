@@ -1,6 +1,10 @@
 package Histograms;
 
-public class NormalValuedBucket4LT {
+import java.io.IOException;
+import java.io.ObjectStreamException;
+import java.io.Serializable;
+
+public class RealValuedBucket4LT implements Serializable {
     int root, lowerLevels;
     double lowerBound, upperBound;
 
@@ -10,7 +14,7 @@ public class NormalValuedBucket4LT {
      * @param upperBound    exclusive
      * @throws IllegalArgumentException
      */
-    public NormalValuedBucket4LT(double lowerBound, double upperBound) throws IllegalArgumentException{
+    public RealValuedBucket4LT(double lowerBound, double upperBound) throws IllegalArgumentException{
         if (upperBound < lowerBound){
             throw new IllegalArgumentException("upperBound must be greater than lowerBound!");
         }
@@ -159,5 +163,69 @@ public class NormalValuedBucket4LT {
             }
         }
         return frequency;
+    }
+
+    public String toString(){
+
+        int delta2_1 = lowerLevels >>> 26; // extract delta of second level - six bits
+        int[] countL2 = new int[2];
+        // compute the counts of the second level
+        countL2[0] = (int) Math.round(delta2_1 / Math.pow(2, 6) * root);
+        countL2[1] = root - countL2[0];
+        // extract deltas of level 3 (5 bits each)
+        int delta3_1 = (lowerLevels >>> 21) & 31;
+        int delta3_3 = (lowerLevels >>> 16) & 31;
+        // compute the counts of the third level
+        int[] countL3 = new int[4];
+        countL3[0] = (int) Math.round(delta3_1 / Math.pow(2, 5) * countL2[0]);
+        countL3[1] = countL2[0] - countL3[0];
+        countL3[2] = (int) Math.round(delta3_3 / Math.pow(2, 5) * countL2[1]);
+        countL3[3] = countL2[1] - countL3[2];
+        // extract the deltas of level 4 (4 bits each)
+        int delta4_1 = (lowerLevels >>> 12) & 15;
+        int delta4_3 = (lowerLevels >>> 8) & 15;
+        int delta4_5 = (lowerLevels >>> 4) & 15;
+        int delta4_7 = lowerLevels & 15;
+        // compute the counts of the fourth level
+        int[] countL4 = new int[8];
+        countL4[0] = (int) Math.round(delta4_1 / Math.pow(2, 4) * countL3[0]);
+        countL4[1] = countL3[0] - countL4[0];
+        countL4[2] = (int) Math.round(delta4_3 / Math.pow(2, 4) * countL3[1]);
+        countL4[3] = countL3[1] - countL4[2];
+        countL4[4] = (int) Math.round(delta4_5 / Math.pow(2, 4) * countL3[2]);
+        countL4[5] = countL3[2] - countL4[4];
+        countL4[6] = (int) Math.round(delta4_7 / Math.pow(2, 4) * countL3[3]);
+        countL4[7] = countL3[3] - countL4[6];
+
+        String s = "lower Bound: " + lowerBound + "  -  upper Bound: " + upperBound +"\n" +
+                "root:                  " + root + "\n" +
+                "          " + countL2[0] + "          |          " + countL2[1] +"\n" +
+                "    " + countL3[0] + "     |     " + countL3[1] + "     |     " + countL3[2] + "     |     " + countL3[3] + "\n" +
+                " "+countL4[0] + "  |  " + countL4[1] + "  |  " + countL4[2] + "  |  " + countL4[3] + "  |  " + countL4[4] + "  |  " + countL4[5] + "  |  " + countL4[6] + "  |  " + countL4[7];
+
+        return s;
+    }
+
+    public RealValuedBucket4LT merge(RealValuedBucket4LT other){
+        // TODO: implement this
+        return null;
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws IOException {
+        out.writeInt(root);
+        out.writeInt(lowerLevels);
+        out.writeDouble(lowerBound);
+        out.writeDouble(upperBound);
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+        root = in.readInt();
+        lowerLevels = in.readInt();
+        lowerBound = in.readDouble();
+        upperBound = in.readDouble();
+    }
+
+    private void readObjectNoData() throws ObjectStreamException {
+        System.out.println("readObjectNoData() called - should give an exception");
     }
 }

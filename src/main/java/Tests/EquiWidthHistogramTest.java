@@ -1,6 +1,7 @@
 package Tests;
 
 import Histograms.EquiWidthHistogram;
+import Histograms.EquiWidthHistogram4LT;
 import Jobs.EventTimeJob;
 import Sketches.BuildSketch;
 import Sketches.HyperLogLogSketch;
@@ -33,9 +34,9 @@ public class EquiWidthHistogramTest {
 
         int keyField = 0;
 
-        Double lowerBound = 0d;
-        Double upperBound = 28d;
-        Integer numBuckets = 14;
+        Double lowerBound = 0d; // lower Bound inclusive
+        Double upperBound = 27d; // upper Bound exclusive
+        Integer numBuckets = 27;
 
         Object[] parameters = new Object[]{lowerBound, upperBound, numBuckets};
         Class<EquiWidthHistogram> sketchClass = EquiWidthHistogram.class;
@@ -58,54 +59,20 @@ public class EquiWidthHistogramTest {
             }
         });
 
-
         queryResult.writeAsText("output/EquiWidhtHistogramQueryOutput.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+
+        DataStream<EquiWidthHistogram4LT> clean = finalSketch.map(new MapFunction<EquiWidthHistogram, EquiWidthHistogram4LT>() {
+            @Override
+            public EquiWidthHistogram4LT map(EquiWidthHistogram value) throws Exception {
+                return new EquiWidthHistogram4LT(value);
+            }
+        });
+
+        clean.writeAsText("output/EquiWidthHistogram4LT.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
         env.execute("Flink Streaming Java API Skeleton");
     }
 
-    /**
-     *  Stateful map function to add the parallelism variable
-     */
-    public static class AddParallelismRichFlatMapFunction extends RichMapFunction<Tuple3<Integer, Integer, Long>, Tuple4<Integer, Integer, Integer, Long>> {
-
-        ValueState<Integer> state;
-
-        @Override
-        public void open(Configuration parameters) throws Exception {
-            state = new ValueState<Integer>() {
-                int value;
-
-                @Override
-                public Integer value() throws IOException {
-                    return value;
-                }
-
-                @Override
-                public void update(Integer value) throws IOException {
-                    this.value = value;
-                }
-
-                @Override
-                public void clear() {
-                    value = 0;
-                }
-            };
-            state.update(0);
-        }
-
-        @Override
-        public Tuple4<Integer, Integer, Integer, Long> map(Tuple3<Integer, Integer, Long> value) throws Exception {
-
-            int currentNode = state.value();
-            int next = currentNode +1;
-            next = next % this.getRuntimeContext().getNumberOfParallelSubtasks();
-            state.update(next);
-
-            return new Tuple4<>(currentNode, value.f0, value.f1, value.f2);
-
-        }
-    }
 
     /**
      * FlatMap to create Tuples from the incoming data
@@ -134,7 +101,7 @@ public class EquiWidthHistogramTest {
     public static class CustomTimeStampExtractor implements AssignerWithPunctuatedWatermarks<Tuple3<Integer, Integer, Long>>{
         /**
          * Asks this implementation if it wants to emit a watermark. This method is called right after
-         * the {@link #extractTimestamp(Tuple4, long)}   method.
+         * the {@link #extractTimestamp(Tuple3, long)}   method.
          *
          * <p>The returned watermark will be emitted only if it is non-null and its timestamp
          * is larger than that of the previously emitted watermark (to preserve the contract of
