@@ -6,7 +6,7 @@ public class Hist4LTTest {
 
     public static void main(String[] args) throws Exception {
         int[] frequencies = {1,2,3,4,5,4,3,2};
-        NormalValuedBucket4LT bucket = new NormalValuedBucket4LT(10, 14);
+        NormalValuedBucket4LT bucket = new NormalValuedBucket4LT(10, 18);
 
         bucket.build(frequencies);
 
