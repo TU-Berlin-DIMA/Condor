@@ -1,5 +1,6 @@
 package Jobs;
 
+import Sampling.BiasedReservoirSampler;
 import Sampling.FiFoSampler;
 import Sampling.FiFoSamplerOld;
 import Sampling.ReservoirSampler;
@@ -31,13 +32,13 @@ public class RudiTest {
         int sampleSize = 20;
         Object[] parameters = new Object[]{sampleSize};
         Time windowTime = Time.minutes(1);
-        Class<ReservoirSampler> sketchClass = ReservoirSampler.class;
+        Class<FiFoSampler> sketchClass = FiFoSampler.class;
 
         DataStream<String> line = env.readTextFile("data/timestamped.csv");
         DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
                 .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
-        SingleOutputStreamOperator<ReservoirSampler> finalSketch = BuildSketch.timeBased(timestamped, windowTime, sketchClass, parameters, 0);
+        SingleOutputStreamOperator<FiFoSampler> finalSketch = BuildSketch.timeBased(timestamped, windowTime, sketchClass, parameters, 0);
         //SingleOutputStreamOperator<ReservoirSampler> finalSketch = BuildSketch.sampleTimeBased(timestamped, windowTime, sketchClass, parameters, -1);
 
         finalSketch.writeAsText("output/rudiTest.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);

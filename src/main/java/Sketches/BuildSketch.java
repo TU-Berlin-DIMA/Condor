@@ -27,14 +27,15 @@ import java.io.IOException;
 public final class BuildSketch {
     public static <T, S extends Sketch> SingleOutputStreamOperator<S> sampleTimeBased(DataStream<T> inputStream, Time windowTime, Class<S> sketchClass,Object[] parameters, int keyField){
         SketchAggregator agg = new SketchAggregator(sketchClass, parameters, keyField);
-        SingleOutputStreamOperator reduce = inputStream
+        SingleOutputStreamOperator reduce1 = inputStream
                 .process(new ConvertToSample())
                 .assignTimestampsAndWatermarks(new SampleTimeStampExtractor())
                 .map(new AddParallelismTuple())
                 .keyBy(0)
                 .timeWindow(windowTime)
-                .aggregate(agg)
-                .timeWindowAll(windowTime)
+                .aggregate(agg);
+        reduce1.writeAsText("output/aggregators", FileSystem.WriteMode.OVERWRITE);
+        SingleOutputStreamOperator reduce = reduce1.timeWindowAll(windowTime)
                 .reduce(new ReduceFunction<S>() { // Merge all sketches in the global window
                     @Override
                     public Sketch reduce(Sketch value1, Sketch value2) throws Exception {
@@ -56,7 +57,29 @@ public final class BuildSketch {
                 .reduce(new ReduceFunction<S>() { // Merge all sketches in the global window
                     @Override
                     public Sketch reduce(Sketch value1, Sketch value2) throws Exception {
-                        return value1.merge(value2);
+                        Sketch merged = value1.merge(value2);
+                        return merged;
+                    }
+                }).returns(sketchClass);
+        return reduce;
+    }
+
+    public static <T, S extends Sketch> SingleOutputStreamOperator<S> debugAggimeBased(DataStream<T> inputStream, Time windowTime, Class<S> sketchClass,Object[] parameters, int keyField){
+        SketchAggregator agg = new SketchAggregator(sketchClass, parameters, keyField);
+
+        SingleOutputStreamOperator reduce1 = inputStream
+                .map(new AddParallelismTuple())
+                .keyBy(0)
+                .timeWindow(windowTime)
+                .aggregate(agg);
+        reduce1.writeAsText("output/aggregators", FileSystem.WriteMode.OVERWRITE);
+        SingleOutputStreamOperator reduce = reduce1
+                .timeWindowAll(windowTime)
+                .reduce(new ReduceFunction<S>() { // Merge all sketches in the global window
+                    @Override
+                    public Sketch reduce(Sketch value1, Sketch value2) throws Exception {
+                        Sketch merged = value1.merge(value2);
+                        return merged;
                     }
                 }).returns(sketchClass);
         return reduce;
