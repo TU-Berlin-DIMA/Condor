@@ -6,14 +6,14 @@ public class Hist4LTTest {
 
     public static void main(String[] args) throws Exception {
         int[] frequencies = {1,2,3,4,5,4,3,2};
-        NormalValuedBucket4LT bucket = new NormalValuedBucket4LT(10, 17);
+        NormalValuedBucket4LT bucket = new NormalValuedBucket4LT(10, 14);
 
         bucket.build(frequencies);
 
         int range0 = bucket.getFrequency(5, 20);
         int range1 = bucket.getFrequency(10, 20);
-        int range2 = bucket.getFrequency(12, 20);
-        int range3 = bucket.getFrequency(12, 15);
+        int range2 = bucket.getFrequency(12, 13);
+        int range3 = bucket.getFrequency(12, 16);
         int range4 = bucket.getFrequency(5, 15);
 
         System.out.println("5-20: " + range0 + "\n10-20: " + range1 + "\n" +

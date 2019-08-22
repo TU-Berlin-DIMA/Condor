@@ -1,9 +1,16 @@
 package Histograms;
 
 public class NormalValuedBucket4LT {
-    int lowerBound, upperBound, root, lowerLevels;
+    int root, lowerLevels;
+    double lowerBound, upperBound;
 
-    public NormalValuedBucket4LT(int lowerBound, int upperBound) throws IllegalArgumentException{
+    /**
+     * Initialise the 4LT Bucket with the given boundaries
+     * @param lowerBound    inclusive
+     * @param upperBound    exclusive
+     * @throws IllegalArgumentException
+     */
+    public NormalValuedBucket4LT(double lowerBound, double upperBound) throws IllegalArgumentException{
         if (upperBound < lowerBound){
             throw new IllegalArgumentException("upperBound must be greater than lowerBound!");
         }
@@ -46,11 +53,11 @@ public class NormalValuedBucket4LT {
         lowerLevels += delta4_7;
     }
 
-    public int getLowerBound() {
+    public double getLowerBound() {
         return lowerBound;
     }
 
-    public int getUpperBound() {
+    public double getUpperBound() {
         return upperBound;
     }
 
@@ -62,10 +69,10 @@ public class NormalValuedBucket4LT {
      * Method which approximately computes the frequencies based on the given query-range.
      * The queries originally have to be based on equi-width buckets in order for this approximation to work!
      * @param queryLowerBound   lower bound of the query range inclusive
-     * @param queryUpperBound   upper bound of the query range inclusive
+     * @param queryUpperBound   upper bound of the query range exclusive
      * @return  the approximate frequencies of the range query based on this 4LT Bucket
      */
-    public int getFrequency(int queryLowerBound, int queryUpperBound){
+    public int getFrequency(double queryLowerBound, double queryUpperBound){
 
         if (queryUpperBound < queryLowerBound){
             throw new IllegalArgumentException("upper Bound cannot be smaller than lower Bound!");
@@ -77,9 +84,9 @@ public class NormalValuedBucket4LT {
             return 0; // if bounds are equal -> end of recursive calls
         }
         int frequency = 0;
-        double distance = (upperBound-lowerBound+1) / 8d;
-        int newQueryLowerBound = queryLowerBound;
-        int newQueryUpperbound = queryUpperBound;
+        double distance = (upperBound-lowerBound) / 8d;
+        double newQueryLowerBound = queryLowerBound;
+        double newQueryUpperBound = queryUpperBound;
 
         double leftIndex = Math.max((queryLowerBound - lowerBound) * 8 / (upperBound-lowerBound), 0d);
         double rightIndex = Math.min((queryUpperBound - lowerBound) * 8 / (upperBound-lowerBound), 8d); // real valued right index exclusive
@@ -92,7 +99,7 @@ public class NormalValuedBucket4LT {
         if (leftIndex == 0 && rightIndex >= 4){ // first second level bucket fully contained in query range
             frequency += countL2[0];
             frequency += getFrequency((int) Math.ceil(distance*4) + lowerBound, queryUpperBound);
-        }else if (leftIndex < 4 && rightIndex == 8){ // second second level bucket fully contained in query range
+        }else if (leftIndex <= 4 && rightIndex == 8){ // second second level bucket fully contained in query range
             frequency += countL2[1];
             frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*4) + lowerBound);
         }else {
@@ -112,10 +119,10 @@ public class NormalValuedBucket4LT {
                     if (leftIndex <= i * 2 && rightIndex >= i * 2 + 2) {
                         frequency += countL3[i];
                         newQueryLowerBound = Math.max(newQueryLowerBound, (int) Math.ceil(distance * (i * 2 + 2)) + lowerBound);
-                        newQueryUpperbound = Math.min(newQueryUpperbound, (int) Math.floor(distance * (i * 2)) + lowerBound);
+                        newQueryUpperBound = Math.min(newQueryUpperBound, (int) Math.floor(distance * (i * 2)) + lowerBound);
                     }
                 }
-                frequency += getFrequency(queryLowerBound, newQueryUpperbound);
+                frequency += getFrequency(queryLowerBound, newQueryUpperBound);
                 frequency += getFrequency(newQueryLowerBound, queryUpperBound);
             } else {
                 // extract the deltas of level 4 (4 bits each)
@@ -136,14 +143,14 @@ public class NormalValuedBucket4LT {
 
                 if ((Math.floor(rightIndex)-Math.ceil(leftIndex)) >= 1){ // A full 4th level bucket can be added to frequency
                     for (int i = 0; i < 8; i++) {
-                        if (leftIndex < i && rightIndex > i+1){
+                        if (leftIndex <= i && rightIndex >= i+1){
                             frequency += countL4[i];
-                            newQueryLowerBound = Math.max(newQueryLowerBound, (int) Math.ceil(distance * (i -1)) + lowerBound);
-                            newQueryUpperbound = Math.min(newQueryUpperbound, (int) Math.floor(distance * i) + lowerBound);
+                            newQueryLowerBound = Math.max(newQueryLowerBound, (int) Math.ceil(distance * i + 1 + lowerBound));
+                            newQueryUpperBound = Math.min(newQueryUpperBound, (int) Math.floor(distance * i) + lowerBound);
                         }
                     }
-                    frequency += getFrequency(lowerBound, newQueryUpperbound);
-                    frequency += getFrequency(newQueryLowerBound, upperBound);
+                    frequency += getFrequency(queryLowerBound, newQueryUpperBound);
+                    frequency += getFrequency(newQueryLowerBound, queryUpperBound);
                 }else {
                     int bucketIndex = (int) Math.floor(leftIndex);
                     frequency += (rightIndex - leftIndex) * countL4[bucketIndex]; // add partial buckets to frequency
