@@ -1,12 +1,12 @@
 package Tests;
 
-import Histograms.NormalValuedBucket4LT;
+import Histograms.RealValuedBucket4LT;
 
 public class Hist4LTTest {
 
     public static void main(String[] args) throws Exception {
         int[] frequencies = {1,2,3,4,5,4,3,2};
-        NormalValuedBucket4LT bucket = new NormalValuedBucket4LT(10, 18);
+        RealValuedBucket4LT bucket = new RealValuedBucket4LT(10, 18);
 
         bucket.build(frequencies);
 
@@ -18,5 +18,6 @@ public class Hist4LTTest {
 
         System.out.println("5-20: " + range0 + "\n10-20: " + range1 + "\n" +
                 "12-20: " + range2 + "\n 12-15: " + range3 +"\n 5-15: " + range4);
+        System.out.println(bucket);
     }
 }
