@@ -206,6 +206,11 @@ public class RealValuedBucket4LT implements Serializable {
         return s;
     }
 
+    public RealValuedBucket4LT merge(RealValuedBucket4LT other){
+        // TODO: implement this
+        return null;
+    }
+
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
         out.writeInt(root);
         out.writeInt(lowerLevels);

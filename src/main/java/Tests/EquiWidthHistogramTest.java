@@ -1,6 +1,7 @@
 package Tests;
 
 import Histograms.EquiWidthHistogram;
+import Histograms.EquiWidthHistogram4LT;
 import Jobs.EventTimeJob;
 import Sketches.BuildSketch;
 import Sketches.HyperLogLogSketch;
@@ -33,9 +34,9 @@ public class EquiWidthHistogramTest {
 
         int keyField = 0;
 
-        Double lowerBound = 0d;
-        Double upperBound = 24d;
-        Integer numBuckets = 14;
+        Double lowerBound = 0d; // lower Bound inclusive
+        Double upperBound = 27d; // upper Bound exclusive
+        Integer numBuckets = 27;
 
         Object[] parameters = new Object[]{lowerBound, upperBound, numBuckets};
         Class<EquiWidthHistogram> sketchClass = EquiWidthHistogram.class;
@@ -58,8 +59,16 @@ public class EquiWidthHistogramTest {
             }
         });
 
-
         queryResult.writeAsText("output/EquiWidhtHistogramQueryOutput.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+
+        DataStream<EquiWidthHistogram4LT> clean = finalSketch.map(new MapFunction<EquiWidthHistogram, EquiWidthHistogram4LT>() {
+            @Override
+            public EquiWidthHistogram4LT map(EquiWidthHistogram value) throws Exception {
+                return new EquiWidthHistogram4LT(value);
+            }
+        });
+
+        clean.writeAsText("output/EquiWidthHistogram4LT.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
         env.execute("Flink Streaming Java API Skeleton");
     }
