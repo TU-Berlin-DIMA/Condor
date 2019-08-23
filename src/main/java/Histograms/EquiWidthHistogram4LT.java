@@ -15,7 +15,7 @@ public class EquiWidthHistogram4LT {
         int oldNumBuckets = old.getNumBuckets();
         double oldBucketLength = (upperBound-lowerBound) / oldNumBuckets;
         bucketLength = oldBucketLength * 8;
-        numBuckets = (int) Math.ceil(oldNumBuckets / 8);
+        numBuckets = (int) Math.ceil(oldNumBuckets / 8d);
         int[] oldFrequencies = old.getFrequency();
         int extraEmptyBuckets = oldNumBuckets % 8;
         upperBound += extraEmptyBuckets * oldBucketLength;
