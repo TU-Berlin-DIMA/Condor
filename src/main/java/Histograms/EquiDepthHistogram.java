@@ -1,10 +1,5 @@
 package Histograms;
 
-import com.oracle.tools.packager.mac.MacAppBundler;
-import org.apache.flink.api.java.tuple.Tuple2;
-
-import java.util.HashMap;
-import java.util.Map;
 import java.util.TreeMap;
 
 public class EquiDepthHistogram {
@@ -37,7 +32,41 @@ public class EquiDepthHistogram {
     }
 
     public int rangeQuery(int lowerBound, int upperBound){
+
+        if (upperBound - lowerBound < 0){
+            throw new IllegalArgumentException("upper Bound can't be smaller than lower Bound!");
+        }
+
+        boolean first = false;
+        boolean last = false;
+        int bucketsInRange = 0;
         int result = 0;
+
+        if (lowerBound > leftBoundaries[numBuckets-1]){
+            double fraction = Math.min(rightmostBoundary, upperBound)/(rightmostBoundary-leftBoundaries[numBuckets-1]);
+            return (int)Math.round(fraction*totalFrequencies/numBuckets);
+        }
+
+        for (int i = 0; i < numBuckets; i++) {
+            if (lowerBound >= leftBoundaries[i] && i < numBuckets-1 && upperBound < leftBoundaries[i+1]){
+                double fraction = (upperBound-lowerBound) / (leftBoundaries[i+1]-leftBoundaries[i]);
+                return (int) Math.round(fraction * totalFrequencies / numBuckets);
+            }
+
+            if (!first || leftBoundaries[i] >= lowerBound){
+                first = true;
+                if (i > 0){
+                    double leftMostBucketFraction = (leftBoundaries[i] - lowerBound) / (double)(leftBoundaries[i] - leftBoundaries[i-1]);
+                    result += Math.round(leftMostBucketFraction * totalFrequencies/numBuckets);
+                }
+            }
+
+            if (first && !last && leftBoundaries[i] <= upperBound){
+
+            }
+        }
+
+
         return result;
     }
 }
