@@ -1,10 +1,19 @@
 package Sampling;
 
-import Sketches.Sketch;
+import Synopsis.Synopsis;
 import java.io.Serializable;
 import java.util.*;
 
-public class FiFoSampler<T> implements Sketch<T>, Serializable {
+/**
+ * Implementation of the traditional FiFo Sampling algorithm with a given sample size. This Sampler just collect
+ * the elements and put them in a Queue of bounded size, if the Queue has reached its maximum capacity the oldest
+ * element will be removed from it.
+ *
+ * @param <T> the type of elements maintained by this sampler
+ *
+ * @author Rudi Poepsel Lemaitre
+ */
+public class FiFoSampler<T> implements Synopsis<T>, Serializable {
     private LinkedList<T> sample;
     private int sampleSize;
     private int merged;
@@ -22,9 +31,9 @@ public class FiFoSampler<T> implements Sketch<T>, Serializable {
 
 
     /**
-     * Update the sketch with a value T
+     * Insert the new element to the Queue and remove oldest if the Queue has reached the desired sampleSize.
      *
-     * @param element
+     * @param element to be added in the Queue
      */
     @Override
     public void update(T element) {
@@ -46,14 +55,15 @@ public class FiFoSampler<T> implements Sketch<T>, Serializable {
     }
 
     /**
-     * Function to Merge two Sketches
+     * Function to Merge two FiFo Samples. This function takes advantage of the ordering of the elements given by
+     * the {@code Synopsis.BuildSynopsis} retaining only the newest elements that entered the window.
      *
-     * @param other
-     * @return
+     * @param other FiFo Sample to be merged with
+     * @return merged FiFo Sample
      * @throws Exception
      */
     @Override
-    public FiFoSampler merge(Sketch other) throws Exception {
+    public FiFoSampler merge(Synopsis other) throws Exception {
         if (other instanceof FiFoSampler
                 && ((FiFoSampler) other).getSampleSize() == this.sampleSize) {
 

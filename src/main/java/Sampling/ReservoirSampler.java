@@ -1,18 +1,32 @@
 package Sampling;
 
-import Sketches.Sketch;
+import Synopsis.Synopsis;
 import org.apache.flink.util.XORShiftRandom;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 
-
-public class ReservoirSampler<T> implements Sketch<T>, Serializable {
+/**
+ * Implementation of the classic Reservoir Sampling algorithm with a given sample size.
+ * Firstly the sample will be fulled with every incoming element, once the sample has reached the sampleSize
+ * bound the upcoming elements will be added to the sample with a probability of sampleSize/processedElements.
+ * If an element should be added it will replace a random element of the sample.
+ *
+ * @param <T> the type of elements maintained by this sampler
+ *
+ * @author Rudi Poepsel Lemaitre
+ */
+public class ReservoirSampler<T> implements Synopsis<T>, Serializable {
     private T sample[];
     private int sampleSize;
     private XORShiftRandom rand;
     private int processedElements;
 
+    /**
+     * Construct a new empty Reservoir Sampler with a bounded size.
+     *
+     * @param sampleSize maximal sample size
+     */
     public ReservoirSampler(Integer sampleSize) {
         this.sample = (T[]) new Object[sampleSize];
         this.sampleSize = sampleSize;
@@ -21,9 +35,12 @@ public class ReservoirSampler<T> implements Sketch<T>, Serializable {
     }
 
     /**
-     * Update the sketch with a value T
+     * Process a new incoming element. Firstly the sample will be fulled with every incoming element,
+     * once the sample has reached the sampleSize bound the upcoming elements will be added to the sample
+     * with a probability of sampleSize/processedElements. If an element should be added it will replace
+     * a random element of the sample.
      *
-     * @param element
+     * @param element element to be added to the sample
      */
     @Override
     public void update(T element) {
@@ -51,14 +68,16 @@ public class ReservoirSampler<T> implements Sketch<T>, Serializable {
     }
 
     /**
-     * Function to Merge two Sketches
+     * Function to Merge two Reservoir Samplers, since the the probability of an element staying in the sample
+     * decreases with the time the merge function will weight the probability of a random item coming from each
+     * sampler by the number of processed elements of each sampler.
      *
-     * @param other
-     * @return
+     * @param other Reservoir Sampler to be merged with this Reservoir Sampler
+     * @return the merged Reservoir Sampler
      * @throws Exception
      */
     @Override
-    public ReservoirSampler<T> merge(Sketch other) throws Exception {
+    public ReservoirSampler<T> merge(Synopsis other) throws Exception {
         if (other instanceof ReservoirSampler
                 && ((ReservoirSampler) other).getSampleSize() == this.sampleSize) {
             ReservoirSampler<T> o = (ReservoirSampler<T>) other;
@@ -107,6 +126,12 @@ public class ReservoirSampler<T> implements Sketch<T>, Serializable {
         return this;
     }
 
+    /**
+     * Internal function to generate an array list containing all indices from 0 to size-1.
+     *
+     * @param size
+     * @return
+     */
     private ArrayList<Integer> generateIndicesArray(int size){
         ArrayList<Integer> list = new ArrayList<>();
         for (int i = 0; i < size; i++) {
@@ -115,10 +140,24 @@ public class ReservoirSampler<T> implements Sketch<T>, Serializable {
         return list;
     }
 
+    /**
+     * Internal function to pick a random index without replacement from the given index list.
+     *
+     * @param list containing the remaining possible indices
+     * @return a random index
+     */
     private int getIndexWithoutReplacement(ArrayList<Integer> list){
         return list.remove(rand.nextInt(list.size()));
     }
 
+    /**
+     * Merge two Reservoir Samplers without taking in account how many elements were processed and giving an
+     * equal distribution coming from each sample.
+     *
+     * @param other Reservoir Sampler to be merged with
+     * @return merged Reservoir Sampler
+     * @throws Exception
+     */
     public ReservoirSampler<T> nonWeightedMerge(ReservoirSampler<T> other) throws Exception {
         if (other.getSampleSize() == this.sampleSize) {
             T[] otherSample = other.getSample();

@@ -8,6 +8,11 @@ import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.Random;
 
+/**
+ * Implementation of a family of pairwise independent hash functions
+ *
+ * @author Rudi Poepsel Lemaitre
+ */
 public class PairwiseIndependentHashFunctions implements Serializable {
 
 
@@ -18,18 +23,12 @@ public class PairwiseIndependentHashFunctions implements Serializable {
 	private final int p = 1610612741; // prime
 
 
-	public PairwiseIndependentHashFunctions(int numFunctions, long seed, Random random) {
-		this.rand = random;
-		rand.setSeed(seed);
-		this.numFunctions = numFunctions;
-		a = new int[numFunctions];
-		b = new int[numFunctions];
-
-		for (int i = 0; i < numFunctions; i++){
-			a[i] = rand.nextInt(p);
-			b[i] = rand.nextInt(p);
-		}
-	}
+	/**
+	 * Create a new family of pairwise independent hash functions.
+	 *
+	 * @param numFunctions number of functions
+	 * @param seed for the randomness of the hash functions
+	 */
 	public PairwiseIndependentHashFunctions(int numFunctions, long seed) {
 		this.rand = new XORShiftRandom(seed);
 		this.numFunctions = numFunctions;
@@ -41,6 +40,12 @@ public class PairwiseIndependentHashFunctions implements Serializable {
 			b[i] = rand.nextInt(p);
 		}
 	}
+
+	/**
+	 * Create a new family of pairwise independent hash functions.
+	 *
+	 * @param numFunctions number of functions
+	 */
 	public PairwiseIndependentHashFunctions(int numFunctions) {
 		this.rand = new XORShiftRandom();
 		this.numFunctions = numFunctions;
@@ -54,7 +59,13 @@ public class PairwiseIndependentHashFunctions implements Serializable {
 
 	}
 
-	// hashes integers
+
+	/**
+	 * Calculate the hash values of the incoming object for all the functions of the family.
+	 *
+	 * @param o object to calculate the hash values
+	 * @return an array containing the hash values given this family of functions
+	 */
 	public int[] hash(Object o) {
 		int[] result = new int[numFunctions];
 
@@ -75,10 +86,6 @@ public class PairwiseIndependentHashFunctions implements Serializable {
 
 	public int[] getB() {
 		return b;
-	}
-
-	public int getNumFunctions() {
-		return numFunctions;
 	}
 
 	public boolean equals(PairwiseIndependentHashFunctions other){

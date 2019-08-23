@@ -2,13 +2,23 @@ package Sketches;
 
 
 import Sketches.HashFunctions.PairwiseIndependentHashFunctions;
+import Synopsis.Synopsis;
 
 import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.HashSet;
 
-public class CountMinSketch<T> implements Sketch<T>, Serializable {
+/**
+ * Implementation of classical Count-Min sketch to estimate the frequencies of the elements in a datastream.
+ * Tis implementation uses a family of pairwise independent hash functions to update the counters of the
+ * sketch.
+ *
+ * @param <T> the type of elements maintained by this sketch
+ *
+ * @author Rudi Poepsel Lemaitre
+ */
+public class CountMinSketch<T> implements Synopsis<T>, Serializable {
 
     private int width;
     private int height;
@@ -18,6 +28,13 @@ public class CountMinSketch<T> implements Sketch<T>, Serializable {
     private HashSet<T> Elements;
 
 
+    /**
+     * Construct a Count-Min sketch
+     *
+     * @param width value range of the hash functions
+     * @param height number of hash functions
+     * @param seed for the randomness of the hash functions
+     */
     public CountMinSketch(Integer width, Integer height, Long seed) {
         this.width = width;
         this.height = height;
@@ -27,55 +44,48 @@ public class CountMinSketch<T> implements Sketch<T>, Serializable {
         this.Elements = new HashSet<>();
     }
 
-    @Override
-    public CountMinSketch clone(){
-        return this.clone();
-    }
+
 
     /**
-     * Update the sketch with a value T by increasing the count by 1.
+     * Update each row of the sketch with a new element by increasing the count of the hash position by 1.
      *
-     * @param element
+     * @param element new incoming element
      */
     @Override
     public void update(T element) {
-
         int[] indices = hashFunctions.hash(element);
         for (int i = 0; i < height; i++) {
-
-            int pos = indices[i] % width;
-            //System.out.println(this + " "+ tuple+" "+pos+" "+indices[i]);
             array[i][indices[i] % width]++;
         }
         Elements.add(element);
         elementsProcessed++;
     }
 
-    /**
-     * Update the sketch with incoming tuple by a width.
-     *
-     * @param tuple
-     * @param weight must be positive
-     */
-    public void weightedUpdate(Object tuple, int weight) throws Exception {
-        if (weight < 0) {
-            throw new Exception("Count Min sketch only accepts positive weights!");
-        }
-        int[] indices = hashFunctions.hash(tuple);
-        for (int i = 0; i < height; i++) {
-            array[i][indices[i] % width] += weight;
-        }
-        elementsProcessed++;
-    }
+//    /**
+//     * Update the sketch with incoming positive weighted tuple.
+//     *
+//     * @param tuple
+//     * @param weight must be positive
+//     */
+//    public void weightedUpdate(Object tuple, int weight) throws Exception {
+//        if (weight < 0) {
+//            throw new Exception("Count Min sketch only accepts positive weights!");
+//        }
+//        int[] indices = hashFunctions.hash(tuple);
+//        for (int i = 0; i < height; i++) {
+//            array[i][indices[i] % width] += weight;
+//        }
+//        elementsProcessed++;
+//    }
 
     /**
-     * Query the sketch and get a Return Value
+     * Query the sketch and get an estimate of the count of this value.
      *
-     * @param tuple
+     * @param element to query the frequency
      * @return The approximate count of tuple so far
      */
-    public Integer query(T tuple) {
-        int[] indices = hashFunctions.hash(tuple);
+    public Integer query(T element) {
+        int[] indices = hashFunctions.hash(element);
         int min = -1;
         for (int i = 0; i < height; i++) {
             if (min == -1)
@@ -99,10 +109,6 @@ public class CountMinSketch<T> implements Sketch<T>, Serializable {
         return array;
     }
 
-    public PairwiseIndependentHashFunctions getHashFunctions() {
-        return hashFunctions;
-    }
-
     public int getElementsProcessed() {
         return elementsProcessed;
     }
@@ -111,14 +117,19 @@ public class CountMinSketch<T> implements Sketch<T>, Serializable {
         return Elements;
     }
 
-
+    /**
+     * Function to Merge two Count-Min sketches by adding their counters.
+     *
+     * @param other Count-Min sketch to be merged with
+     * @return merged Count-Min sketch
+     * @throws Exception
+     */
     @Override
-    public CountMinSketch merge(Sketch other) throws Exception {
+    public CountMinSketch merge(Synopsis other) throws Exception {
         if (other instanceof CountMinSketch) {
             CountMinSketch otherCM = (CountMinSketch) other;
             if (otherCM.getWidth() == width && otherCM.getHeight() == height && hashFunctions.equals(otherCM.hashFunctions))
             {
-
                 int[][] a2 = otherCM.getArray();
                 for (int i = 0; i < height; i++) {
                     for (int j = 0; j < width; j++) {

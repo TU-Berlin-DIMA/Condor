@@ -1,7 +1,6 @@
 package Histograms;
 
-import Sketches.Sketch;
-import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
+import Synopsis.Synopsis;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,7 +9,7 @@ import org.slf4j.LoggerFactory;
  * @param <T>
  * @author joschavonhein
  */
-public class EquiWidthHistogram<T extends Number> implements Sketch<T> {
+public class EquiWidthHistogram<T extends Number> implements Synopsis<T> {
 
     private static final Logger LOG = LoggerFactory.getLogger(EquiWidthHistogram.class);
 
@@ -66,7 +65,7 @@ public class EquiWidthHistogram<T extends Number> implements Sketch<T> {
     }
 
     @Override
-    public EquiWidthHistogram merge(Sketch other) throws IllegalArgumentException {
+    public EquiWidthHistogram merge(Synopsis other) throws IllegalArgumentException {
         if (other instanceof EquiWidthHistogram){
             EquiWidthHistogram o = (EquiWidthHistogram) other;
             if (lowerBound == o.getLowerBound()
