@@ -1,13 +1,13 @@
 package Sampling;
 
-import Sketches.Sketch;
+import Synopsis.Synopsis;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.TreeSet;
 
-public class FiFoSamplerOld<T> implements Sketch<SampleElement>, Serializable {
+public class FiFoSamplerOld<T> implements Synopsis<SampleElement>, Serializable {
     private TreeSet<SampleElement<T>> sample;
     private int sampleSize;
 //    private long expireTime;
@@ -76,7 +76,7 @@ public class FiFoSamplerOld<T> implements Sketch<SampleElement>, Serializable {
      * @throws Exception
      */
     @Override
-    public FiFoSamplerOld merge(Sketch other) throws Exception {
+    public FiFoSamplerOld merge(Synopsis other) throws Exception {
         if (other instanceof FiFoSamplerOld
                 && ((FiFoSamplerOld) other).getSampleSize() == this.sampleSize
                 && ((FiFoSamplerOld) other).isEventTime() == this.eventTime) {

@@ -1,18 +1,22 @@
 package Sketches;
 
 import Sketches.HashFunctions.PairwiseIndependentHashFunctions;
+import Synopsis.Synopsis;
 
 import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 
 /**
- * Implementation of the classical HyperLogLog Sketch for count distinct queries on data streams.
+ * Implementation of the classical HyperLogLog Synopsis for count distinct queries on data streams.
  * This implementation uses 64 bit hash values and should therefore be able to handle up to 2^64 / 30
- * distinct items with adequate accuracy (given acceptable number of registers)
- * @author joschavonhein
+ * distinct items with adequate accuracy (given acceptable number of registers).
+ *
+ * @param <T> the type of elements maintained by this sketch
+ *
+ * @author Joscha von Hein
  */
-public class HyperLogLogSketch implements Sketch<Object>, Serializable {
+public class HyperLogLogSketch<T> implements Synopsis<T>, Serializable {
 
     // TODO: write method / constructor which selects the logRegNum according to estimated error or available memory
     // TODO: implement the Sparse Representation as given in the Google Paper!
@@ -38,10 +42,11 @@ public class HyperLogLogSketch implements Sketch<Object>, Serializable {
 
     /**
      * Method which updates the sketch with the input object
+     *
      * @param element Tuple, Field or Object with which to update the sketch
      */
     @Override
-    public void update(Object element) {
+    public void update(T element) {
 
         long hash = hashFunctions.hash(element)[0];
         long firstBits = ((long) hashFunctions.hash(element)[1]) << 32;
@@ -55,17 +60,17 @@ public class HyperLogLogSketch implements Sketch<Object>, Serializable {
     }
 
     /**
-     * @param sketch the sketch to merge
+     * @param synopsis the synopsis to merge
      * @return the merged HyperLogLogSketch Datastructure
      */
-    public HyperLogLogSketch merge(Sketch sketch) throws Exception {
-        if (sketch.getClass().isInstance(HyperLogLogSketch.class)){
+    public HyperLogLogSketch merge(Synopsis synopsis) throws Exception {
+        if (synopsis.getClass().isInstance(HyperLogLogSketch.class)){
             throw new IllegalArgumentException("Sketches can only be merged with other Sketches of the same Type \n" +
-                    "otherHLL.getClass() = " + sketch.getClass() + "\n" +
+                    "otherHLL.getClass() = " + synopsis.getClass() + "\n" +
                     "otherHLL.getClass().isInstance(HyperLogLogSketch.class = false");
         }
 
-        HyperLogLogSketch otherHLL = (HyperLogLogSketch) sketch;
+        HyperLogLogSketch otherHLL = (HyperLogLogSketch) synopsis;
 
         if ((otherHLL.getRegNum() != this.regNum) || (!otherHLL.getHashFunctions().equals(hashFunctions)))
             throw new IllegalArgumentException("attempted union of non matching HLogLog classes");

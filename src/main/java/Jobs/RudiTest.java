@@ -1,11 +1,7 @@
 package Jobs;
 
-import Sampling.BiasedReservoirSampler;
 import Sampling.FiFoSampler;
-import Sampling.FiFoSamplerOld;
-import Sampling.ReservoirSampler;
-import Sketches.BuildSketch;
-import Sketches.CountMinSketch;
+import Synopsis.BuildSynopsis;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.core.fs.FileSystem;
@@ -30,7 +26,6 @@ public class RudiTest {
 
         // int parallelism = env.getParallelism();
         int sampleSize = 20;
-        Object[] parameters = new Object[]{sampleSize};
         Time windowTime = Time.minutes(1);
         Class<FiFoSampler> sketchClass = FiFoSampler.class;
 
@@ -38,8 +33,8 @@ public class RudiTest {
         DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
                 .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
-        SingleOutputStreamOperator<FiFoSampler> finalSketch = BuildSketch.timeBased(timestamped, windowTime, sketchClass, parameters, 0);
-        //SingleOutputStreamOperator<ReservoirSampler> finalSketch = BuildSketch.sampleTimeBased(timestamped, windowTime, sketchClass, parameters, -1);
+        SingleOutputStreamOperator<FiFoSampler> finalSketch = BuildSynopsis.timeBased(timestamped, windowTime, 0, sketchClass, sampleSize);
+        //SingleOutputStreamOperator<ReservoirSampler> finalSketch = BuildSynopsis.sampleTimeBased(timestamped, windowTime, sketchClass, parameters, -1);
 
         finalSketch.writeAsText("output/rudiTest.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 

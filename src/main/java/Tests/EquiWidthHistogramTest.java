@@ -2,16 +2,10 @@ package Tests;
 
 import Histograms.EquiWidthHistogram;
 import Histograms.EquiWidthHistogram4LT;
-import Jobs.EventTimeJob;
-import Sketches.BuildSketch;
-import Sketches.HyperLogLogSketch;
+import Synopsis.BuildSynopsis;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.functions.RichMapFunction;
-import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.api.java.tuple.Tuple4;
-import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -23,7 +17,6 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 
 public class EquiWidthHistogramTest {
     public static void main(String[] args) throws Exception {
@@ -47,7 +40,7 @@ public class EquiWidthHistogramTest {
         DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
                 .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
-        SingleOutputStreamOperator<EquiWidthHistogram> finalSketch = BuildSketch.timeBased(timestamped, windowTime, sketchClass, parameters, keyField);
+        SingleOutputStreamOperator<EquiWidthHistogram> finalSketch = BuildSynopsis.timeBased(timestamped, windowTime, sketchClass, parameters, keyField);
 
         finalSketch.writeAsText("output/EquiWidthHistogram.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 

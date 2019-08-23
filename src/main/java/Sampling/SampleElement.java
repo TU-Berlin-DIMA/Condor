@@ -2,10 +2,24 @@ package Sampling;
 
 import java.io.Serializable;
 
+/**
+ * Object to represent a sample element in the case the synopsis need the timestamp of each elements.
+ * @see Synopsis.BuildSynopsis.ConvertToSample
+ *
+ * @param <T> the type of the elements
+ *
+ * @author Rudi Poepsel Lemaitre
+ */
 public class SampleElement<T> implements Serializable, Comparable<SampleElement> {
     private T value;
     private long timeStamp;
 
+    /**
+     * Construct a SampleElement with a given timestamp
+     *
+     * @param value value of the element
+     * @param timeStamp of the element (It can be the Event-timestamp or Process-Timestamp)
+     */
     public SampleElement(T value, long timeStamp) {
         this.value = value;
         this.timeStamp = timeStamp;
@@ -23,10 +37,6 @@ public class SampleElement<T> implements Serializable, Comparable<SampleElement>
         return timeStamp;
     }
 
-    public void setTimeStamp(long timeStamp) {
-        this.timeStamp = timeStamp;
-    }
-
 
     @Override
     public int compareTo(SampleElement o) {
@@ -41,16 +51,5 @@ public class SampleElement<T> implements Serializable, Comparable<SampleElement>
     public String toString() {
         return new String("(" + value.toString() + " | " + timeStamp + ")");
     }
-
-//    @Override
-//    public boolean equals(Object obj){
-//
-//        if (obj instanceof SampleElement){
-//            if (this.compareTo((SampleElement) obj) == 0){
-//                return ((SampleElement) obj).getValue().equals(this.value);
-//            }
-//        }
-//        return false;
-//    }
 
 }

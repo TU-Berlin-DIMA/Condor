@@ -19,17 +19,12 @@
 package Jobs;
 
 
-import Sketches.BuildSketch;
+import Synopsis.BuildSynopsis;
 
 import Sketches.CountMinSketch;
-import Sketches.HyperLogLogSketch;
-import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.common.state.ValueState;
-import org.apache.flink.api.java.tuple.Tuple;
-import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.configuration.Configuration;
@@ -40,7 +35,6 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.api.windowing.time.Time;
-import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
 import org.apache.flink.util.Collector;
 
 import javax.annotation.Nullable;
@@ -71,7 +65,6 @@ public class StreamingJob {
         int width = 10;
         int height = 5;
         long seed = 1;
-        Object[] parameters = new Object[]{width,height,seed};
         Class<CountMinSketch> sketchClass = CountMinSketch.class;
 //        int logRegNum = 10;
 //        long seed = 1;
@@ -84,7 +77,7 @@ public class StreamingJob {
         DataStream<String> line = env.readTextFile("data/timestamped.csv");
         DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
                 .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
-        SingleOutputStreamOperator<CountMinSketch> finalSketch = BuildSketch.timeBased(timestamped, windowTime, sketchClass, parameters, keyField);
+        SingleOutputStreamOperator<CountMinSketch> finalSketch = BuildSynopsis.timeBased(timestamped, windowTime, keyField, sketchClass, width,height,seed);
 
         finalSketch.writeAsText("output/eventTimeSketch.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 

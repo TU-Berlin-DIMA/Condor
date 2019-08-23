@@ -1,12 +1,24 @@
 package Sampling;
 
-import Sketches.Sketch;
+import Synopsis.Synopsis;
 import org.apache.flink.util.XORShiftRandom;
 
 import java.io.Serializable;
 import java.util.LinkedList;
 
-public class BiasedReservoirSampler<T> implements Sketch<T>, Serializable {
+/**
+ * Implementation of the Biased Reservoir Sampling algorithm with a given sample size.
+ * (@href http://charuaggarwal.net/sigreservoir.pdf)
+ * The idea is to give more priority to the newest incoming elements adding them always to the sample in
+ * contrast to the traditional Reservoir Sampler. The probability that this element is simply appended to
+ * the sample or replace an element of the sample is given by actualSize/sampleSize. Meaning that once the sample
+ * has reached the desired size the probability of an element replacing an already existing sample will be equal to 1.
+ *
+ * @param <T> the type of elements maintained by this sampler
+ *
+ * @author Rudi Poepsel Lemaitre
+ */
+public class BiasedReservoirSampler<T> implements Synopsis<T>, Serializable {
 
     private T sample[];
     private int sampleSize;
@@ -15,6 +27,11 @@ public class BiasedReservoirSampler<T> implements Sketch<T>, Serializable {
     private int merged = 1;
     private LinkedList<Integer> latestPositions;
 
+    /**
+     * Construct a new empty Biased Reservoir Sampler with a bounded size.
+     *
+     * @param sampleSize
+     */
     public BiasedReservoirSampler(Integer sampleSize) {
         this.sample = (T[]) new Object[sampleSize];
         this.sampleSize = sampleSize;
@@ -24,7 +41,10 @@ public class BiasedReservoirSampler<T> implements Sketch<T>, Serializable {
     }
 
     /**
-     * Update the sketch with a value T
+     * Add the incoming element to the sample. The probability that this element is simply appended to
+     * the sample or replace an element of the sample is given by actualSize/sampleSize. Meaning that once the
+     * sample has reached the desired size the probability of an element replacing an already existing sample
+     * will be equal to 1.
      *
      * @param element
      */
@@ -61,14 +81,15 @@ public class BiasedReservoirSampler<T> implements Sketch<T>, Serializable {
     }
 
     /**
-     * Function to Merge two Sketches
+     * Function to Merge two Biased Reservoir samples. This function takes advantage of the ordering of the elements
+     * given by the {@code Synopsis.BuildSynopsis} retaining only the newest elements that entered the window.
      *
-     * @param other
-     * @return
+     * @param other Biased Reservoir sample to be merged with
+     * @return merged Biased Reservoir Sample
      * @throws Exception
      */
     @Override
-    public BiasedReservoirSampler<T> merge(Sketch other) throws Exception {
+    public BiasedReservoirSampler<T> merge(Synopsis other) throws Exception {
         if (other instanceof BiasedReservoirSampler
                 && ((BiasedReservoirSampler) other).getSampleSize() == this.sampleSize) {
             BiasedReservoirSampler<T> o = (BiasedReservoirSampler<T>) other;
