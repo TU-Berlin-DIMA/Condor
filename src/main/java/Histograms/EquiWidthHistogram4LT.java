@@ -2,6 +2,10 @@ package Histograms;
 
 import java.util.Arrays;
 
+/**
+ * Creates an Equi-width histogram using 4LT buckets from an ordinary equi-width histogram
+ * @author joschavonhein
+ */
 public class EquiWidthHistogram4LT {
     double lowerBound;
     double upperBound;

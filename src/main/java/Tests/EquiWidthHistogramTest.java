@@ -40,7 +40,8 @@ public class EquiWidthHistogramTest {
         DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
                 .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
-        SingleOutputStreamOperator<EquiWidthHistogram> finalSketch = BuildSynopsis.timeBased(timestamped, windowTime, sketchClass, parameters, keyField);
+
+        SingleOutputStreamOperator<EquiWidthHistogram> finalSketch = BuildSynopsis.timeBased(timestamped, windowTime,keyField, sketchClass, parameters);
 
         finalSketch.writeAsText("output/EquiWidthHistogram.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
