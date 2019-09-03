@@ -36,14 +36,14 @@ public final class BuildSynopsis {
      *
      * @param inputStream the data stream to build the Synopsis
      * @param windowTime the size of the time window
-     * @param keyField the field of the tuple to build the Synopsis
+     * @param keyField the field of the tuple to build the Synopsis. Set to -1 to build the Synopsis over the whole tuple.
      * @param sketchClass the type of Synopsis to be computed
      * @param parameters the initialization parameters for the Synopsis
      * @param <T> the type of the input elements
      * @param <S> the type of the Synopsis
      * @return stream of time window based Synopses
      */
-    public static <T extends Tuple, S extends Synopsis> SingleOutputStreamOperator<S> timeBased(DataStream<T> inputStream, Time windowTime, int keyField, Class<S> sketchClass, Object... parameters){
+    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> timeBased(DataStream<T> inputStream, Time windowTime, int keyField, Class<S> sketchClass, Object... parameters){
         SynopsisAggregator agg = new SynopsisAggregator(sketchClass, parameters, keyField);
 
         SingleOutputStreamOperator reduce = inputStream
@@ -62,6 +62,25 @@ public final class BuildSynopsis {
         return reduce;
     }
 
+
+    /**
+     * Build an operator pipeline to generate a stream of time window based Synopses. Firstly each element will be
+     * assigned to a random partition. Then based on the partition a {@link KeyedStream} will be generated and an
+     * {@link KeyedStream#timeWindow} will accumulate the a Synopsis via the {@link SynopsisAggregator}. Afterwards
+     * the partial results of the partitions will be reduced (merged) to a single Synopsis representing the whole window.
+     *
+     * @param inputStream the data stream to build the Synopsis
+     * @param windowTime the size of the time window
+     * @param sketchClass the type of Synopsis to be computed
+     * @param parameters the initialization parameters for the Synopsis
+     * @param <T> the type of the input elements
+     * @param <S> the type of the Synopsis
+     * @return stream of time window based Synopses
+     */
+    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> timeBased(DataStream<T> inputStream, Time windowTime, Class<S> sketchClass, Object... parameters){
+        return timeBased(inputStream, windowTime, -1, sketchClass, parameters);
+    }
+
     /**
      * Debug function to print the output of the aggregators.
      * Build an operator pipeline to generate a stream of time window based Synopses. Firstly each element will be
@@ -71,7 +90,7 @@ public final class BuildSynopsis {
      *
      * @param inputStream the data stream to build the Synopsis
      * @param windowTime the size of the time window
-     * @param keyField the field of the tuple to build the Synopsis
+     * @param keyField the field of the tuple to build the Synopsis. Set to -1 to build the Synopsis over the whole tuple.
      * @param sketchClass the type of Synopsis to be computed
      * @param parameters the initialization parameters for the Synopsis
      * @param <T> the type of the input elements
@@ -107,7 +126,7 @@ public final class BuildSynopsis {
      *
      * @param inputStream the data stream to build the Synopsis
      * @param windowSize the size of the count window
-     * @param keyField the field of the tuple to build the Synopsis
+     * @param keyField the field of the tuple to build the Synopsis. Set to -1 to build the Synopsis over the whole tuple.
      * @param sketchClass the type of Synopsis to be computed
      * @param parameters the initialization parameters for the Synopsis
      * @param <T> the type of the input elements
@@ -131,6 +150,24 @@ public final class BuildSynopsis {
                     }
                 }).returns(sketchClass);
         return reduce;
+    }
+
+    /**
+     * Build an operator pipeline to generate a stream of count window based Synopses. Firstly each element will be
+     * assigned to a random partition. Then based on the partition a {@link KeyedStream} will be generated and an
+     * {@link KeyedStream#countWindow} will accumulate the a Synopsis via the {@link SynopsisAggregator}. Afterwards
+     * the partial results of the partitions will be reduced (merged) to a single Synopsis representing the whole window.
+     *
+     * @param inputStream the data stream to build the Synopsis
+     * @param windowSize the size of the count window
+     * @param sketchClass the type of Synopsis to be computed
+     * @param parameters the initialization parameters for the Synopsis
+     * @param <T> the type of the input elements
+     * @param <S> the type of the Synopsis
+     * @return stream of count window based Synopses
+     */
+    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> countBased(DataStream<T> inputStream, long windowSize, Class<S> sketchClass, Object... parameters){
+        return countBased(inputStream, windowSize, -1, sketchClass, parameters);
     }
 
 
