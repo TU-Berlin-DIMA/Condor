@@ -3,12 +3,13 @@ package Histograms;
 import java.util.TreeMap;
 
 /**
+ * Classical Equi-Depth Histogram based on sorted input (relatively trivial case)
  *
  * @author joschavonhein
  */
 public class EquiDepthHistogram {
 
-    int[] leftBoundaries; // boundaries are inclusive
+    double[] leftBoundaries; // boundaries are inclusive
     int rightmostBoundary; // rightmost boundary - inclusive
     int totalFrequencies;
     int numBuckets;
@@ -27,7 +28,7 @@ public class EquiDepthHistogram {
         if(sortedInput.size() < numBuckets){
             this.numBuckets = sortedInput.size();   // number of buckets cannot exceed actual number of input items
         }
-        this.leftBoundaries = new int[this.numBuckets];
+        this.leftBoundaries = new double[this.numBuckets];
         this.totalFrequencies = total;
         int bucketSize = total / this.numBuckets;
         int currentLeftBoundary = sortedInput.firstKey();
@@ -43,6 +44,10 @@ public class EquiDepthHistogram {
             if (tempBucketSize > bucketSize){
                 leftBoundaries[index] = currentLeftBoundary;
                 index++;
+                int extremeOverflow = (tempBucketSize-bucketSize) / bucketSize;
+                for (int j = 0; j < extremeOverflow; j++) {
+
+                }
                 tempBucketSize = tempBucketSize % bucketSize;
             }
         }
