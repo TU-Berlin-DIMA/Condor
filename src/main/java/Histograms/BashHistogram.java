@@ -1,6 +1,7 @@
 package Histograms;
 
 import Synopsis.Synopsis;
+import com.esotericsoftware.minlog.Log;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +11,14 @@ import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.TreeMap;
 
+/**
+ * Class which sketch which can be merged with itself and updated in a streaming fashion.
+ * Designed for streaming window applications in Flink.
+ * Supports method to create an approximate Equi-Depth Histogram from the Sketch data.
+ * Based on ideas in the paper: "Fast and Accurate Computation of Equi-Depth Histograms over Data Streams" - ACM International Conference Proceeding Series 2011
+ *
+ * @author joschavonhein
+ */
 public class BashHistogram implements Synopsis, Serializable {
 
     private int p; // precision hyper parameter
@@ -22,6 +31,11 @@ public class BashHistogram implements Synopsis, Serializable {
 
     private static final Logger logger = LoggerFactory.getLogger(BashHistogram.class);
 
+    /**
+     *
+     * @param precision     precision hyperparameter - must be larger than 1 and can generally be below 10 - defaults is 7
+     * @param numberOfFinalBuckets  number of buckets the final equi-depth histogram should have
+     */
     public BashHistogram(int precision, int numberOfFinalBuckets) {
         p = precision;
         numBuckets = numberOfFinalBuckets;
@@ -183,17 +197,50 @@ public class BashHistogram implements Synopsis, Serializable {
         }
     }
 
+    /**
+     * Function which creates the final equi-depth bucket boundaries and returns a standard equi-depths histogram
+     * @return EquiDepthHistogram
+     */
+    public EquiDepthHistogram buildEquiDepthHistogram(){
+
+        double[] boundaries = new double[numBuckets];
+        boundaries[0] = bars.firstKey();
+        int b = bars.firstKey();
+        float count = bars.firstEntry().getValue();
+        double idealBuckSize = totalFrequencies / numBuckets;
+
+        for (int i = 1; i < numBuckets; i++) { // starting from 1 as first boundary is already known
+            while (count <= idealBuckSize){
+                b = bars.ceilingKey(b);
+                count += bars.get(b);
+            }
+            double surplus = count % idealBuckSize;
+            boundaries[i] = (b + (bars.higherKey(b)-b) * (1- surplus / bars.get(b)));
+        }
+
+        return new EquiDepthHistogram(boundaries, rightBoundary, totalFrequencies);
+    }
+
     /*
      * Methods needed for Serializability
      */
     private void writeObject(java.io.ObjectOutputStream out) throws IOException{
-        // TODO
+        out.writeInt(p);
+        out.writeInt(numBars);
+        out.writeObject(bars);
+        out.writeInt(rightBoundary);
+        out.writeDouble(totalFrequencies);
     }
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException{
-        // TODO
+        p = in.readInt();
+        numBars = in.readInt();
+        numBuckets = numBars * p;
+        bars = (TreeMap<Integer, Float>) in.readObject();
+        rightBoundary = in.readInt();
+        totalFrequencies = in.readDouble();
     }
     private void readObjectNoData() throws ObjectStreamException{
-        // TODO
+        Log.error("method not implemented");
     }
 
 }
