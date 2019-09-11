@@ -1,6 +1,6 @@
 package Tests;
 
-import Histograms.EquiDepthHistogram;
+import Histograms.EquiDepthHistogramTrivial;
 
 import java.util.TreeMap;
 
@@ -21,7 +21,7 @@ public class EquiDepthHistogramTest {
 
         int total = 1+2+3+4+5+6+5+4+3+2;
 
-        EquiDepthHistogram histogram = new EquiDepthHistogram(map, 5, total);
+        EquiDepthHistogramTrivial histogram = new EquiDepthHistogramTrivial(map, 5, total);
 
         int range0 = histogram.rangeQuery(0,10);
 
