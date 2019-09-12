@@ -1,5 +1,7 @@
 package Histograms;
 
+import java.util.Arrays;
+
 /**
  * classic EquiDepthHistogram with range query capabilites.
  * Does not contain methods to build the histogram but rather takes boundaries and frequencies as input.
@@ -75,5 +77,15 @@ public class EquiDepthHistogram {
         }
         result += bucketsInRange*totalFrequencies/numBuckets;
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "EquiDepthHistogram{" +
+                "leftBoundaries=" + Arrays.toString(leftBoundaries) + "\n" +
+                ", rightMostBoundary=" + rightMostBoundary +
+                ", totalFrequencies=" + totalFrequencies +
+                ", numBuckets=" + numBuckets +
+                '}';
     }
 }

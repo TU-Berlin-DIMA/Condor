@@ -23,7 +23,7 @@ public class BashHistogram implements Synopsis, Serializable {
 
     private int p; // precision hyper parameter
     private int numBuckets; // number of final Buckets
-    private int numBars; // maximum number of Bars in the sketch
+    private int maxNumBars; // maximum number of Bars in the sketch
     private TreeMap<Integer, Float> bars; //
     private int rightBoundary; // rightmost boundary - inclusive
     private final double MAXCOEF = 1.7;
@@ -39,7 +39,7 @@ public class BashHistogram implements Synopsis, Serializable {
     public BashHistogram(int precision, int numberOfFinalBuckets) {
         p = precision;
         numBuckets = numberOfFinalBuckets;
-        numBars = numBuckets * p;
+        maxNumBars = numBuckets * p;
         bars = new TreeMap<>();
         totalFrequencies = 0;
     }
@@ -54,9 +54,9 @@ public class BashHistogram implements Synopsis, Serializable {
      *
      * @param input f0: value, f1: corresponding frequency
      */
-    private void update(Tuple2<Integer, Float> input){
+    public void update(Tuple2<Integer, Float> input){
         totalFrequencies += input.f1;
-        double maxSize = MAXCOEF * totalFrequencies / numBars; // maximum value a bar can have before it should split
+        double maxSize = MAXCOEF * totalFrequencies / maxNumBars; // maximum value a bar can have before it should split
         float binFrequency;
         int next = input.f0;
         if (bars.isEmpty()){
@@ -97,11 +97,11 @@ public class BashHistogram implements Synopsis, Serializable {
                 /**
                  * Merge the two smallest adjacent bars
                  */
-                if (bars.size() > numBars){
+                if (bars.size() > maxNumBars){
                     // Find Bars to Merge
                     float currentMin = Float.MAX_VALUE;
                     int index = 0;
-                    for (int i = 0; i < numBars - 1; i++) {
+                    for (int i = 0; i < maxNumBars - 1; i++) {
                         if (bars.get(i) + bars.get(i+1) < currentMin){
                             index = i;
                             currentMin = bars.get(i) + bars.get(i+1);
@@ -117,7 +117,7 @@ public class BashHistogram implements Synopsis, Serializable {
     @Override
     public void update(Object element) {
         if (element instanceof Integer){
-            update(new Tuple2<>((int)element, 1)); //standard case in which just a single element is added to the sketch
+            update(new Tuple2<Integer, Float>((int)element, 1f)); //standard case in which just a single element is added to the sketch
         }else {
             if(element instanceof BashHistogram){
                 try {
@@ -126,7 +126,7 @@ public class BashHistogram implements Synopsis, Serializable {
                     e.printStackTrace();
                 }
             }else {
-                logger.warn("update element has to be an integer or BashHistogram!");
+                logger.warn("update element has to be an integer or BashHistogram! - is: " + element.getClass());
             }
         }
     }
@@ -139,8 +139,8 @@ public class BashHistogram implements Synopsis, Serializable {
         return numBuckets;
     }
 
-    public int getNumBars() {
-        return numBars;
+    public int getMaxNumBars() {
+        return maxNumBars;
     }
 
     public TreeMap<Integer, Float> getBars() {
@@ -203,19 +203,42 @@ public class BashHistogram implements Synopsis, Serializable {
      */
     public EquiDepthHistogram buildEquiDepthHistogram(){
 
+        if (bars.isEmpty()){
+            Log.error("no data yet! Bars is empty!");
+            return null;
+        }
+        if (bars.size() < numBuckets){
+            Log.warn("less bars than number of Buckets!");
+        }else if (bars.size() < maxNumBars){
+            Log.warn("less bars than maxNumBars!");
+        }
+        if (bars.size() == 1){ // in case there is only a single bar!
+            double[] bound = {(double)bars.firstKey()};
+            return new EquiDepthHistogram(bound, rightBoundary, totalFrequencies);
+        }
+
         double[] boundaries = new double[numBuckets];
         boundaries[0] = bars.firstKey();
         int b = bars.firstKey();
-        float count = bars.firstEntry().getValue();
+        double count = bars.firstEntry().getValue();
         double idealBuckSize = totalFrequencies / numBuckets;
 
         for (int i = 1; i < numBuckets; i++) { // starting from 1 as first boundary is already known
             while (count <= idealBuckSize){
-                b = bars.ceilingKey(b);
-                count += bars.get(b);
+                if (bars.higherKey(b) != null){
+                    b = bars.higherKey(b);
+                    count += bars.get(b);
+                }
             }
-            double surplus = count % idealBuckSize;
-            boundaries[i] = (b + (bars.higherKey(b)-b) * (1- surplus / bars.get(b)));
+            double surplus = count-idealBuckSize;
+            double rb;
+            if (bars.higherKey(b) != null){
+                rb = bars.higherKey(b);
+            }else {
+                rb = rightBoundary;
+            }
+            boundaries[i] = (b + (rb-b) * (1- (surplus / bars.get(b))));
+            count = surplus;
         }
 
         return new EquiDepthHistogram(boundaries, rightBoundary, totalFrequencies);
@@ -226,19 +249,32 @@ public class BashHistogram implements Synopsis, Serializable {
      */
     private void writeObject(java.io.ObjectOutputStream out) throws IOException{
         out.writeInt(p);
-        out.writeInt(numBars);
+        out.writeInt(maxNumBars);
         out.writeObject(bars);
         out.writeInt(rightBoundary);
         out.writeDouble(totalFrequencies);
     }
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException{
         p = in.readInt();
-        numBars = in.readInt();
-        numBuckets = numBars * p;
+        maxNumBars = in.readInt();
+        numBuckets = maxNumBars * p;
         bars = (TreeMap<Integer, Float>) in.readObject();
         rightBoundary = in.readInt();
         totalFrequencies = in.readDouble();
     }
+
+    @Override
+    public String toString() {
+        return "BashHistogram{" +
+                "p=" + p +
+                ", numBuckets=" + numBuckets +
+                ", maxNumBars=" + maxNumBars +
+                ", bars=" + bars +
+                ", rightBoundary=" + rightBoundary +
+                ", totalFrequencies=" + totalFrequencies +
+                '}';
+    }
+
     private void readObjectNoData() throws ObjectStreamException{
         Log.error("method not implemented");
     }
