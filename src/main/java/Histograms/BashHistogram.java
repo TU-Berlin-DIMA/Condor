@@ -36,7 +36,7 @@ public class BashHistogram implements Synopsis, Serializable {
      * @param precision     precision hyperparameter - must be larger than 1 and can generally be below 10 - defaults is 7
      * @param numberOfFinalBuckets  number of buckets the final equi-depth histogram should have
      */
-    public BashHistogram(int precision, int numberOfFinalBuckets) {
+    public BashHistogram(Integer precision, Integer numberOfFinalBuckets) {
         p = precision;
         numBuckets = numberOfFinalBuckets;
         maxNumBars = numBuckets * p;
@@ -44,7 +44,7 @@ public class BashHistogram implements Synopsis, Serializable {
         totalFrequencies = 0;
     }
 
-    public BashHistogram(int numBuckets) {
+    public BashHistogram(Integer numBuckets) {
         this(7, numBuckets);
     }
 
@@ -66,7 +66,7 @@ public class BashHistogram implements Synopsis, Serializable {
             int key;
             if (bars.floorKey(next) != null) {
                 key = bars.floorKey(next);
-                if (key == bars.lastKey()){
+                if (key == bars.lastKey() && next > rightBoundary){ // if key greater than current right boundary it becomes the new boundary
                     rightBoundary = next;
                 }
                 binFrequency = bars.get(key) + input.f1;
@@ -169,28 +169,59 @@ public class BashHistogram implements Synopsis, Serializable {
             TreeMap<Integer, Float> otherBars = o.getBars();
             TreeMap<Integer, Float> baseBars = base.getBars();
             for (int i = 0; i < otherBars.size(); i++) { // add every bar of the other histogram to the base histogram using appropriate weights
+                // Set base and other lower and upper bounds correctly
                 int otherLB = otherBars.firstKey();
                 float frequency = otherBars.remove(otherLB);
                 int otherUB;
-                if (otherBars.isEmpty()) {otherUB = o.rightBoundary;}
-                else {otherUB = otherBars.firstKey();}
-                int baseLB = baseBars.floorKey(otherLB);
+                if (otherBars.isEmpty()) {
+                    otherUB = o.rightBoundary;
+                } else {
+                    otherUB = otherBars.firstKey();
+                }
+                int baseLB;
                 int baseUB;
-                if(baseBars.ceilingKey(otherLB) != null) {baseUB = baseBars.ceilingKey(otherLB);}
-                else {baseUB = base.rightBoundary;}
+                if(baseBars.floorKey(otherLB) != null){ // case in which base bar left boundary is smaller than other left boundary
+                    baseLB = baseBars.floorKey(otherLB);
+                    if(baseBars.higherKey(baseLB) != null) {
+                        baseUB = baseBars.higherKey(baseLB);
+                    } else {
+                        baseUB = base.rightBoundary;
+                    }
+                }else { // case in which other bar left boundary is smaller than base left boundary
+                    baseLB = otherLB; // change the leftmost boundary of the base in case the other lower bound is smaller
+                    int first = baseBars.firstKey();
+                    if (baseBars.higherKey(baseBars.firstKey()) != null){
+                        baseUB = baseBars.higherKey(baseBars.firstKey());
+                    }else {
+                        baseUB = base.rightBoundary;
+                    }
+                }
+
+
+                // loop through all base bars which cover area of the current other bar
                 while (baseLB < otherUB){
                     int coveredBaseBar = Math.min(otherUB, baseUB) - Math.max(otherLB, baseLB);
                     int otherBarWidth = otherUB - otherLB;
                     float weightedFrequency = frequency * coveredBaseBar / otherBarWidth;
-                    base.update(new Tuple2<>(baseLB, weightedFrequency)); // add weighted fraction of other bar to base bar
+
+                    if (baseBars.lastKey() == baseLB){ // the rightmost base bar has to be updated with the upper bound of the other bar to facilitate changing boundaries
+                        base.update(new Tuple2<>(otherUB, weightedFrequency));
+                    } /*else if (baseLB == baseBars.firstKey()){ // the leftmost base bar has to be updated with the lower bound of the other bar to facilitate changing boundaries
+                        base.update(new Tuple2<>(otherLB, weightedFrequency));
+                    } */else {
+                        base.update(new Tuple2<>(baseLB, weightedFrequency)); // standard case of adding weighted fraction of other bar to base bar
+                    }
 
                     // change base boundaries to next bar
                     baseLB = baseUB;
-                    if(baseBars.ceilingKey(baseUB) != null) {baseUB = baseBars.ceilingKey(baseUB);}
-                    else {baseUB = base.rightBoundary;}
+                    if(baseBars.higherKey(baseUB) != null) {
+                        baseUB = baseBars.higherKey(baseUB);
+                    } else {
+                        baseUB = base.rightBoundary;
+                    }
                 }
             }
-
+            logger.info("merge complete");
             return base;
         }else {
             throw new IllegalArgumentException("Synopsis to be merged must be of the same type!");

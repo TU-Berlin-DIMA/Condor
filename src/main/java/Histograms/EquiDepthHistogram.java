@@ -6,6 +6,8 @@ import java.util.Arrays;
  * classic EquiDepthHistogram with range query capabilites.
  * Does not contain methods to build the histogram but rather takes boundaries and frequencies as input.
  * This way multiple classes with different build methods can all use this class.
+ *
+ * @author joschavonhein
  */
 public class EquiDepthHistogram {
     private double[] leftBoundaries;
@@ -29,7 +31,7 @@ public class EquiDepthHistogram {
     /**
      * Return frequency of a range query. lower bound is inclusive, upper bound is exclusive
      * @param lowerBound    inclusive
-     * @param upperBound    TODO: confirm inclusive or exclusive
+     * @param upperBound    upper bound of the range query
      * @return  estimated result frequency of the range query
      */
     public double rangeQuery(double lowerBound, double upperBound){
@@ -45,7 +47,7 @@ public class EquiDepthHistogram {
 
         // edge case that lower Bound is in last Bucket
         if (lowerBound >= leftBoundaries[numBuckets-1]){
-            double fraction = (Math.min(rightMostBoundary, upperBound)-leftBoundaries[numBuckets-1])/(rightMostBoundary-leftBoundaries[numBuckets-1]);
+            double fraction = (Math.min(rightMostBoundary, upperBound)-lowerBound)/(rightMostBoundary-leftBoundaries[numBuckets-1]);
             return fraction * totalFrequencies / numBuckets;
         }
 
