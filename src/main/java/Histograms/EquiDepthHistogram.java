@@ -45,23 +45,23 @@ public class EquiDepthHistogram {
 
         // edge case that lower Bound is in last Bucket
         if (lowerBound >= leftBoundaries[numBuckets-1]){
-            double fraction = Math.min(rightMostBoundary, upperBound)/(rightMostBoundary-leftBoundaries[numBuckets-1]);
-            return (int)Math.round(fraction*totalFrequencies/numBuckets);
+            double fraction = (Math.min(rightMostBoundary, upperBound)-leftBoundaries[numBuckets-1])/(rightMostBoundary-leftBoundaries[numBuckets-1]);
+            return fraction * totalFrequencies / numBuckets;
         }
 
         for (int i = 0; i < numBuckets; i++) {
             // edge case that range is contained in a single bucket
             if (lowerBound >= leftBoundaries[i] && i < numBuckets-1 && upperBound < leftBoundaries[i+1]){
                 double fraction = (upperBound-lowerBound) / (leftBoundaries[i+1]-leftBoundaries[i]);
-                return (int) Math.round(fraction * totalFrequencies / numBuckets);
+                return fraction * totalFrequencies / numBuckets;
             }
 
             // add leftmost bucket part to query result
-            if (!first || leftBoundaries[i] >= lowerBound){
+            if (!first && leftBoundaries[i] >= lowerBound){
                 first = true;
                 if (i > 0){
-                    double leftMostBucketFraction = (leftBoundaries[i] - lowerBound) / (double)(leftBoundaries[i] - leftBoundaries[i-1]);
-                    result += Math.round(leftMostBucketFraction * totalFrequencies/numBuckets);
+                    double leftMostBucketFraction = (leftBoundaries[i] - lowerBound) / (leftBoundaries[i] - leftBoundaries[i-1]);
+                    result += leftMostBucketFraction * totalFrequencies/numBuckets;
                 }
             }
 
@@ -69,13 +69,13 @@ public class EquiDepthHistogram {
             if (first && !last){
                 if (upperBound < leftBoundaries[i]){
                     last = true;
-                    double rightmostBucketFraction = (upperBound - leftBoundaries[i-1]) / (double) (leftBoundaries[i] - leftBoundaries[i-1]);
+                    double rightmostBucketFraction = (upperBound - leftBoundaries[i-1]) / (leftBoundaries[i] - leftBoundaries[i-1]);
                     result += rightmostBucketFraction * totalFrequencies/numBuckets; // add rightmost bucket part to query result
                 }
                 bucketsInRange++;
             }
         }
-        result += bucketsInRange*totalFrequencies/numBuckets;
+        result += bucketsInRange * totalFrequencies / numBuckets;
         return result;
     }
 

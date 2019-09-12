@@ -69,9 +69,9 @@ public class BashHistogramTest {
         int total = 1+2+3+4+5+6+5+4+3+2;
 
         result = bash.buildEquiDepthHistogram();
-        double range0 = result.rangeQuery(0,10);
+        double range0 = result.rangeQuery(0,2);
 
-        System.out.println("0-10: " + range0 + "  should be: " + total);
+        System.out.println("0-10: " + range0);
         System.out.println(result);
     }
 }
