@@ -138,11 +138,10 @@ public class CountMinSketch<T> implements Synopsis<T>, Serializable {
                 }
                 elementsProcessed += otherCM.getElementsProcessed();
                 Elements.addAll(otherCM.getElements());
+                return this;
             }
-        } else {
-            throw new Exception("Sketches to merge have to be the same size and hash Functions");
         }
-        return this;
+        throw new Exception("Sketches to merge have to be the same size and hash Functions");
     }
 
     @Override
