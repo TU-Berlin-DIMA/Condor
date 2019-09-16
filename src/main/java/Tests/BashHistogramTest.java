@@ -29,7 +29,7 @@ public class BashHistogramTest {
 
         int keyField = 0;
 
-        Integer numFinalBuckets = 5;
+        Integer numFinalBuckets = 27;
         Integer precision = 5;
 
         Object[] parameters = new Object[]{precision, numFinalBuckets};
@@ -53,7 +53,7 @@ public class BashHistogramTest {
         DataStream<Double> queryResult = equiDepthHistograms.map(new MapFunction<EquiDepthHistogram, Double>() {
             @Override
             public Double map(EquiDepthHistogram hist) throws Exception {
-                return hist.rangeQuery(18d, 30d);
+                return hist.rangeQuery(2d, 16d);
             }
         });
 

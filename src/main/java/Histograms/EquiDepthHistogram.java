@@ -84,10 +84,10 @@ public class EquiDepthHistogram {
     @Override
     public String toString() {
         return "EquiDepthHistogram{" +
-                "leftBoundaries=" + Arrays.toString(leftBoundaries) + "\n" +
-                ", rightMostBoundary=" + rightMostBoundary +
+                "leftBoundaries: \n" + Arrays.toString(leftBoundaries)  +
+                ", rightMostBoundary=" + rightMostBoundary + "\n" +
                 ", totalFrequencies=" + totalFrequencies +
                 ", numBuckets=" + numBuckets +
-                '}';
+                "}\n";
     }
 }
