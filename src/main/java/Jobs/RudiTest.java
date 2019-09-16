@@ -1,6 +1,7 @@
 package Jobs;
 
 import Sampling.FiFoSampler;
+import Sketches.BloomFilter;
 import Synopsis.BuildSynopsis;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.java.tuple.Tuple3;
@@ -13,11 +14,13 @@ import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
+import org.apache.flink.util.XORShiftRandom;
 
 import javax.annotation.Nullable;
 
 public class RudiTest {
     public static void main(String[] args) throws Exception {
+
 
         // set up the streaming execution environment
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -27,13 +30,13 @@ public class RudiTest {
         // int parallelism = env.getParallelism();
         int sampleSize = 20;
         Time windowTime = Time.minutes(1);
-        Class<FiFoSampler> sketchClass = FiFoSampler.class;
+        Class<BloomFilter> sketchClass = BloomFilter.class;
 
         DataStream<String> line = env.readTextFile("data/timestamped.csv");
         DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
                 .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
-        SingleOutputStreamOperator<FiFoSampler> finalSketch = BuildSynopsis.timeBased(timestamped, windowTime, 0, sketchClass, sampleSize);
+        SingleOutputStreamOperator<BloomFilter> finalSketch = BuildSynopsis.timeBased(timestamped, windowTime, 0, sketchClass, 27,100,1);
         //SingleOutputStreamOperator<ReservoirSampler> finalSketch = BuildSynopsis.sampleTimeBased(timestamped, windowTime, sketchClass, parameters, -1);
 
         finalSketch.writeAsText("output/rudiTest.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
