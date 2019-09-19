@@ -15,11 +15,11 @@ import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
-
+import org.junit.jupiter.api.Test;
 import javax.annotation.Nullable;
 
 public class EquiWidthHistogramTest {
-    public static void main(String[] args) throws Exception {
+  @Test public static void main(String[] args) throws Exception {
 
         // set up the streaming execution environment
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();

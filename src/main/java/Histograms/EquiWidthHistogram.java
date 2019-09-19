@@ -99,7 +99,7 @@ public class EquiWidthHistogram<T extends Number> implements Synopsis<T> {
         int indexUB = (int) Math.floor((upperBound - this.lowerBound) / bucketLength); // the index of the rightmost bucket of the query range
         double leftMostBucketShare = 0, rightMostBucketShare = 0;
         if (indexLB >= 0 && indexLB <numBuckets){
-            double bucketUB = this.lowerBound + (indexLB+1) * bucketLength;
+            double bucketUB = this.lowerBound + (indexLB+1) * bucketLength; //what is the upper bound for the leftmost bucket
             leftMostBucketShare = ((bucketUB - lowerBound) / bucketLength) * frequency[indexLB]; //compute the frequency of the part of the leftmost bucket
             indexLB++;
         }else {
