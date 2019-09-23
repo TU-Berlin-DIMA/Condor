@@ -1,5 +1,6 @@
 package Histograms;
 
+import Sampling.ReservoirSampler;
 import Synopsis.Synopsis;
 import com.esotericsoftware.minlog.Log;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -26,17 +27,25 @@ public class BashHistogram implements Synopsis, Serializable {
     private int maxNumBars; // maximum number of Bars in the sketch
     private TreeMap<Integer, Float> bars; //
     private int rightBoundary; // rightmost boundary - inclusive
-    private final double MAXCOEF = 1.7;
     private double totalFrequencies; //
+    private ReservoirSampler sample;
+    private double countError;
+    private Integer sampleSize;
+    private double c;
+    private final double GAMMA = 0.5; // hyperparameter which tunes the MAXCOEFF
+    private int threshold;
 
     private static final Logger logger = LoggerFactory.getLogger(BashHistogram.class);
 
     /**
-     *
+     * Master constructor used by the other constructors
      * @param precision     precision hyperparameter - must be larger than 1 and can generally be below 10 - defaults is 7
      * @param numberOfFinalBuckets  number of buckets the final equi-depth histogram should have
+     * @param countError    maximum error: standard deviation of the bucket counts from the actual number of elements
+     *                     in each buckets, normalized with respect to the mean bucket count.
+     * @param sampleSize    maximum size of the backing sample used to recompute the histogram and the median of buckets to be split
      */
-    public BashHistogram(Integer precision, Integer numberOfFinalBuckets) {
+    private void init(int precision, int numberOfFinalBuckets, double countError, int sampleSize) {
         p = precision;
         numBuckets = numberOfFinalBuckets;
         maxNumBars = numBuckets * p;
@@ -44,9 +53,30 @@ public class BashHistogram implements Synopsis, Serializable {
         totalFrequencies = 0;
     }
 
-    public BashHistogram(Integer numBuckets) {
-        this(7, numBuckets);
+    public double getErrorMinProbability() {
+        return 1 - 1 / Math.pow(numBuckets, Math.sqrt(c)-1) - 1 / Math.pow(totalFrequencies / (2+GAMMA), 1/3);
     }
+
+    public BashHistogram(Integer precision, Integer numBuckets, Double countError) {
+        c = 1 / (Math.pow(countError, 6) * Math.log(numBuckets));
+        sampleSize = (int) (numBuckets * c * Math.pow(Math.log(numBuckets), 2));
+        init(precision, numBuckets, countError, sampleSize);
+    }
+
+    public BashHistogram(Integer precision, Integer numBuckets, Integer sampleSize){
+        c = sampleSize / (numBuckets * Math.pow(Math.log(numBuckets),2));
+        countError = 1 / Math.pow((c * Math.log(numBuckets)), 1/6);
+        init(precision, numBuckets, countError, sampleSize);
+    }
+
+    public BashHistogram(Integer numBuckets, Integer sampleSize){
+        this(7, numBuckets, sampleSize);
+    }
+
+    public BashHistogram(Integer numBuckets, Double countError){
+        this(7, numBuckets, countError);
+    }
+
 
     /**
      * private update method called by the public update (tuple) and merge function.
@@ -83,12 +113,7 @@ public class BashHistogram implements Synopsis, Serializable {
                  * Split Bin
                  */
                 binFrequency /= 2;
-                int nextRightBound;
-                if (key == bars.lastKey()){
-                    nextRightBound = rightBoundary;
-                }else{
-                    nextRightBound = bars.higherKey(key);
-                }
+                int nextRightBound = key == bars.lastKey() ? rightBoundary : bars.higherKey(key);
                 int nextLeftBound = (nextRightBound+key) / 2;
                 if (nextLeftBound != key){ // edge case in which boundaries are too close to each other -> don't split
                     bars.replace(key, binFrequency);
@@ -172,32 +197,16 @@ public class BashHistogram implements Synopsis, Serializable {
                 // Set base and other lower and upper bounds correctly
                 int otherLB = otherBars.firstKey();
                 float frequency = otherBars.remove(otherLB);
-                int otherUB;
-                if (otherBars.isEmpty()) {
-                    otherUB = o.rightBoundary;
-                } else {
-                    otherUB = otherBars.firstKey();
-                }
+                int otherUB = otherBars.isEmpty() ? o.rightBoundary : otherBars.firstKey();
                 int baseLB;
                 int baseUB;
                 if(baseBars.floorKey(otherLB) != null){ // case in which base bar left boundary is smaller than other left boundary
                     baseLB = baseBars.floorKey(otherLB);
-                    if(baseBars.higherKey(baseLB) != null) {
-                        baseUB = baseBars.higherKey(baseLB);
-                    } else {
-                        baseUB = base.rightBoundary;
-                    }
+                    baseUB = baseBars.higherKey(baseLB) == null ? base.rightBoundary : baseBars.higherKey(baseLB);
                 }else { // case in which other bar left boundary is smaller than base left boundary
                     baseLB = otherLB; // change the leftmost boundary of the base in case the other lower bound is smaller
-                    int first = baseBars.firstKey();
-                    if (baseBars.higherKey(baseBars.firstKey()) != null){
-                        baseUB = baseBars.higherKey(baseBars.firstKey());
-                    }else {
-                        baseUB = base.rightBoundary;
-                    }
+                    baseUB = baseBars.higherKey(baseBars.firstKey()) == null ? base.rightBoundary : baseBars.higherKey(baseBars.firstKey());
                 }
-
-
                 // loop through all base bars which cover area of the current other bar
                 while (baseLB < otherUB){
                     int coveredBaseBar = Math.min(otherUB, baseUB) - Math.max(otherLB, baseLB);
@@ -206,19 +215,13 @@ public class BashHistogram implements Synopsis, Serializable {
 
                     if (baseBars.lastKey() == baseLB){ // the rightmost base bar has to be updated with the upper bound of the other bar to facilitate changing boundaries
                         base.update(new Tuple2<>(otherUB, weightedFrequency));
-                    } /*else if (baseLB == baseBars.firstKey()){ // the leftmost base bar has to be updated with the lower bound of the other bar to facilitate changing boundaries
-                        base.update(new Tuple2<>(otherLB, weightedFrequency));
-                    } */else {
+                    }else {
                         base.update(new Tuple2<>(baseLB, weightedFrequency)); // standard case of adding weighted fraction of other bar to base bar
                     }
 
                     // change base boundaries to next bar
                     baseLB = baseUB;
-                    if(baseBars.higherKey(baseUB) != null) {
-                        baseUB = baseBars.higherKey(baseUB);
-                    } else {
-                        baseUB = base.rightBoundary;
-                    }
+                    baseUB = baseBars.higherKey(baseUB) != null ? baseBars.higherKey(baseUB) : base.rightBoundary;
                 }
             }
             logger.info("merge complete");

@@ -2,8 +2,6 @@ package Tests;
 
 import Histograms.BashHistogram;
 import Histograms.EquiDepthHistogram;
-import Histograms.EquiWidthHistogram;
-import Histograms.EquiWidthHistogram4LT;
 import Synopsis.BuildSynopsis;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.MapFunction;
