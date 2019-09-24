@@ -1,137 +1,107 @@
 package Tests;
 
 import Histograms.EquiWidthHistogram;
-import Histograms.EquiWidthHistogram4LT;
-import Synopsis.BuildSynopsis;
-import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.core.fs.FileSystem;
-import org.apache.flink.streaming.api.TimeCharacteristic;
-import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
-import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks;
-import org.apache.flink.streaming.api.watermark.Watermark;
-import org.apache.flink.streaming.api.windowing.time.Time;
-import org.apache.flink.util.Collector;
-import org.junit.jupiter.api.Test;
-import javax.annotation.Nullable;
+import Sketches.CountMinSketch;
+import org.junit.Test;
+import org.junit.Assert;
+import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.io.File;
+import java.lang.Double;
+import java.io.FileNotFoundException;
 
 public class EquiWidthHistogramTest {
-  @Test public static void main(String[] args) throws Exception {
+    @Test(expected = IllegalArgumentException.class)
+    public void illegalboundTest(){
+        Double lowerBound=12.2;
+        Double upperBound=5.0;
+        EquiWidthHistogram eqwHistogram = new EquiWidthHistogram(lowerBound,upperBound,10);}
+    @Test(expected = IllegalArgumentException.class)
+    public void illegalbucketnumTest(){
+        Double lowerBound=12.2;
+        Double upperBound=20.0;
+        Integer bucket= -20;
+        EquiWidthHistogram eqwHistogram = new EquiWidthHistogram(lowerBound,upperBound,bucket);}
+    @Test
+    public void bucketlengthTest(){
+        Double lowerBound=12.6;
+        Double upperBound=20.0;
+        Integer bucket= 4;
+        EquiWidthHistogram eqwHistogram = new EquiWidthHistogram(lowerBound,upperBound,bucket);
+        //System.out.println(eqwHistogram.getBucketLength());
+        Assert.assertTrue(eqwHistogram.getBucketLength() == 1.85);
+    }
+    @Test
+    public void updateTest(){
+        String fileName= "data/testdata.csv";
+        File file= new File(fileName);
+        Double lowerBound=0.0;
+        Double upperBound=200.0;
+        Integer numBucket= 10;
+        int[] knownFrequency = new int[] {6,12,14,11,12,8,10,8,10,9};
+        EquiWidthHistogram eqwHistogram = new EquiWidthHistogram(lowerBound,upperBound,numBucket);
+        int [] computedFrequency=updateFrequencyFromFile( "data/testdata.csv",eqwHistogram);
+        //for (Integer freq:eqwHistogram.getFrequency()){System.out.println(freq);}
+        Assert.assertTrue(Arrays.equals(knownFrequency, computedFrequency));}
 
-        // set up the streaming execution environment
-        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+    @Test(expected = IllegalArgumentException.class)
+    public void mergboundryTest(){
+        EquiWidthHistogram eqwHistogram = new EquiWidthHistogram(12.0,50.0,5);
+        EquiWidthHistogram other = new EquiWidthHistogram(12.5,50.0,5);
+        eqwHistogram.merge(other);
+    }
+    @Test(expected = IllegalArgumentException.class)
+    public void mergothertypeTest(){
+        EquiWidthHistogram eqwHistogram = new EquiWidthHistogram(12.0,50.0,5);
+        CountMinSketch other = new CountMinSketch(10,34,128L);
+        eqwHistogram.merge(other);}
+    @Test
+    public void mergTest(){
+        Double lowerBound=0.0;
+        Double upperBound=200.0;
+        Integer numBucket= 10;
+        int[] knownFrequency;
+        EquiWidthHistogram eqwHistogram = new EquiWidthHistogram(lowerBound,upperBound,numBucket);
+        int[] computedFrequency=updateFrequencyFromFile( "data/testdata.csv",eqwHistogram);
+        EquiWidthHistogram other = new EquiWidthHistogram(lowerBound,upperBound,numBucket);
+        int[] otherComputedFrequency =updateFrequencyFromFile( "data/testdata2.csv",other);
+        knownFrequency = new int[computedFrequency.length];
+        Arrays.setAll(knownFrequency, i->computedFrequency[i]+otherComputedFrequency[i] );
+        eqwHistogram.merge(other);
+        Assert.assertTrue(Arrays.equals(knownFrequency,eqwHistogram.getFrequency()));
 
-        int keyField = 0;
-
-        Double lowerBound = 0d; // lower Bound inclusive
-        Double upperBound = 27d; // upper Bound exclusive
-        Integer numBuckets = 27;
-
-        Object[] parameters = new Object[]{lowerBound, upperBound, numBuckets};
-        Class<EquiWidthHistogram> sketchClass = EquiWidthHistogram.class;
-
-        Time windowTime = Time.minutes(1);
-
-        DataStream<String> line = env.readTextFile("data/timestamped.csv");
-        DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
-                .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
-
-
-        SingleOutputStreamOperator<EquiWidthHistogram> finalSketch = BuildSynopsis.timeBased(timestamped, windowTime,keyField, sketchClass, parameters);
-
-        finalSketch.writeAsText("output/EquiWidthHistogram.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
-
-
-        DataStream<Double> queryResult = finalSketch.map(new MapFunction<EquiWidthHistogram, Double>() {
-            @Override
-            public Double map(EquiWidthHistogram value) throws Exception {
-                return value.rangeQuery(18, 30d);
-            }
-        });
-
-        queryResult.writeAsText("output/EquiWidhtHistogramQueryOutput.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
-
-        DataStream<EquiWidthHistogram4LT> clean = finalSketch.map(new MapFunction<EquiWidthHistogram, EquiWidthHistogram4LT>() {
-            @Override
-            public EquiWidthHistogram4LT map(EquiWidthHistogram value) throws Exception {
-                return new EquiWidthHistogram4LT(value);
-            }
-        });
-
-        clean.writeAsText("output/EquiWidthHistogram4LT.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
-
-        env.execute("Flink Streaming Java API Skeleton");
     }
 
+    public int[] updateFrequencyFromFile(String Name,EquiWidthHistogram eqwHistogram){
+        String fileName= Name;
+        File file= new File(fileName);
+        EquiWidthHistogram histogram = eqwHistogram;
 
-    /**
-     * FlatMap to create Tuples from the incoming data
-     */
-    public static class CreateTuplesFlatMap implements FlatMapFunction<String, Tuple3<Integer, Integer, Long>>{
-        @Override
-        public void flatMap(String value, Collector<Tuple3<Integer, Integer, Long>> out) throws Exception {
-            String[] tuples = value.split(",");
+        // this gives you a 2-dimensional array of strings
+        ArrayList<Double> lines = new ArrayList<>();
+        Scanner inputStream;
 
-            if(tuples.length == 3) {
+        try{
+            inputStream = new Scanner(file);
 
-                Integer key = new Integer(tuples[0]);
-                Integer val = new Integer(tuples[1]);
-                Long timestamp = new Long(tuples[2]);
-
-                if (key != null && val != null) {
-                    out.collect(new Tuple3<>(key, val, timestamp));
-                }
+            while(inputStream.hasNext()){
+                String line= inputStream.next();
+                double values = Double.parseDouble(line);//line.split(",")[0]
+                // this adds the currently parsed line to the 2-dimensional string array
+                lines.add(values);
             }
-        }
-    }
 
-    /**
-     * The Custom TimeStampExtractor which is used to assign Timestamps and Watermarks for our data
-     */
-    public static class CustomTimeStampExtractor implements AssignerWithPunctuatedWatermarks<Tuple3<Integer, Integer, Long>>{
-        /**
-         * Asks this implementation if it wants to emit a watermark. This method is called right after
-         * the {@link #extractTimestamp(Tuple3, long)}   method.
-         *
-         * <p>The returned watermark will be emitted only if it is non-null and its timestamp
-         * is larger than that of the previously emitted watermark (to preserve the contract of
-         * ascending watermarks). If a null value is returned, or the timestamp of the returned
-         * watermark is smaller than that of the last emitted one, then no new watermark will
-         * be generated.
-         *
-         * <p>For an example how to use this method, see the documentation of
-         * {@link AssignerWithPunctuatedWatermarks this class}.
-         *
-         * @param lastElement
-         * @param extractedTimestamp
-         * @return {@code Null}, if no watermark should be emitted, or the next watermark to emit.
-         */
-        @Nullable
-        @Override
-        public Watermark checkAndGetNextWatermark(Tuple3<Integer, Integer, Long> lastElement, long extractedTimestamp) {
-            return new Watermark(extractedTimestamp);
+            inputStream.close();
+        }catch (FileNotFoundException e) {
+            e.printStackTrace();
         }
 
-        /**
-         * Assigns a timestamp to an element, in milliseconds since the Epoch.
-         *
-         * <p>The method is passed the previously assigned timestamp of the element.
-         * That previous timestamp may have been assigned from a previous assigner,
-         * by ingestion time. If the element did not carry a timestamp before, this value is
-         * {@code Long.MIN_VALUE}.
-         *
-         * @param element                  The element that the timestamp will be assigned to.
-         * @param previousElementTimestamp The previous internal timestamp of the element,
-         *                                 or a negative value, if no timestamp has been assigned yet.
-         * @return The new timestamp.
-         */
-        @Override
-        public long extractTimestamp(Tuple3<Integer, Integer, Long> element, long previousElementTimestamp) {
-            return element.f2;
+        for (Double element: lines) {
+            histogram.update(element);
         }
+        //for (Integer freq:eqwHistogram.getFrequency()){System.out.println(freq);}
+        return histogram.getFrequency();
     }
+
 }
