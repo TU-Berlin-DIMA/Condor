@@ -25,14 +25,15 @@ public class EquiWidthHistogram<T extends Number> implements Synopsis<T> {
      * @param numBuckets number of Buckets
      * @throws IllegalArgumentException
      */
+
     public EquiWidthHistogram(Double lowerBound, Double upperBound, Integer numBuckets) throws IllegalArgumentException {
+        if (lowerBound == null || upperBound == null || upperBound - lowerBound <= 0 || numBuckets <= 0 ){
+            throw new IllegalArgumentException("lower bound has to be smaller than upper bound!");
+        }
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
         this.numBuckets = numBuckets;
         this.frequency = new int[numBuckets];
-        if (lowerBound == null || upperBound == null || upperBound - lowerBound <= 0){
-            throw new IllegalArgumentException("lower bound has to be smaller than upper bound!");
-        }
         this.bucketLength = (upperBound - lowerBound) / (double) numBuckets;
     }
 
@@ -58,6 +59,10 @@ public class EquiWidthHistogram<T extends Number> implements Synopsis<T> {
 
     public int getNumBuckets() {
         return numBuckets;
+    }
+
+    public double getbucketLength() {
+        return this.bucketLength;
     }
 
     public int[] getFrequency() {
