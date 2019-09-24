@@ -23,7 +23,7 @@ public class EquiDepthHistogramTest {
         int total = 9*2+10;
 
         EquiDepthHistBuilder builder = new EquiDepthHistBuilder();
-        EquiDepthHistogram histogram = builder.equiDepthSampleCompute(map, 5, total);
+        EquiDepthHistogram histogram = builder.buildEquiDepthHistogram(map, 5, total);
         System.out.println(histogram);
 
         double range0 = histogram.rangeQuery(0,10);

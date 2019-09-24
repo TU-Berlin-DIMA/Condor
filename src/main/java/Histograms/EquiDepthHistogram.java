@@ -90,4 +90,20 @@ public class EquiDepthHistogram {
                 ", numBuckets=" + numBuckets +
                 "}\n";
     }
+
+    public double[] getLeftBoundaries() {
+        return leftBoundaries;
+    }
+
+    public double getRightMostBoundary() {
+        return rightMostBoundary;
+    }
+
+    public double getTotalFrequencies() {
+        return totalFrequencies;
+    }
+
+    public int getNumBuckets() {
+        return numBuckets;
+    }
 }

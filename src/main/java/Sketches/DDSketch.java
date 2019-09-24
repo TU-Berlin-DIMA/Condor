@@ -61,7 +61,7 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
     }
 
     /**
-     * Update the Synopsis structure with a new incoming element.
+     * Update the Synopsis structure with a new incoming element.f
      *
      * @param element new incoming element
      */

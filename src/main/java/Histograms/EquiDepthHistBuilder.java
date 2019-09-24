@@ -16,7 +16,7 @@ public class EquiDepthHistBuilder {
 
     public EquiDepthHistBuilder() { }
 
-    public EquiDepthHistogram equiDepthSampleCompute(TreeMap<Integer, Integer> sortedInput, int numBuckets, int total){
+    public EquiDepthHistogram buildEquiDepthHistogram(TreeMap<Integer, Integer> sortedInput, int numBuckets, int total){
         this.numBuckets = numBuckets;
         if(sortedInput.size() < numBuckets){
             this.numBuckets = sortedInput.size();   // number of buckets cannot exceed actual number of input items
@@ -46,4 +46,5 @@ public class EquiDepthHistBuilder {
         }
         return new EquiDepthHistogram(leftBoundaries, rightmostBoundary, totalFrequencies);
     }
+
 }

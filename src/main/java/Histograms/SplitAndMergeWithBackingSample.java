@@ -13,80 +13,69 @@ import java.io.Serializable;
 import java.util.TreeMap;
 
 /**
- * Class which sketch which can be merged with itself and updated in a streaming fashion.
- * Designed for streaming window applications in Flink.
- * Supports method to create an approximate Equi-Depth Histogram from the Sketch data.
- * Based on ideas in the paper: "Fast and Accurate Computation of Equi-Depth Histograms over Data Streams" - ACM International Conference Proceeding Series 2011
+ * Class which maintains an error-bound equi-depth histogram in a streaming environment using a backing sample.
+ * The backing sample is used to periodically recompute the histogram boundaries and extract statistical properties of the data.
+ * The incremental update process is done using a split and merge algorithm as proposed in the below mentioned paper.
+ * The backing sample is used to compute the median of buckets which have to be split.
+ *
+ * Based on the paper: "Fast Incremental Maintenance of Approximate Histograms" - ACM Transactions on Database Systems, Vol. V, 2002
  *
  * @author joschavonhein
  */
-public class BashHistogram implements Synopsis, Serializable {
+public class SplitAndMergeWithBackingSample implements Synopsis, Serializable {
 
-    private int p; // precision hyper parameter
-    private int numBuckets; // number of final Buckets
+
     private int maxNumBars; // maximum number of Bars in the sketch
     private TreeMap<Integer, Float> bars; //
     private int rightBoundary; // rightmost boundary - inclusive
     private double totalFrequencies; //
     private ReservoirSampler sample;
     private double countError;
-    private Integer sampleSize;
+    private int sampleSize;
     private double c;
-    private final double GAMMA = 0.5; // hyperparameter which tunes the MAXCOEFF
+    private final double GAMMA = 0.5; // hyper parameter which tunes the threshold - has to be greater than -1 and should realistically be smaller than 2
     private int threshold;
+    private static EquiDepthHistBuilder builder = new EquiDepthHistBuilder();
 
-    private static final Logger logger = LoggerFactory.getLogger(BashHistogram.class);
+    private static final Logger logger = LoggerFactory.getLogger(SplitAndMergeWithBackingSample.class);
 
     /**
-     * Master constructor used by the other constructors
-     * @param precision     precision hyperparameter - must be larger than 1 and can generally be below 10 - defaults is 7
-     * @param numberOfFinalBuckets  number of buckets the final equi-depth histogram should have
+     * initialisation method used by all constructors
      * @param countError    maximum error: standard deviation of the bucket counts from the actual number of elements
      *                     in each buckets, normalized with respect to the mean bucket count.
      * @param sampleSize    maximum size of the backing sample used to recompute the histogram and the median of buckets to be split
      */
-    private void init(int precision, int numberOfFinalBuckets, double countError, int sampleSize) {
-        p = precision;
-        numBuckets = numberOfFinalBuckets;
-        maxNumBars = numBuckets * p;
+    private void init(int numberOfFinalBuckets, double countError, int sampleSize) {
+        maxNumBars = numberOfFinalBuckets;
         bars = new TreeMap<>();
         totalFrequencies = 0;
     }
 
     public double getErrorMinProbability() {
-        return 1 - 1 / Math.pow(numBuckets, Math.sqrt(c)-1) - 1 / Math.pow(totalFrequencies / (2+GAMMA), 1/3);
+        return 1 - 1 / Math.pow(bars.size(), Math.sqrt(c)-1) - 1 / Math.pow(totalFrequencies / (2+GAMMA), 1/3);
     }
 
-    public BashHistogram(Integer precision, Integer numBuckets, Double countError) {
+    public SplitAndMergeWithBackingSample(Integer numBuckets, Double countError) {
         c = 1 / (Math.pow(countError, 6) * Math.log(numBuckets));
         sampleSize = (int) (numBuckets * c * Math.pow(Math.log(numBuckets), 2));
-        init(precision, numBuckets, countError, sampleSize);
+        init( numBuckets, countError, sampleSize);
     }
 
-    public BashHistogram(Integer precision, Integer numBuckets, Integer sampleSize){
+    public SplitAndMergeWithBackingSample(Integer numBuckets, Integer sampleSize){
         c = sampleSize / (numBuckets * Math.pow(Math.log(numBuckets),2));
         countError = 1 / Math.pow((c * Math.log(numBuckets)), 1/6);
-        init(precision, numBuckets, countError, sampleSize);
-    }
-
-    public BashHistogram(Integer numBuckets, Integer sampleSize){
-        this(7, numBuckets, sampleSize);
-    }
-
-    public BashHistogram(Integer numBuckets, Double countError){
-        this(7, numBuckets, countError);
+        init(numBuckets, countError, sampleSize);
     }
 
 
     /**
      * private update method called by the public update (tuple) and merge function.
-     * Adds frequencies for a certain value to the BASH Histogram.
+     * Adds frequencies for a certain value to the Histogram.
      *
      * @param input f0: value, f1: corresponding frequency
      */
     public void update(Tuple2<Integer, Float> input){
         totalFrequencies += input.f1;
-        double maxSize = MAXCOEF * totalFrequencies / maxNumBars; // maximum value a bar can have before it should split
         float binFrequency;
         int next = input.f0;
         if (bars.isEmpty()){
@@ -108,19 +97,9 @@ public class BashHistogram implements Synopsis, Serializable {
                 key = next;
                 bars.put(key, binFrequency); // create new bin with new left boundary
             }
-            while (binFrequency > maxSize){ // split bins while
+            if (bars.size() == maxNumBars){
                 /**
-                 * Split Bin
-                 */
-                binFrequency /= 2;
-                int nextRightBound = key == bars.lastKey() ? rightBoundary : bars.higherKey(key);
-                int nextLeftBound = (nextRightBound+key) / 2;
-                if (nextLeftBound != key){ // edge case in which boundaries are too close to each other -> don't split
-                    bars.replace(key, binFrequency);
-                    bars.put(nextLeftBound, binFrequency);
-                }
-                /**
-                 * Merge the two smallest adjacent bars
+                 * Merge the two smallest adjacent buckets - when their sum exceeds the Threshold recompute from Sample
                  */
                 if (bars.size() > maxNumBars){
                     // Find Bars to Merge
@@ -132,11 +111,65 @@ public class BashHistogram implements Synopsis, Serializable {
                             currentMin = bars.get(i) + bars.get(i+1);
                         }
                     }
-                    bars.remove(index+1);
-                    bars.replace(index, currentMin);
+                    if (currentMin < threshold){
+                        bars.remove(index+1);
+                        bars.replace(index, currentMin);
+                    }else {
+                        // TODO: call recompute from Sample
+                    }
                 }
             }
+            while (binFrequency >= threshold){ // split bins while frequency is greater than the threshold
+                /**
+                 * Split Bin
+                 */
+                binFrequency /= 2;
+                int nextRightBound = key == bars.lastKey() ? rightBoundary : bars.higherKey(key);
+                int nextLeftBound = (nextRightBound+key) / 2;
+                if (nextLeftBound != key){ // edge case in which boundaries are too close to each other -> don't split
+                    bars.replace(key, binFrequency);
+                    bars.put(nextLeftBound, binFrequency);
+                }
+
+            }
         }
+    }
+
+    private void equiDepthSampleCompute(){
+        TreeMap<Integer, Integer> map = new TreeMap();
+        Integer[] s = (Integer[]) sample.getSample();
+        int sampleSize = 0;
+        for (int f: s) {
+            map.merge(f, 1, (a,b) -> a + b);
+            sampleSize += f;
+        }
+        if(map.size() < maxNumBars){
+            this.numBuckets = sortedInput.size();   // number of buckets cannot exceed actual number of input items
+        }
+        this.leftBoundaries = new double[this.numBuckets];
+        this.totalFrequencies = total;
+        double bucketSize = (double) total / this.numBuckets;
+        int currentLeftBoundary = sortedInput.firstKey();
+        leftBoundaries[0] = currentLeftBoundary;
+        this.rightmostBoundary = sortedInput.lastKey();
+        double tempBucketSize = 0;
+        int index = 1;
+        int previousVal;
+
+        while(!sortedInput.isEmpty()) {
+            previousVal = sortedInput.firstKey();
+            tempBucketSize += sortedInput.pollFirstEntry().getValue();
+            currentLeftBoundary = (sortedInput.isEmpty()) ? rightmostBoundary : sortedInput.firstKey();
+            double fraction;
+
+            while (tempBucketSize >= bucketSize && index < numBuckets){
+                tempBucketSize -= bucketSize;
+                fraction = Math.min(tempBucketSize / bucketSize, 1);
+                leftBoundaries[index] = previousVal + (1-fraction) * (currentLeftBoundary-previousVal);
+                index++;
+            }
+        }
+        return new EquiDepthHistogram(leftBoundaries, rightmostBoundary, totalFrequencies);
     }
 
     @Override
@@ -144,24 +177,16 @@ public class BashHistogram implements Synopsis, Serializable {
         if (element instanceof Integer){
             update(new Tuple2<Integer, Float>((int)element, 1f)); //standard case in which just a single element is added to the sketch
         }else {
-            if(element instanceof BashHistogram){
+            if(element instanceof SplitAndMergeWithBackingSample){
                 try {
-                    this.merge((BashHistogram)element);
+                    this.merge((SplitAndMergeWithBackingSample)element);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }else {
-                logger.warn("update element has to be an integer or BashHistogram! - is: " + element.getClass());
+                logger.warn("update element has to be an integer or SplitAndMergeWithBackingSample! - is: " + element.getClass());
             }
         }
-    }
-
-    public int getP() {
-        return p;
-    }
-
-    public int getNumBuckets() {
-        return numBuckets;
     }
 
     public int getMaxNumBars() {
@@ -181,10 +206,10 @@ public class BashHistogram implements Synopsis, Serializable {
     }
 
     @Override
-    public BashHistogram merge(Synopsis other) throws Exception {
-        if (other instanceof BashHistogram){
-            BashHistogram o = (BashHistogram) other;
-            BashHistogram base;
+    public SplitAndMergeWithBackingSample merge(Synopsis other) throws Exception {
+        if (other instanceof SplitAndMergeWithBackingSample){
+            SplitAndMergeWithBackingSample o = (SplitAndMergeWithBackingSample) other;
+            SplitAndMergeWithBackingSample base;
             if (this.totalFrequencies > o.getTotalFrequencies()) {
                 base = this;
             } else {
@@ -231,67 +256,19 @@ public class BashHistogram implements Synopsis, Serializable {
         }
     }
 
-    /**
-     * Function which creates the final equi-depth bucket boundaries and returns a standard equi-depths histogram
-     * @return EquiDepthHistogram
-     */
-    public EquiDepthHistogram buildEquiDepthHistogram(){
 
-        if (bars.isEmpty()){
-            Log.error("no data yet! Bars is empty!");
-            return null;
-        }
-        if (bars.size() < numBuckets){
-            Log.warn("less bars than number of Buckets!");
-        }else if (bars.size() < maxNumBars){
-            Log.warn("less bars than maxNumBars!");
-        }
-        if (bars.size() == 1){ // in case there is only a single bar!
-            double[] bound = {(double)bars.firstKey()};
-            return new EquiDepthHistogram(bound, rightBoundary, totalFrequencies);
-        }
-
-        double[] boundaries = new double[numBuckets];
-        boundaries[0] = bars.firstKey();
-        int b = bars.firstKey();
-        double count = bars.firstEntry().getValue();
-        double idealBuckSize = totalFrequencies / numBuckets;
-
-        for (int i = 1; i < numBuckets; i++) { // starting from 1 as first boundary is already known
-            while (count <= idealBuckSize){
-                if (bars.higherKey(b) != null){
-                    b = bars.higherKey(b);
-                    count += bars.get(b);
-                }
-            }
-            double surplus = count-idealBuckSize;
-            double rb;
-            if (bars.higherKey(b) != null){
-                rb = bars.higherKey(b);
-            }else {
-                rb = rightBoundary;
-            }
-            boundaries[i] = (b + (rb-b) * (1- (surplus / bars.get(b))));
-            count = surplus;
-        }
-
-        return new EquiDepthHistogram(boundaries, rightBoundary, totalFrequencies);
-    }
 
     /*
      * Methods needed for Serializability
      */
     private void writeObject(java.io.ObjectOutputStream out) throws IOException{
-        out.writeInt(p);
         out.writeInt(maxNumBars);
         out.writeObject(bars);
         out.writeInt(rightBoundary);
         out.writeDouble(totalFrequencies);
     }
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException{
-        p = in.readInt();
         maxNumBars = in.readInt();
-        numBuckets = maxNumBars * p;
         bars = (TreeMap<Integer, Float>) in.readObject();
         rightBoundary = in.readInt();
         totalFrequencies = in.readDouble();
@@ -299,9 +276,7 @@ public class BashHistogram implements Synopsis, Serializable {
 
     @Override
     public String toString() {
-        return "BashHistogram{" +
-                "p=" + p +
-                ", numBuckets=" + numBuckets +
+        return "SplitAndMergeWithBackingSample{" +
                 ", maxNumBars=" + maxNumBars +
                 ", bars=" + bars +
                 ", rightBoundary=" + rightBoundary +
@@ -312,5 +287,4 @@ public class BashHistogram implements Synopsis, Serializable {
     private void readObjectNoData() throws ObjectStreamException{
         Log.error("method not implemented");
     }
-
 }
