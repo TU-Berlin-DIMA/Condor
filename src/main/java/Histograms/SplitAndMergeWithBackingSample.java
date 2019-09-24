@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.TreeMap;
 
 /**
@@ -25,12 +26,12 @@ import java.util.TreeMap;
 public class SplitAndMergeWithBackingSample implements Synopsis, Serializable {
 
 
-    private int maxNumBars; // maximum number of Bars in the sketch
-    private TreeMap<Integer, Float> bars; //
+    private int maxNumBuckets; // maximum number of Bars in the sketch
+    private TreeMap<Integer, Float> buckets; //
     private int rightBoundary; // rightmost boundary - inclusive
     private double totalFrequencies; //
     private ReservoirSampler sample;
-    private double countError;
+    private double countError; // with probability of at least getErrorMinProbability() this is the maximum error the counts of this approximate histogram varies from the grue equi depth histogram
     private int sampleSize;
     private double c;
     private final double GAMMA = 0.5; // hyper parameter which tunes the threshold - has to be greater than -1 and should realistically be smaller than 2
@@ -46,13 +47,16 @@ public class SplitAndMergeWithBackingSample implements Synopsis, Serializable {
      * @param sampleSize    maximum size of the backing sample used to recompute the histogram and the median of buckets to be split
      */
     private void init(int numberOfFinalBuckets, double countError, int sampleSize) {
-        maxNumBars = numberOfFinalBuckets;
-        bars = new TreeMap<>();
+        maxNumBuckets = numberOfFinalBuckets;
+        buckets = new TreeMap<>();
         totalFrequencies = 0;
+        this.countError = countError;
+        this.sampleSize = sampleSize;
+        this.threshold = 3; // initially set the threshold to 3 (value it should have if there is only a single valu)
     }
 
     public double getErrorMinProbability() {
-        return 1 - 1 / Math.pow(bars.size(), Math.sqrt(c)-1) - 1 / Math.pow(totalFrequencies / (2+GAMMA), 1/3);
+        return 1 - 1 / Math.pow(buckets.size(), Math.sqrt(c)-1) - 1 / Math.pow(totalFrequencies / (2+GAMMA), 1/3);
     }
 
     public SplitAndMergeWithBackingSample(Integer numBuckets, Double countError) {
@@ -78,98 +82,99 @@ public class SplitAndMergeWithBackingSample implements Synopsis, Serializable {
         totalFrequencies += input.f1;
         float binFrequency;
         int next = input.f0;
-        if (bars.isEmpty()){
-            bars.put(next, input.f1);
+        // 1st step: add frequency to existing bin
+        if (buckets.isEmpty()){ // special case for first input
+            buckets.put(next, input.f1);
             rightBoundary = next;
-        }else {
+        }else { // usual case if a bucket already exists
             int key;
-            if (bars.floorKey(next) != null) {
-                key = bars.floorKey(next);
-                if (key == bars.lastKey() && next > rightBoundary){ // if key greater than current right boundary it becomes the new boundary
+            if (buckets.floorKey(next) != null) {
+                key = buckets.floorKey(next);
+                if (key == buckets.lastKey() && next > rightBoundary){ // if key greater than current right boundary it becomes the new boundary
                     rightBoundary = next;
                 }
-                binFrequency = bars.get(key) + input.f1;
-                bars.replace(key, binFrequency);
+                binFrequency = buckets.merge(key, input.f1, (a,b) -> a + b);
             } else{ // element is new leftmost boundary
-                key = bars.ceilingKey(next);
-                binFrequency = bars.get(key) + input.f1;
-                bars.remove(key);   // remove old bin
-                key = next;
-                bars.put(key, binFrequency); // create new bin with new left boundary
+                key = buckets.ceilingKey(next);
+                binFrequency = buckets.get(key) + input.f1;
+                buckets.remove(key);   // remove old bin
+                buckets.put(next, binFrequency); // create new bin with new left boundary
             }
-            if (bars.size() == maxNumBars){
-                /**
-                 * Merge the two smallest adjacent buckets - when their sum exceeds the Threshold recompute from Sample
-                 */
-                if (bars.size() > maxNumBars){
-                    // Find Bars to Merge
-                    float currentMin = Float.MAX_VALUE;
-                    int index = 0;
-                    for (int i = 0; i < maxNumBars - 1; i++) {
-                        if (bars.get(i) + bars.get(i+1) < currentMin){
-                            index = i;
-                            currentMin = bars.get(i) + bars.get(i+1);
+
+            if (binFrequency >= threshold){ // check whether the bucket frequency exceeds the threshold and has to be split
+                int nextRightBound = key == buckets.lastKey() ? rightBoundary : buckets.higherKey(key); // lookup the right boundary of the bucket to be split
+                int nextLeftBound = medianForBucket(key, nextRightBound); // set the median of the sample to be the left boundary of the newly created bucket
+
+                if (buckets.size() == maxNumBuckets && nextLeftBound != key){ // check whether buckets have to be merged after split && the split can happen
+
+                    // 2nd step: find the two adjacent buckets where the sum of frequencies is minimal
+                    // if their sum exceeds the threshold recompute from sample!
+                    if (buckets.size() > maxNumBuckets){
+                        float currentMin = Float.MAX_VALUE;
+                        int index = 0;
+                        for (int i = 0; i < maxNumBuckets - 1; i++) {
+                            if (buckets.get(i) + buckets.get(i+1) < currentMin){
+                                index = i;
+                                currentMin = buckets.get(i) + buckets.get(i+1);
+                            }
+                        }
+                        if (currentMin < threshold){
+                            buckets.remove(index+1);
+                            buckets.replace(index, currentMin);
+                        }else {
+                            equiDepthSampleCompute();   // recompute the histogram from the backing sample
                         }
                     }
-                    if (currentMin < threshold){
-                        bars.remove(index+1);
-                        bars.replace(index, currentMin);
-                    }else {
-                        // TODO: call recompute from Sample
-                    }
-                }
-            }
-            while (binFrequency >= threshold){ // split bins while frequency is greater than the threshold
-                /**
-                 * Split Bin
-                 */
-                binFrequency /= 2;
-                int nextRightBound = key == bars.lastKey() ? rightBoundary : bars.higherKey(key);
-                int nextLeftBound = (nextRightBound+key) / 2;
-                if (nextLeftBound != key){ // edge case in which boundaries are too close to each other -> don't split
-                    bars.replace(key, binFrequency);
-                    bars.put(nextLeftBound, binFrequency);
                 }
 
+                // 3rd step: split the bucket whose frequency exceeds the threshold
+                binFrequency /= 2;
+                if (nextLeftBound != key){ // edge case in which boundaries are too close to each other -> don't split
+                    buckets.replace(key, binFrequency);
+                    buckets.put(nextLeftBound, binFrequency);
+                }
             }
         }
     }
 
+    /**
+     * Method to completely recompute the histogram boundaries on the basis of the backing sample
+     *
+     * The leftmost and rightmost boundary are an exception to this and are kept as they represent 100% accurate values.
+     */
     private void equiDepthSampleCompute(){
-        TreeMap<Integer, Integer> map = new TreeMap();
-        Integer[] s = (Integer[]) sample.getSample();
-        int sampleSize = 0;
-        for (int f: s) {
-            map.merge(f, 1, (a,b) -> a + b);
-            sampleSize += f;
-        }
-        if(map.size() < maxNumBars){
-            this.numBuckets = sortedInput.size();   // number of buckets cannot exceed actual number of input items
-        }
-        this.leftBoundaries = new double[this.numBuckets];
-        this.totalFrequencies = total;
-        double bucketSize = (double) total / this.numBuckets;
-        int currentLeftBoundary = sortedInput.firstKey();
-        leftBoundaries[0] = currentLeftBoundary;
-        this.rightmostBoundary = sortedInput.lastKey();
-        double tempBucketSize = 0;
-        int index = 1;
-        int previousVal;
 
-        while(!sortedInput.isEmpty()) {
-            previousVal = sortedInput.firstKey();
-            tempBucketSize += sortedInput.pollFirstEntry().getValue();
-            currentLeftBoundary = (sortedInput.isEmpty()) ? rightmostBoundary : sortedInput.firstKey();
-            double fraction;
-
-            while (tempBucketSize >= bucketSize && index < numBuckets){
-                tempBucketSize -= bucketSize;
-                fraction = Math.min(tempBucketSize / bucketSize, 1);
-                leftBoundaries[index] = previousVal + (1-fraction) * (currentLeftBoundary-previousVal);
-                index++;
-            }
+        Integer[] sampleArray = (Integer[]) sample.getSample();
+        int sampleSize = sample.getSampleSize(); // actual amount of values currently in the backing sample
+        int actualNumBuckets = maxNumBuckets;
+        if(sampleSize < maxNumBuckets){
+            actualNumBuckets = sampleSize;   // number of buckets cannot exceed actual number of input items
         }
-        return new EquiDepthHistogram(leftBoundaries, rightmostBoundary, totalFrequencies);
+        float bucketSize = (float) (totalFrequencies / actualNumBuckets);
+        Arrays.sort(sampleArray); // sort the sample
+        sampleArray[0] = buckets.firstKey(); // replace the first entry with the leftmost boundary to make sure that the actual boundaries are kept
+        buckets.clear();
+        int index;
+
+        for (int i = 0; i < actualNumBuckets; i++) {
+            index = sampleSize / actualNumBuckets * i;
+            buckets.put(sampleArray[index], bucketSize); // add the current bucket
+        }
+    }
+
+    /**
+     * computes the median for the given bucket
+     * @param leftBoundary  left boundary of the given bucket - inclusive
+     * @param rightBoundary right boundary of the given bucket - exclusive
+     * @return  the median value of the bucket sample
+     */
+    private int medianForBucket(int leftBoundary, int rightBoundary){
+        Integer[] sampleArray = (Integer[]) sample.getSample();
+        Arrays.sort(sampleArray);
+        int leftIndex = Arrays.binarySearch(sampleArray, leftBoundary);
+        int rightIndex = Arrays.binarySearch(sampleArray, rightBoundary);
+        int bucketCount = rightIndex - leftIndex;
+        return sampleArray[rightIndex-bucketCount/2];
     }
 
     @Override
@@ -189,12 +194,12 @@ public class SplitAndMergeWithBackingSample implements Synopsis, Serializable {
         }
     }
 
-    public int getMaxNumBars() {
-        return maxNumBars;
+    public int getMaxNumBuckets() {
+        return maxNumBuckets;
     }
 
-    public TreeMap<Integer, Float> getBars() {
-        return bars;
+    public TreeMap<Integer, Float> getBuckets() {
+        return buckets;
     }
 
     public int getRightBoundary() {
@@ -205,71 +210,42 @@ public class SplitAndMergeWithBackingSample implements Synopsis, Serializable {
         return totalFrequencies;
     }
 
+    public ReservoirSampler getSample() {
+        return sample;
+    }
+
     @Override
     public SplitAndMergeWithBackingSample merge(Synopsis other) throws Exception {
         if (other instanceof SplitAndMergeWithBackingSample){
-            SplitAndMergeWithBackingSample o = (SplitAndMergeWithBackingSample) other;
-            SplitAndMergeWithBackingSample base;
-            if (this.totalFrequencies > o.getTotalFrequencies()) {
-                base = this;
-            } else {
-                base = o;
-                o = this;
-            }
-            TreeMap<Integer, Float> otherBars = o.getBars();
-            TreeMap<Integer, Float> baseBars = base.getBars();
-            for (int i = 0; i < otherBars.size(); i++) { // add every bar of the other histogram to the base histogram using appropriate weights
-                // Set base and other lower and upper bounds correctly
-                int otherLB = otherBars.firstKey();
-                float frequency = otherBars.remove(otherLB);
-                int otherUB = otherBars.isEmpty() ? o.rightBoundary : otherBars.firstKey();
-                int baseLB;
-                int baseUB;
-                if(baseBars.floorKey(otherLB) != null){ // case in which base bar left boundary is smaller than other left boundary
-                    baseLB = baseBars.floorKey(otherLB);
-                    baseUB = baseBars.higherKey(baseLB) == null ? base.rightBoundary : baseBars.higherKey(baseLB);
-                }else { // case in which other bar left boundary is smaller than base left boundary
-                    baseLB = otherLB; // change the leftmost boundary of the base in case the other lower bound is smaller
-                    baseUB = baseBars.higherKey(baseBars.firstKey()) == null ? base.rightBoundary : baseBars.higherKey(baseBars.firstKey());
-                }
-                // loop through all base bars which cover area of the current other bar
-                while (baseLB < otherUB){
-                    int coveredBaseBar = Math.min(otherUB, baseUB) - Math.max(otherLB, baseLB);
-                    int otherBarWidth = otherUB - otherLB;
-                    float weightedFrequency = frequency * coveredBaseBar / otherBarWidth;
 
-                    if (baseBars.lastKey() == baseLB){ // the rightmost base bar has to be updated with the upper bound of the other bar to facilitate changing boundaries
-                        base.update(new Tuple2<>(otherUB, weightedFrequency));
-                    }else {
-                        base.update(new Tuple2<>(baseLB, weightedFrequency)); // standard case of adding weighted fraction of other bar to base bar
-                    }
+            sample = sample.merge(((SplitAndMergeWithBackingSample) other).getSample());
+            this.rightBoundary = this.rightBoundary < ((SplitAndMergeWithBackingSample) other).getRightBoundary()
+                    ? ((SplitAndMergeWithBackingSample) other).getRightBoundary() : this.rightBoundary;
+            int leftmostBoundary = buckets.firstKey() < ((SplitAndMergeWithBackingSample) other).getBuckets().firstKey()
+                    ? buckets.firstKey() : ((SplitAndMergeWithBackingSample) other).getBuckets().firstKey();
+            buckets.put(leftmostBoundary, 1f); // make sure the leftmost boundary is stored in the buckets, the frequency doesn't matter since it will get cleared in equiDepthSample compute anyway
+            equiDepthSampleCompute();   // completely recompute the histogram based on the merged backing sample to make sure the histogram conforms to the accuracy guarantees
 
-                    // change base boundaries to next bar
-                    baseLB = baseUB;
-                    baseUB = baseBars.higherKey(baseUB) != null ? baseBars.higherKey(baseUB) : base.rightBoundary;
-                }
-            }
             logger.info("merge complete");
-            return base;
+            return this;
         }else {
             throw new IllegalArgumentException("Synopsis to be merged must be of the same type!");
         }
     }
 
 
-
     /*
      * Methods needed for Serializability
      */
     private void writeObject(java.io.ObjectOutputStream out) throws IOException{
-        out.writeInt(maxNumBars);
-        out.writeObject(bars);
+        out.writeInt(maxNumBuckets);
+        out.writeObject(buckets);
         out.writeInt(rightBoundary);
         out.writeDouble(totalFrequencies);
     }
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException{
-        maxNumBars = in.readInt();
-        bars = (TreeMap<Integer, Float>) in.readObject();
+        maxNumBuckets = in.readInt();
+        buckets = (TreeMap<Integer, Float>) in.readObject();
         rightBoundary = in.readInt();
         totalFrequencies = in.readDouble();
     }
@@ -277,8 +253,8 @@ public class SplitAndMergeWithBackingSample implements Synopsis, Serializable {
     @Override
     public String toString() {
         return "SplitAndMergeWithBackingSample{" +
-                ", maxNumBars=" + maxNumBars +
-                ", bars=" + bars +
+                ", maxNumBuckets=" + maxNumBuckets +
+                ", buckets=" + buckets +
                 ", rightBoundary=" + rightBoundary +
                 ", totalFrequencies=" + totalFrequencies +
                 '}';
