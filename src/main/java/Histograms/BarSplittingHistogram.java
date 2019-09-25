@@ -19,7 +19,7 @@ import java.util.TreeMap;
  *
  * @author joschavonhein
  */
-public class BashHistogram implements Synopsis, Serializable {
+public class BarSplittingHistogram implements Synopsis, Serializable {
 
     private int p; // precision hyper parameter
     private int numBuckets; // number of final Buckets
@@ -29,14 +29,14 @@ public class BashHistogram implements Synopsis, Serializable {
     private final double MAXCOEF = 1.7;
     private double totalFrequencies; //
 
-    private static final Logger logger = LoggerFactory.getLogger(BashHistogram.class);
+    private static final Logger logger = LoggerFactory.getLogger(BarSplittingHistogram.class);
 
     /**
      *
      * @param precision     precision hyperparameter - must be larger than 1 and can generally be below 10 - defaults is 7
      * @param numberOfFinalBuckets  number of buckets the final equi-depth histogram should have
      */
-    public BashHistogram(Integer precision, Integer numberOfFinalBuckets) {
+    public BarSplittingHistogram(Integer precision, Integer numberOfFinalBuckets) {
         p = precision;
         numBuckets = numberOfFinalBuckets;
         maxNumBars = numBuckets * p;
@@ -44,7 +44,7 @@ public class BashHistogram implements Synopsis, Serializable {
         totalFrequencies = 0;
     }
 
-    public BashHistogram(Integer numBuckets) {
+    public BarSplittingHistogram(Integer numBuckets) {
         this(7, numBuckets);
     }
 
@@ -119,14 +119,14 @@ public class BashHistogram implements Synopsis, Serializable {
         if (element instanceof Integer){
             update(new Tuple2<Integer, Float>((int)element, 1f)); //standard case in which just a single element is added to the sketch
         }else {
-            if(element instanceof BashHistogram){
+            if(element instanceof BarSplittingHistogram){
                 try {
-                    this.merge((BashHistogram)element);
+                    this.merge((BarSplittingHistogram)element);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }else {
-                logger.warn("update element has to be an integer or BashHistogram! - is: " + element.getClass());
+                logger.warn("update element has to be an integer or BarSplittingHistogram! - is: " + element.getClass());
             }
         }
     }
@@ -156,10 +156,10 @@ public class BashHistogram implements Synopsis, Serializable {
     }
 
     @Override
-    public BashHistogram merge(Synopsis other) throws Exception {
-        if (other instanceof BashHistogram){
-            BashHistogram o = (BashHistogram) other;
-            BashHistogram base;
+    public BarSplittingHistogram merge(Synopsis other) throws Exception {
+        if (other instanceof BarSplittingHistogram){
+            BarSplittingHistogram o = (BarSplittingHistogram) other;
+            BarSplittingHistogram base;
             if (this.totalFrequencies > o.getTotalFrequencies()) {
                 base = this;
             } else {
@@ -296,7 +296,7 @@ public class BashHistogram implements Synopsis, Serializable {
 
     @Override
     public String toString() {
-        return "BashHistogram{" +
+        return "BarSplittingHistogram{" +
                 "p=" + p +
                 ", numBuckets=" + numBuckets +
                 ", maxNumBars=" + maxNumBars +

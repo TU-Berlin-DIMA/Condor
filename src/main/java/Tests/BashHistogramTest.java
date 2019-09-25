@@ -1,9 +1,7 @@
 package Tests;
 
-import Histograms.BashHistogram;
+import Histograms.SplitAndMergeWithBackingSample;
 import Histograms.EquiDepthHistogram;
-import Histograms.EquiWidthHistogram;
-import Histograms.EquiWidthHistogram4LT;
 import Synopsis.BuildSynopsis;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.MapFunction;
@@ -29,11 +27,11 @@ public class BashHistogramTest {
 
         int keyField = 0;
 
-        Integer numFinalBuckets = 5;
+        Integer numFinalBuckets = 27;
         Integer precision = 5;
 
         Object[] parameters = new Object[]{precision, numFinalBuckets};
-        Class<BashHistogram> sketchClass = BashHistogram.class;
+        Class<SplitAndMergeWithBackingSample> sketchClass = SplitAndMergeWithBackingSample.class;
 
         Time windowTime = Time.minutes(1);
 
@@ -42,7 +40,7 @@ public class BashHistogramTest {
                 .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
 
-        SingleOutputStreamOperator<BashHistogram> bash = BuildSynopsis.timeBased(timestamped, windowTime, keyField, sketchClass, parameters);
+        SingleOutputStreamOperator<SplitAndMergeWithBackingSample> bash = BuildSynopsis.timeBased(timestamped, windowTime, keyField, sketchClass, parameters);
 
         bash.writeAsText("output/BASHHistogram.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
@@ -53,7 +51,7 @@ public class BashHistogramTest {
         DataStream<Double> queryResult = equiDepthHistograms.map(new MapFunction<EquiDepthHistogram, Double>() {
             @Override
             public Double map(EquiDepthHistogram hist) throws Exception {
-                return hist.rangeQuery(18d, 30d);
+                return hist.rangeQuery(2d, 16d);
             }
         });
 
