@@ -1,6 +1,7 @@
 package Histograms;
 
 import Sampling.ReservoirSampler;
+import Sketches.DDSketch;
 import Synopsis.Synopsis;
 import com.esotericsoftware.minlog.Log;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -21,6 +22,12 @@ import java.util.TreeMap;
  *
  * Based on the paper: "Fast Incremental Maintenance of Approximate Histograms" - ACM Transactions on Database Systems, Vol. V, 2002
  *
+ * Due to the nature of the algorithm and the merge this algorithm is most useful in a single threaded environment (parallelism of 1)
+ * and a continuous window with an evictor instead of the typical count / time based windows. This is due to fact that
+ * with every merge the @equiDepthSampleCompute() function is called. The benefit compared to an algorithm which simply computes
+ * an equiDepthHistogram from a sample lies in it's characteristic of beeing accurate within a given error bound at all (!) times
+ * and not just at the end of a window.
+ *
  * @author joschavonhein
  */
 public class SplitAndMergeWithBackingSample implements Synopsis, Serializable {
@@ -30,7 +37,7 @@ public class SplitAndMergeWithBackingSample implements Synopsis, Serializable {
     private TreeMap<Integer, Float> buckets; //
     private int rightBoundary; // rightmost boundary - inclusive
     private double totalFrequencies; //
-    private ReservoirSampler sample;
+    private DDSketch;
     private double countError; // with probability of at least getErrorMinProbability() this is the maximum error the counts of this approximate histogram varies from the grue equi depth histogram
     private int sampleSize;
     private double c;
@@ -52,7 +59,7 @@ public class SplitAndMergeWithBackingSample implements Synopsis, Serializable {
         totalFrequencies = 0;
         this.countError = countError;
         this.sampleSize = sampleSize;
-        this.threshold = 3; // initially set the threshold to 3 (value it should have if there is only a single valu)
+        this.threshold = 2; // initially set the threshold to 3 (value it should have if there is only a single value)
     }
 
     public double getErrorMinProbability() {
@@ -102,10 +109,16 @@ public class SplitAndMergeWithBackingSample implements Synopsis, Serializable {
             }
 
             if (binFrequency >= threshold){ // check whether the bucket frequency exceeds the threshold and has to be split
+                // 2nd step: split the bucket whose frequency exceeds the threshold
                 int nextRightBound = key == buckets.lastKey() ? rightBoundary : buckets.higherKey(key); // lookup the right boundary of the bucket to be split
                 int nextLeftBound = medianForBucket(key, nextRightBound); // set the median of the sample to be the left boundary of the newly created bucket
+                binFrequency /= 2;
+                if (nextLeftBound != key){ // edge case in which boundaries are too close to each other -> don't split
+                    buckets.replace(key, binFrequency);
+                    buckets.put(nextLeftBound, binFrequency);
+                }
 
-                if (buckets.size() == maxNumBuckets && nextLeftBound != key){ // check whether buckets have to be merged after split && the split can happen
+                if (buckets.size() > maxNumBuckets){ // check whether buckets have to be merged after split
 
                     // 2nd step: find the two adjacent buckets where the sum of frequencies is minimal
                     // if their sum exceeds the threshold recompute from sample!
@@ -123,16 +136,12 @@ public class SplitAndMergeWithBackingSample implements Synopsis, Serializable {
                             buckets.replace(index, currentMin);
                         }else {
                             equiDepthSampleCompute();   // recompute the histogram from the backing sample
+                            threshold = (int)Math.round(totalFrequencies * (2+GAMMA));
                         }
                     }
                 }
 
-                // 3rd step: split the bucket whose frequency exceeds the threshold
-                binFrequency /= 2;
-                if (nextLeftBound != key){ // edge case in which boundaries are too close to each other -> don't split
-                    buckets.replace(key, binFrequency);
-                    buckets.put(nextLeftBound, binFrequency);
-                }
+
             }
         }
     }
@@ -169,10 +178,17 @@ public class SplitAndMergeWithBackingSample implements Synopsis, Serializable {
      * @return  the median value of the bucket sample
      */
     private int medianForBucket(int leftBoundary, int rightBoundary){
+        // TODO: make sure the negative values from binarySearch are taken care of (if the key was not found)
         Integer[] sampleArray = (Integer[]) sample.getSample();
         Arrays.sort(sampleArray);
         int leftIndex = Arrays.binarySearch(sampleArray, leftBoundary);
         int rightIndex = Arrays.binarySearch(sampleArray, rightBoundary);
+        while (sampleArray[leftIndex] == leftBoundary){
+            leftIndex --;
+        }
+        while (sampleArray[rightIndex] == rightBoundary){
+            rightBoundary++;
+        }
         int bucketCount = rightIndex - leftIndex;
         return sampleArray[rightIndex-bucketCount/2];
     }

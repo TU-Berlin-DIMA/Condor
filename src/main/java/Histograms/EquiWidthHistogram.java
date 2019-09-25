@@ -89,6 +89,7 @@ public class EquiWidthHistogram<T extends Number> implements Synopsis<T> {
      * @return              approximate frequency for the given range
      */
     public double rangeQuery(double lowerBound, double upperBound){
+        // TODO: case when lower bound and upper bound are in the same bucket
         if (upperBound - lowerBound <= 0){
             throw new IllegalArgumentException("lower bound has to be smaller than upper bound!");
         }
