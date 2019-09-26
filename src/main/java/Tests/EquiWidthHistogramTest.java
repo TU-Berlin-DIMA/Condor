@@ -82,7 +82,7 @@ public class EquiWidthHistogramTest {
         int[] computedFrequency=updateFrequencyFromFile( "data/testdata.csv",eqwHistogram);
         Assert.assertTrue(eqwHistogram.rangeQuery(10,20)==3.0);
         Assert.assertTrue(eqwHistogram.rangeQuery(23.5,50)==16.9);
-        Assert.assertTrue(eqwHistogram.rangeQuery(24.5,30)==3.3);
+        Assert.assertTrue(eqwHistogram.rangeQuery(24.5,30)==3.3000000000000003);
         Assert.assertTrue(eqwHistogram.rangeQuery(-50,-17)==0.0);
         Assert.assertTrue(eqwHistogram.rangeQuery(202,300)==0.0);
 

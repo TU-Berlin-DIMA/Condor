@@ -105,9 +105,7 @@ public class EquiWidthHistogram<T extends Number> implements Synopsis<T> {
         }
         int indexLB = (int) Math.floor((lowerBound - this.lowerBound) / bucketLength); // the index of the leftmost bucket of the query range
         int indexUB = (int) Math.floor((upperBound - this.lowerBound) / bucketLength); // the index of the rightmost bucket of the query range
-        System.out.println("--------LB------");
-        System.out.println(indexLB);
-        if(indexLB==indexUB){
+        if(indexLB == indexUB){
             return (( upperBound-lowerBound) / bucketLength) * frequency[indexLB];
         }
         double leftMostBucketShare = 0, rightMostBucketShare = 0;
@@ -128,14 +126,6 @@ public class EquiWidthHistogram<T extends Number> implements Synopsis<T> {
         for (int i = indexLB; i < indexUB; i++) {
             resultFrequency += frequency[i];
         }
-        System.out.println("-------UB-------");
-        System.out.println(indexUB);
-        System.out.println("-------leftmost-------");
-        System.out.println(leftMostBucketShare);
-        System.out.println("--------rightmost------");
-        System.out.println(rightMostBucketShare);
-        System.out.println("------total--------");
-        System.out.println(resultFrequency);
 
         return resultFrequency;
     }
