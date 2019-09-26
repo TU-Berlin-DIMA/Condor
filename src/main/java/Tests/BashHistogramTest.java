@@ -1,6 +1,7 @@
 package Tests;
 
-import Histograms.SplitAndMergeWithBackingSample;
+import Histograms.BarSplittingHistogram;
+import Histograms.SplitAndMergeWithDDSketch;
 import Histograms.EquiDepthHistogram;
 import Synopsis.BuildSynopsis;
 import org.apache.flink.api.common.functions.FlatMapFunction;
@@ -31,7 +32,7 @@ public class BashHistogramTest {
         Integer precision = 5;
 
         Object[] parameters = new Object[]{precision, numFinalBuckets};
-        Class<SplitAndMergeWithBackingSample> sketchClass = SplitAndMergeWithBackingSample.class;
+        Class<BarSplittingHistogram> sketchClass = BarSplittingHistogram.class;
 
         Time windowTime = Time.minutes(1);
 
@@ -40,7 +41,7 @@ public class BashHistogramTest {
                 .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
 
-        SingleOutputStreamOperator<SplitAndMergeWithBackingSample> bash = BuildSynopsis.timeBased(timestamped, windowTime, keyField, sketchClass, parameters);
+        SingleOutputStreamOperator<BarSplittingHistogram> bash = BuildSynopsis.timeBased(timestamped, windowTime, keyField, sketchClass, parameters);
 
         bash.writeAsText("output/BASHHistogram.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
