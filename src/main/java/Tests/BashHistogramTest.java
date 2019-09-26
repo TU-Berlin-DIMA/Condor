@@ -1,5 +1,6 @@
 package Tests;
 
+import Histograms.BarSplittingHistogram;
 import Histograms.SplitAndMergeWithDDSketch;
 import Histograms.EquiDepthHistogram;
 import Synopsis.BuildSynopsis;
@@ -31,7 +32,7 @@ public class BashHistogramTest {
         Integer precision = 5;
 
         Object[] parameters = new Object[]{precision, numFinalBuckets};
-        Class<SplitAndMergeWithDDSketch> sketchClass = SplitAndMergeWithDDSketch.class;
+        Class<BarSplittingHistogram> sketchClass = BarSplittingHistogram.class;
 
         Time windowTime = Time.minutes(1);
 
@@ -40,7 +41,7 @@ public class BashHistogramTest {
                 .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
 
-        SingleOutputStreamOperator<SplitAndMergeWithDDSketch> bash = BuildSynopsis.timeBased(timestamped, windowTime, keyField, sketchClass, parameters);
+        SingleOutputStreamOperator<BarSplittingHistogram> bash = BuildSynopsis.timeBased(timestamped, windowTime, keyField, sketchClass, parameters);
 
         bash.writeAsText("output/BASHHistogram.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
