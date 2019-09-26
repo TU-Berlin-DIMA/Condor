@@ -88,7 +88,7 @@ public class BloomFilter<T> implements Synopsis<T>, Serializable {
 
     /**
      * Function to Merge two Bloom Filters of the same size with the same family of Hash functions
-     * by a simple and operation between the hash maps.
+     * by a simple logical-and operation between the hash maps.
      *
      * @param other synopsis to be merged with
      * @return merged Bloom Filter
