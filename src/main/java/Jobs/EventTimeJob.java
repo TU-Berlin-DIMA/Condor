@@ -1,8 +1,7 @@
 package Jobs;
 
-import Histograms.EquiDepthHistogramTrivial;
 import Synopsis.BuildSynopsis;
-import Sketches.EquiDepthHistogramTrivial;
+import Sketches.CountMinSketch;
 import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.core.fs.FileSystem;
@@ -33,13 +32,13 @@ public class EventTimeJob {
         long seed = 1;
         int keyField = 0;
         Time windowTime = Time.minutes(1);
-        Class<EquiDepthHistogramTrivial> sketchClass = EquiDepthHistogramTrivial.class;
+        Class<CountMinSketch> sketchClass = CountMinSketch.class;
 
         DataStream<String> line = env.readTextFile("data/timestamped.csv");
         DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
                 .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
-        SingleOutputStreamOperator<EquiDepthHistogramTrivial> finalSketch = BuildSynopsis.timeBased(timestamped, windowTime, keyField, sketchClass, width);
+        SingleOutputStreamOperator<CountMinSketch> finalSketch = BuildSynopsis.timeBased(timestamped, windowTime, keyField, sketchClass, width,height,seed);
 
 
 

@@ -39,6 +39,9 @@ public class EquiDepthHistogram {
         if (upperBound - lowerBound < 0){
             throw new IllegalArgumentException("upper Bound can't be smaller than lower Bound!");
         }
+        if (upperBound < leftBoundaries[0] || lowerBound > rightMostBoundary){
+            throw new IllegalArgumentException("query Bound can't be out of histogram domain");
+        }
 
         boolean first = false;
         boolean last = false;
