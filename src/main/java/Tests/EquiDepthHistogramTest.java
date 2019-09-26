@@ -31,8 +31,16 @@ public class EquiDepthHistogramTest {
     }
     @Test()
     public void querylastbucketTest(){
-        System.out.println(equiDepthHistogram.rangeQuery(168,190));
-        Assert.assertEquals(10.128913443830573,equiDepthHistogram.rangeQuery(168,190));
+         Assert.assertTrue(10.128913443830573==equiDepthHistogram.rangeQuery(168,190));
+    }
+    @Test
+    public void querybucketTest(){
+        System.out.println(equiDepthHistogram.rangeQuery(0,46));
+        System.out.println(equiDepthHistogram.rangeQuery(46.0,75.48));
+        System.out.println(equiDepthHistogram.rangeQuery(115,156.56));
+        System.out.println(equiDepthHistogram.rangeQuery(156.56,200));
+
+        Assert.assertTrue(20==equiDepthHistogram.rangeQuery(115,200));
     }
 
 
