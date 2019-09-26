@@ -57,12 +57,14 @@ public class EquiDepthHistogram {
         for (int i = 0; i < numBuckets; i++) {
             // edge case that range is contained in a single bucket
             if (lowerBound >= leftBoundaries[i] && i < numBuckets-1 && upperBound < leftBoundaries[i+1]){
+                System.out.println("yessssssssssssss");
                 double fraction = (upperBound-lowerBound) / (leftBoundaries[i+1]-leftBoundaries[i]);
                 return fraction * totalFrequencies / numBuckets;
             }
 
             // add leftmost bucket part to query result
             if (!first && leftBoundaries[i] >= lowerBound){
+                System.out.println("firssstttt");
                 first = true;
                 if (i > 0){
                     double leftMostBucketFraction = (leftBoundaries[i] - lowerBound) / (leftBoundaries[i] - leftBoundaries[i-1]);
@@ -72,6 +74,7 @@ public class EquiDepthHistogram {
 
             // count amount of fully contained buckets in range
             if (first && !last){
+                System.out.println("noottfirssstttt");
                 if (upperBound < leftBoundaries[i]){
                     last = true;
                     double rightmostBucketFraction = (upperBound - leftBoundaries[i-1]) / (leftBoundaries[i] - leftBoundaries[i-1]);
