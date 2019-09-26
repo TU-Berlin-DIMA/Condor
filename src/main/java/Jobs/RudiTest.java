@@ -2,6 +2,8 @@ package Jobs;
 
 import Sampling.FiFoSampler;
 import Sketches.BloomFilter;
+import Sketches.CuckooFilter;
+import Sketches.DDSketch;
 import Synopsis.BuildSynopsis;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.java.tuple.Tuple3;
@@ -28,15 +30,15 @@ public class RudiTest {
 
 
         // int parallelism = env.getParallelism();
-        int sampleSize = 20;
+
         Time windowTime = Time.minutes(1);
-        Class<BloomFilter> sketchClass = BloomFilter.class;
+        Class<DDSketch> sketchClass = DDSketch.class;
 
         DataStream<String> line = env.readTextFile("data/timestamped.csv");
         DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
                 .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
-        SingleOutputStreamOperator<BloomFilter> finalSketch = BuildSynopsis.timeBased(timestamped, windowTime, 0, sketchClass, 27,100,1);
+        SingleOutputStreamOperator<DDSketch> finalSketch = BuildSynopsis.timeBased(timestamped, windowTime, 2, sketchClass, 0.1, 2000);
         //SingleOutputStreamOperator<ReservoirSampler> finalSketch = BuildSynopsis.sampleTimeBased(timestamped, windowTime, sketchClass, parameters, -1);
 
         finalSketch.writeAsText("output/rudiTest.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);

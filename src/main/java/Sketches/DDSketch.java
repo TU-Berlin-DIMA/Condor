@@ -11,6 +11,17 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.TreeMap;
 
+/**
+ * Implementation of DDSketch to estimate every p-Quantile with relative error Bounds and fixed
+ * maximum Memory usage. If the maximum number of bins is exceeded the lowest bins maintained will be merged
+ * losing the error guarantees for lowest Quantiles but preserving the relative error for middle and high
+ * Quantiles.
+ * This algorithm was proposed by DataDog.
+ *
+ * @param <T> the type of elements maintained by this sketch
+ *
+ * @author Rudi Poepsel Lemaitre
+ */
 public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
     private int maxNumBins;
     private boolean isCollapsed;
@@ -24,7 +35,14 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
 
     private TreeMap<Integer, Integer> counts;
 
-    public DDSketch(double relativeAccuracy, int maxNumBins) {
+    /**
+     * Construct a DDSketch
+     *
+     * @param relativeAccuracy to define the query error bounds for each Quantile
+     * @param maxNumBins Maximum number of bins to be maintained, if this value is exceeded the lowest bins
+     *                   will be merged
+     */
+    public DDSketch(Double relativeAccuracy, Integer maxNumBins) {
         if (relativeAccuracy <= 0 || relativeAccuracy >= 1) {
             throw new IllegalArgumentException("The relative accuracy must be between 0 and 1.");
         }
@@ -40,6 +58,9 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
         this.counts = new TreeMap<>();
     }
 
+    /**
+     * @return the lowest value that can be indexed
+     */
     public double minIndexableValue() {
         return Math.max(
                 Math.exp((Integer.MIN_VALUE + 1) * logGamma), // so that index >= Integer.MIN_VALUE
@@ -47,6 +68,9 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
         );
     }
 
+    /**
+     * @return the highest value that can be indexed
+     */
     public double maxIndexableValue() {
         return Math.min(
                 Math.exp(Integer.MAX_VALUE * logGamma), // so that index <= Integer.MAX_VALUE
@@ -54,6 +78,9 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
         );
     }
 
+    /**
+     * Test if the value can be inserted in the structure.
+     */
     private void checkValueTrackable(double value) {
         if (value < 0 || value > maxIndexedValue) {
             throw new IllegalArgumentException("The input value is outside the range that is tracked by the sketch.");
@@ -61,7 +88,9 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
     }
 
     /**
-     * Update the Synopsis structure with a new incoming element.
+     * Update the DDSketch index structure with a new incoming element, by incrementing the counter value if the
+     * Bin already exists and creating a new Bin in the case this element is the first element from its Bin.
+     * In the case the maximum number of Bins is exceeded the lowest Bins will be merged.
      *
      * @param element new incoming element
      */
@@ -83,15 +112,31 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
         }
     }
 
+
+    /**
+     * Given a value calculate the index of the corresponding Bin.
+     *
+     * @param value to get the index from
+     * @return the log index correspondig the accuracy factor (logGamma)
+     */
     public int index(double value) {
         final double index = Math.log(value) / logGamma;
         return index >= 0 ? (int) index : (int) index - 1;
     }
 
+    /**
+     * Calculate the representative value from the given index acording to the relative accuracy
+     *
+     * @param index to calcule the value from
+     * @return the reprentative value
+     */
     public double value(int index) {
         return Math.exp(index * logGamma) * (1 + relativeAccuracy);
     }
 
+    /**
+     * @return the value of the maintained Bin with the lowest index
+     */
     public double getMinValue() {
         if (zeroCount > 0) {
             return 0;
@@ -100,6 +145,9 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
         }
     }
 
+    /**
+     * @return the value of the maintained Bin with the highest index
+     */
     public double getMaxValue() {
         if (zeroCount > 0 && counts.isEmpty()) {
             return 0;
@@ -108,10 +156,22 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
         }
     }
 
+    /**
+     * Estimate the p-Quantile value considering all the elements in the actual structure
+     *
+     * @param quantile p value of the quantile (0 < p < 1)
+     * @return the esimated quantile value with a relative accuracy
+     */
     public double getValueAtQuantile(double quantile) {
         return getValueAtQuantile(quantile, zeroCount + globalCount);
     }
 
+    /**
+     * Estimate different p-Quantile values considering all the elements in the actual structure
+     *
+     * @param quantiles an array containing all p values from each quantile (0 < p < 1)
+     * @return an array containing the estimated quantiles in the same order as the input
+     */
     public double[] getValuesAtQuantiles(double[] quantiles) {
         final long count = zeroCount + globalCount;
         return Arrays.stream(quantiles)
@@ -119,6 +179,13 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
                 .toArray();
     }
 
+    /**
+     * Estimate the p-Quantile value considering only a given number of elements
+     *
+     * @param quantile p value of the quantile (0 < p < 1)
+     * @param count the number of elements to be considered as total
+     * @return the estimated quantile value considering a especified number
+     */
     private double getValueAtQuantile(double quantile, long count) {
         if (quantile < 0 || quantile > 1) {
             throw new IllegalArgumentException("The quantile must be between 0 and 1.");
@@ -159,11 +226,11 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
     }
 
     /**
-     * Function to Merge two Synopses.
+     * Function to Merge two DDSketches by adding the content of all the Bins.
      *
-     * @param other synopsis to be merged with
-     * @return merged synopsis
-     * @throws Exception
+     * @param other DDSketch to be merged with
+     * @return merged DDSketch
+     * @throws Exception in case
      */
     @Override
     public DDSketch merge(Synopsis other) throws Exception {
@@ -189,6 +256,19 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
         throw new Exception("Sketches to merge have to be the same size and hash Functions");
     }
 
+    @Override
+    public String toString() {
+        String sketch = new String();
+        sketch += "Relative Accuracy: " + relativeAccuracy + "\n";
+        sketch += "Max Number of Bins: " + maxNumBins + "\n";
+        sketch += "Collapsed: " + isCollapsed + "\n";
+        sketch += "Count: " + (globalCount + zeroCount) + "\n";
+
+        sketch += counts.toString() + "\n";
+        //sketch += "Quantile: " + getValueAtQuantile(0.5) + "\n";
+        return sketch;
+    }
+
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
         out.writeInt(maxNumBins);
         out.writeBoolean(isCollapsed);
@@ -200,6 +280,7 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
         out.writeDouble(maxIndexedValue);
         out.writeObject(counts);
     }
+
 
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
         maxNumBins = in.readInt();

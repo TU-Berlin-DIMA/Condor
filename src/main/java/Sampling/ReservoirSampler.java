@@ -8,7 +8,7 @@ import java.util.ArrayList;
 
 /**
  * Implementation of the classic Reservoir Sampling algorithm with a given sample size.
- * Firstly the sample will be fulled with every incoming element, once the sample has reached the sampleSize
+ * Firstly the sample will be filled with every incoming element, once the sample has reached the sampleSize
  * bound the upcoming elements will be added to the sample with a probability of sampleSize/processedElements.
  * If an element should be added it will replace a random element of the sample.
  *

@@ -11,7 +11,7 @@ import java.util.HashSet;
 
 /**
  * Implementation of classical Count-Min sketch to estimate the frequencies of the elements in a datastream.
- * Tis implementation uses a family of pairwise independent hash functions to update the counters of the
+ * This implementation uses a family of pairwise independent hash functions to update the counters of the
  * sketch.
  *
  * @param <T> the type of elements maintained by this sketch
