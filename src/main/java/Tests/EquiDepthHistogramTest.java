@@ -36,6 +36,10 @@ public class EquiDepthHistogramTest {
     @Test
     public void querybucketTest(){
         System.out.println(equiDepthHistogram.rangeQuery(0,46));
+        // System.out.println(equiDepthHistogram.rangeQuery(46,75.48));
+        //System.out.println(equiDepthHistogram.rangeQuery(75.48,115));
+        //System.out.println(equiDepthHistogram.rangeQuery(115,156.56));
+        //System.out.println(equiDepthHistogram.rangeQuery(156.56,200));
 
         //Assert.assertTrue(20==equiDepthHistogram.rangeQuery(115,200));
     }

@@ -49,7 +49,8 @@ public class EquiDepthHistogram {
         double result = 0;
 
         // edge case that lower Bound is in last Bucket
-        if (lowerBound >= leftBoundaries[numBuckets-1]){
+        if (lowerBound >= leftBoundaries[numBuckets-1]){  
+            System.out.println("at upper");
             double fraction = (Math.min(rightMostBoundary, upperBound)-lowerBound)/(rightMostBoundary-leftBoundaries[numBuckets-1]);
             return fraction * totalFrequencies / numBuckets;
         }
@@ -57,16 +58,17 @@ public class EquiDepthHistogram {
         for (int i = 0; i < numBuckets; i++) {
             // edge case that range is contained in a single bucket
             if (lowerBound >= leftBoundaries[i] && i < numBuckets-1 && upperBound < leftBoundaries[i+1]){
-                System.out.println("yessssssssssssss");
+                //System.out.println("yessssssssssssss");
                 double fraction = (upperBound-lowerBound) / (leftBoundaries[i+1]-leftBoundaries[i]);
                 return fraction * totalFrequencies / numBuckets;
             }
 
             // add leftmost bucket part to query result
             if (!first && leftBoundaries[i] >= lowerBound){
-                System.out.println("firssstttt");
+               // System.out.println("firssstttt");
                 first = true;
                 if (i > 0){
+                    //System.out.println("non-zeroooo");
                     double leftMostBucketFraction = (leftBoundaries[i] - lowerBound) / (leftBoundaries[i] - leftBoundaries[i-1]);
                     result += leftMostBucketFraction * totalFrequencies/numBuckets;
                 }
@@ -74,11 +76,13 @@ public class EquiDepthHistogram {
 
             // count amount of fully contained buckets in range
             if (first && !last){
-                System.out.println("noottfirssstttt");
+                //System.out.println("noottfirssstttt");
                 if (upperBound < leftBoundaries[i]){
+                    //System.out.println("innnnnoottfirssstttt");
                     last = true;
                     double rightmostBucketFraction = (upperBound - leftBoundaries[i-1]) / (leftBoundaries[i] - leftBoundaries[i-1]);
                     result += rightmostBucketFraction * totalFrequencies/numBuckets; // add rightmost bucket part to query result
+                    System.out.println(result);
                 }
                 bucketsInRange++;
             }
