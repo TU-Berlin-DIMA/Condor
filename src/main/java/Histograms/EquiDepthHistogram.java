@@ -49,8 +49,8 @@ public class EquiDepthHistogram {
         boolean last = false;
         double result = 0;
         double rightMostBucketBound=0;
-        int lowerBucket=-100;
-        int upperBucket=-200;
+        int lowerBucket=numBuckets-1;
+        int upperBucket=numBuckets-1;
 
 
        if(lowerBound < leftBoundaries[0] && upperBound >= leftBoundaries[0]){
@@ -61,26 +61,26 @@ public class EquiDepthHistogram {
            upperBucket=numBuckets-1;
            upperBound=rightMostBoundary;
            last=true;
-
        }
-       for (int i = 0; i < numBuckets; i++){
-            if(!first){
-                if(lowerBound >= leftBoundaries[i] && lowerBound <= leftBoundaries[i+1]){
-                    lowerBucket=i;
-                    first= true;
+       for (int i = 0; i < numBuckets-1; i++) {
 
-                }
-            }
-            if(!last){
-                if(upperBound <= leftBoundaries[i+1]){
-                    upperBucket=i;
-                    last=true;
-                }
-            }
+           if (!first) {
+               if (lowerBound >= leftBoundaries[i] && lowerBound <= leftBoundaries[i + 1]) {
+                   lowerBucket = i;
+                   first = true;
+               }
+           }
+           if (!last) {
+               if (upperBound <= leftBoundaries[i + 1] ) {
+                   upperBucket = i;
+                   last = true;
+                   System.out.println("hhhhh");
+               }
+           }
        }
-
        if(upperBucket==numBuckets-1){
            rightMostBucketBound=rightMostBoundary;
+
        }
        else{
            rightMostBucketBound=leftBoundaries[upperBucket+1];
@@ -93,7 +93,7 @@ public class EquiDepthHistogram {
             int midBucket= upperBucket-lowerBucket-1;
             double leftmostFraction = (Math.min(upperBound,leftBoundaries[lowerBucket+1])-lowerBound)/(leftBoundaries[lowerBucket+1]-leftBoundaries [lowerBucket]);
             double rightmostFraction = (upperBound-leftBoundaries[upperBucket])/(rightMostBucketBound-leftBoundaries[upperBucket]);
-           //System.out.println(rightmostFraction);
+
             result = (midBucket+leftmostFraction+rightmostFraction) * perbucketFrequency;
 
        }

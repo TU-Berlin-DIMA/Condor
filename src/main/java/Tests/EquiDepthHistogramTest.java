@@ -37,7 +37,7 @@ public class EquiDepthHistogramTest {
     public void querybucketTest(){
         //System.out.println(equiDepthHistogram.rangeQuery(0,200));
         //System.out.println(equiDepthHistogram.rangeQuery(89,200));
-        System.out.println(equiDepthHistogram.rangeQuery(89,147.1));
+        System.out.println(equiDepthHistogram.rangeQuery(167.7,190.1));
         //System.out.println(equiDepthHistogram.rangeQuery(147.1,200));
         //System.out.println(equiDepthHistogram.rangeQuery(156.56,200));
 
