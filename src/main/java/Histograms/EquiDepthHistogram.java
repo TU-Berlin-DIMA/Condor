@@ -14,6 +14,7 @@ public class EquiDepthHistogram {
     private double rightMostBoundary;
     private double totalFrequencies;
     private int numBuckets;
+    private double perbucketFrequency;
 
     /**
      * Constructor with all necessary parameters
@@ -26,6 +27,7 @@ public class EquiDepthHistogram {
         this.rightMostBoundary = rightMostBoundary;
         this.totalFrequencies = totalFrequencies;
         this.numBuckets = leftBoundaries.length;
+        this.perbucketFrequency = this.totalFrequencies /this.numBuckets;
     }
 
     /**
@@ -45,50 +47,58 @@ public class EquiDepthHistogram {
 
         boolean first = false;
         boolean last = false;
-        int bucketsInRange = 0;
         double result = 0;
+        double rightMostBucketBound=0;
+        int lowerBucket=-100;
+        int upperBucket=-200;
 
-        // edge case that lower Bound is in last Bucket
-        if (lowerBound >= leftBoundaries[numBuckets-1]){  
-            System.out.println("at upper");
-            double fraction = (Math.min(rightMostBoundary, upperBound)-lowerBound)/(rightMostBoundary-leftBoundaries[numBuckets-1]);
-            return fraction * totalFrequencies / numBuckets;
-        }
 
-        for (int i = 0; i < numBuckets; i++) {
-            // edge case that range is contained in a single bucket
-            if (lowerBound >= leftBoundaries[i] && i < numBuckets-1 && upperBound < leftBoundaries[i+1]){
-                //System.out.println("yessssssssssssss");
-                double fraction = (upperBound-lowerBound) / (leftBoundaries[i+1]-leftBoundaries[i]);
-                return fraction * totalFrequencies / numBuckets;
-            }
+       if(lowerBound < leftBoundaries[0] && upperBound >= leftBoundaries[0]){
+           lowerBucket = 0;
+           lowerBound= leftBoundaries[0];
+           first=true;}
+       if(upperBound >= rightMostBoundary && lowerBound <= rightMostBoundary){
+           upperBucket=numBuckets-1;
+           upperBound=rightMostBoundary;
+           last=true;
 
-            // add leftmost bucket part to query result
-            if (!first && leftBoundaries[i] >= lowerBound){
-               // System.out.println("firssstttt");
-                first = true;
-                if (i > 0){
-                    //System.out.println("non-zeroooo");
-                    double leftMostBucketFraction = (leftBoundaries[i] - lowerBound) / (leftBoundaries[i] - leftBoundaries[i-1]);
-                    result += leftMostBucketFraction * totalFrequencies/numBuckets;
+       }
+       for (int i = 0; i < numBuckets; i++){
+            if(!first){
+                if(lowerBound >= leftBoundaries[i] && lowerBound <= leftBoundaries[i+1]){
+                    lowerBucket=i;
+                    first= true;
+
                 }
             }
-
-            // count amount of fully contained buckets in range
-            if (first && !last){
-                //System.out.println("noottfirssstttt");
-                if (upperBound < leftBoundaries[i]){
-                    //System.out.println("innnnnoottfirssstttt");
-                    last = true;
-                    double rightmostBucketFraction = (upperBound - leftBoundaries[i-1]) / (leftBoundaries[i] - leftBoundaries[i-1]);
-                    result += rightmostBucketFraction * totalFrequencies/numBuckets; // add rightmost bucket part to query result
-                    System.out.println(result);
+            if(!last){
+                if(upperBound <= leftBoundaries[i+1]){
+                    upperBucket=i;
+                    last=true;
                 }
-                bucketsInRange++;
             }
-        }
-        result += bucketsInRange * totalFrequencies / numBuckets;
-        return result;
+       }
+
+       if(upperBucket==numBuckets-1){
+           rightMostBucketBound=rightMostBoundary;
+       }
+       else{
+           rightMostBucketBound=leftBoundaries[upperBucket+1];
+       }
+       if (upperBucket == lowerBucket) {
+            double fraction = (upperBound-lowerBound)/(rightMostBucketBound-leftBoundaries[lowerBucket]);
+            result= fraction * perbucketFrequency;
+       }
+       else{
+            int midBucket= upperBucket-lowerBucket-1;
+            double leftmostFraction = (Math.min(upperBound,leftBoundaries[lowerBucket+1])-lowerBound)/(leftBoundaries[lowerBucket+1]-leftBoundaries [lowerBucket]);
+            double rightmostFraction = (upperBound-leftBoundaries[upperBucket])/(rightMostBucketBound-leftBoundaries[upperBucket]);
+           //System.out.println(rightmostFraction);
+            result = (midBucket+leftmostFraction+rightmostFraction) * perbucketFrequency;
+
+       }
+      return result;
+
     }
 
     @Override

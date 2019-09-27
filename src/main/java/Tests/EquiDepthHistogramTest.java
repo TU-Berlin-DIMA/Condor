@@ -17,7 +17,7 @@ public class EquiDepthHistogramTest {
 
     //@Before
    // public void setup(){
-        double [] leftBoundaries= new double[] {0, 46, 75.48, 115, 156.56};
+        double [] leftBoundaries= new double[] {0.  ,  51.45,  89.  , 147.1 };//{0, 46, 75.48, 115, 156.56};
         EquiDepthHistogram equiDepthHistogram = new EquiDepthHistogram(leftBoundaries, 200, 100);
    // }
     @Test(expected = IllegalArgumentException.class)
@@ -35,10 +35,10 @@ public class EquiDepthHistogramTest {
     }
     @Test
     public void querybucketTest(){
-        System.out.println(equiDepthHistogram.rangeQuery(0,46));
-        // System.out.println(equiDepthHistogram.rangeQuery(46,75.48));
-        //System.out.println(equiDepthHistogram.rangeQuery(75.48,115));
-        //System.out.println(equiDepthHistogram.rangeQuery(115,156.56));
+        //System.out.println(equiDepthHistogram.rangeQuery(0,200));
+        //System.out.println(equiDepthHistogram.rangeQuery(89,200));
+        System.out.println(equiDepthHistogram.rangeQuery(89,147.1));
+        //System.out.println(equiDepthHistogram.rangeQuery(147.1,200));
         //System.out.println(equiDepthHistogram.rangeQuery(156.56,200));
 
         //Assert.assertTrue(20==equiDepthHistogram.rangeQuery(115,200));
