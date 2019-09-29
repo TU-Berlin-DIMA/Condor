@@ -49,19 +49,31 @@ public class EquiDepthHistogram {
         boolean last = false;
         double result = 0;
         double rightMostBucketBound=0;
-        int lowerBucket=numBuckets-1;
-        int upperBucket=numBuckets-1;
+        int lowerBucket=-1;//numBuckets-1;
+        int upperBucket=-3;//numBuckets-1;
 
-
+       //case Query range starts from lower
        if(lowerBound < leftBoundaries[0] && upperBound >= leftBoundaries[0]){
            lowerBucket = 0;
            lowerBound= leftBoundaries[0];
            first=true;}
-       if(upperBound >= rightMostBoundary && lowerBound <= rightMostBoundary){
-           upperBucket=numBuckets-1;
-           upperBound=rightMostBoundary;
-           last=true;
-       }
+
+        if(upperBound >= rightMostBoundary && lowerBound <= rightMostBoundary){
+            upperBucket=numBuckets-1;
+            upperBound=rightMostBoundary;
+            last=true;
+        }
+
+        if(lowerBound >= leftBoundaries[numBuckets-1] && lowerBound <= rightMostBoundary){
+            lowerBucket=numBuckets-1;
+            first=true;
+        }
+        if(upperBound >= leftBoundaries[numBuckets-1] && upperBound <= rightMostBoundary){
+            upperBucket=numBuckets-1;
+            last=true;
+        }
+
+
        for (int i = 0; i < numBuckets-1; i++) {
 
            if (!first) {
@@ -74,7 +86,7 @@ public class EquiDepthHistogram {
                if (upperBound <= leftBoundaries[i + 1] ) {
                    upperBucket = i;
                    last = true;
-                   System.out.println("hhhhh");
+                   //System.out.println("");
                }
            }
        }
