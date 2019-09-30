@@ -68,6 +68,9 @@ public class RealValuedBucket4LT implements Serializable {
     public int getRoot() {
         return root;
     }
+    public int getLowerLevels() {
+        return lowerLevels;
+    }
 
     /**
      * Method which approximately computes the frequencies based on the given query-range.

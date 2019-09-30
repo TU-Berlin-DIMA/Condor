@@ -1,6 +1,5 @@
 package Tests;
 import Histograms.EquiDepthHistogram;
-import Sketches.CountMinSketch;
 import org.junit.Test;
 import org.junit.Assert;
 import org.junit.BeforeClass;
