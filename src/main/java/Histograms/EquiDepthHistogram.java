@@ -52,22 +52,24 @@ public class EquiDepthHistogram {
         int lowerBucket=-1;//numBuckets-1;
         int upperBucket=-3;//numBuckets-1;
 
-       //case Query range starts from lower
+       //case Query range starts from amount lower than first leftboundry and ends in histogram domain
        if(lowerBound < leftBoundaries[0] && upperBound >= leftBoundaries[0]){
            lowerBucket = 0;
            lowerBound= leftBoundaries[0];
            first=true;}
-
+        //case Query range starts in histogram domain and ends in amounts greater than rightmostboundry
         if(upperBound >= rightMostBoundary && lowerBound <= rightMostBoundary){
             upperBucket=numBuckets-1;
             upperBound=rightMostBoundary;
             last=true;
         }
 
+        //case Query range starts at last bucket
         if(lowerBound >= leftBoundaries[numBuckets-1] && lowerBound <= rightMostBoundary){
             lowerBucket=numBuckets-1;
             first=true;
         }
+        //case Query range ends at last bucket
         if(upperBound >= leftBoundaries[numBuckets-1] && upperBound <= rightMostBoundary){
             upperBucket=numBuckets-1;
             last=true;
