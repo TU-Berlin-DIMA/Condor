@@ -22,10 +22,11 @@ public class CountMinSketch<T> implements Synopsis<T>, Serializable {
 
     private int width;
     private int height;
+    private long seed;
     private int[][] array;
     private PairwiseIndependentHashFunctions hashFunctions;
     private int elementsProcessed;
-    private HashSet<T> Elements;
+//    private HashSet<T> Elements;
 
 
     /**
@@ -38,10 +39,11 @@ public class CountMinSketch<T> implements Synopsis<T>, Serializable {
     public CountMinSketch(Integer width, Integer height, Long seed) {
         this.width = width;
         this.height = height;
+        this.seed = seed;
         array = new int[height][width];
         this.hashFunctions = new PairwiseIndependentHashFunctions(height, seed);
         this.elementsProcessed = 0;
-        this.Elements = new HashSet<>();
+//        this.Elements = new HashSet<>();
     }
 
 
@@ -57,7 +59,7 @@ public class CountMinSketch<T> implements Synopsis<T>, Serializable {
         for (int i = 0; i < height; i++) {
             array[i][indices[i] % width]++;
         }
-        Elements.add(element);
+//        Elements.add(element);
         elementsProcessed++;
     }
 
@@ -113,9 +115,23 @@ public class CountMinSketch<T> implements Synopsis<T>, Serializable {
         return elementsProcessed;
     }
 
-    public HashSet<T> getElements() {
-        return Elements;
+    public void setArray(int[][] array) {
+        if (!(array.length == height && array[0].length == width)){
+            throw new IllegalArgumentException("Sketches have to be the same size");
+        }
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                this.array[i][j] = array[i][j];
+            }
+        }
     }
+
+    public void setElementsProcessed(int elementsProcessed) {
+        this.elementsProcessed = elementsProcessed;
+    }
+    //    public HashSet<T> getElements() {
+//        return Elements;
+//    }
 
     /**
      * Function to Merge two Count-Min sketches by adding their counters.
@@ -137,12 +153,37 @@ public class CountMinSketch<T> implements Synopsis<T>, Serializable {
                     }
                 }
                 elementsProcessed += otherCM.getElementsProcessed();
-                Elements.addAll(otherCM.getElements());
+//                Elements.addAll(otherCM.getElements());
                 return this;
             }
         }
         throw new Exception("Sketches to merge have to be the same size and hash Functions");
     }
+
+    @Override
+    public CountMinSketch clone(){
+        CountMinSketch cm = new CountMinSketch(width, height, seed);
+        cm.setElementsProcessed(this.elementsProcessed);
+        cm.setArray(this.array);
+
+        return cm;
+    }
+
+    public CountMinSketch invert(CountMinSketch otherCM) throws Exception {
+        if (otherCM.getWidth() == width && otherCM.getHeight() == height && hashFunctions.equals(otherCM.hashFunctions))
+        {
+            int[][] a2 = otherCM.getArray();
+            for (int i = 0; i < height; i++) {
+                for (int j = 0; j < width; j++) {
+                    array[i][j] -= a2[i][j];
+                }
+            }
+            elementsProcessed -= otherCM.getElementsProcessed();
+            return this;
+        }
+        throw new Exception("Sketches to invert have to be the same size and hash Functions");
+    }
+
 
     @Override
     public String toString() {
@@ -160,17 +201,18 @@ public class CountMinSketch<T> implements Synopsis<T>, Serializable {
             sketch += "\n";
         }
         sketch += "Elements processed: " + elementsProcessed + "\n";
-        for (Object elem :
-                Elements) {
-            sketch += elem.toString() + ", ";
-        }
-        sketch += "\n";
+//        for (Object elem :
+//                Elements) {
+//            sketch += elem.toString() + ", ";
+//        }
+//        sketch += "\n";
         return sketch;
     }
 
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
         out.writeInt(width);
         out.writeInt(height);
+        out.writeLong(seed);
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
                 out.writeInt(array[i][j]);
@@ -182,6 +224,7 @@ public class CountMinSketch<T> implements Synopsis<T>, Serializable {
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
         width = in.readInt();
         height = in.readInt();
+        seed = in.readLong();
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
                 array[i][j] = in.readInt();
