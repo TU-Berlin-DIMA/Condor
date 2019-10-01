@@ -1,5 +1,6 @@
 package Sketches;
 
+import de.tub.dima.scotty.core.windowFunction.AggregateFunction;
 import de.tub.dima.scotty.core.windowFunction.InvertibleAggregateFunction;
 import de.tub.dima.scotty.core.windowFunction.InvertibleReduceAggregateFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
