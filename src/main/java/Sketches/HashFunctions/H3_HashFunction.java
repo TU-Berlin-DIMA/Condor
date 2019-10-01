@@ -3,6 +3,7 @@ package Sketches.HashFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
 import java.util.BitSet;
 
 /**
@@ -11,34 +12,26 @@ import java.util.BitSet;
  *
  * @author joschavonhein
  */
-public class H3_HashFunction {
-    private BitSet seed;
+public class H3_HashFunction implements Serializable {
     private BitSet[] q_matrix;
-    private final byte H = 64;
+    private final byte H = 64;  // length in bits of the generated HashValues
     private byte n;
-    private EH3 eh3;
+
     Logger logger = LoggerFactory.getLogger(H3_HashFunction.class);
 
-    /**
-     * Standard constructor which sets n to 32 (amount of bits contained in an Integer)
-     * @param seed  33 bit seed
-     */
-    public H3_HashFunction(BitSet seed) {
-        this(seed, (byte) 32);
-    }
 
-    public H3_HashFunction(BitSet seed, byte n) {
+
+    public H3_HashFunction(byte n, BitSet seed) {
         if (n > 64){
             throw new IllegalArgumentException("input size n can't be larger than 64 bits (#bits of a Long)!");
         }
-        if (seed.length() > n+1){
-            logger.warn("seed bigger than expected. additional bits will get cut off");
-        }
 
-        this.seed = seed;
         this.n = n;
         q_matrix = new BitSet[n];
-        eh3 = new EH3(seed, n);
+
+        BitSet eh3_seed = (BitSet) seed.clone();
+        eh3_seed.clear(17, 64); // make sure the seed is length 17 by clearing the bits which are possibly set
+        EH3 eh3 = new EH3(eh3_seed, (byte) 16);
 
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < H; j++) {
@@ -53,15 +46,15 @@ public class H3_HashFunction {
     /**
      * Generates a Hash value with size H
      * @param input value which is used to generate the hash
-     * @return  Hash value of size H
+     * @return  Hash value as Long
      */
-    public BitSet generateHash(BitSet input){
+    public long generateHash(BitSet input){
         BitSet result = new BitSet(H);
         for (int i = 0; i < n; i++) {
             if (input.get(i)){
                 result.xor(q_matrix[i]);    // XOR the row i of matrix q when the input bit is set to 1 at position i
             }
         }
-        return result;
+        return result.toLongArray()[0];
     }
 }

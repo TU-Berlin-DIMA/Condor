@@ -1,5 +1,6 @@
 package Sketches.HashFunctions;
 
+import java.io.Serializable;
 import java.util.BitSet;
 
 /**
@@ -7,7 +8,7 @@ import java.util.BitSet;
  *
  * @author joschavonhein
  */
-public class EH3 {
+public class EH3 implements Serializable {
     private BitSet seed;
     private byte n; // input length in bits
 
