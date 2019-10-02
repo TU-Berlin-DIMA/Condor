@@ -32,6 +32,21 @@ public class FastAMS implements Synopsis, Serializable {
     private byte n;
     private BitSet[] seeds; // always have size n+1
 
+    @Override
+    public String toString() {
+        String arrayString = "";
+        for (int i = 0; i < height; i++) {
+            arrayString += Arrays.toString(array[i]) + "\n";
+        }
+        return "FastAMS{" +
+                ", width=" + width +
+                ", height=" + height +
+                ", n=" + n +
+                ", seeds=" + Arrays.toString(seeds) +
+                "\n Array: " + arrayString +
+                '}';
+    }
+
     /**
      * Constructs a FastAMS Sketch Object.
      *
@@ -40,7 +55,7 @@ public class FastAMS implements Synopsis, Serializable {
      * @param n         lenth in bits of the input objects
      * @param seed      seed for the RandomNumber Generator
      */
-    public FastAMS(int width, int height, long seed, byte n) {
+    public FastAMS(Integer width, Integer height, Long seed, Byte n) {
         if (n > 64){
             throw new IllegalArgumentException("n can't be larger than 64 (amount of bits of a Long)!");
         }
@@ -66,7 +81,7 @@ public class FastAMS implements Synopsis, Serializable {
      * @param height    amount of hash functions / rows in the sketch array
      * @param seed      seed for the RandomNumber Generator
      */
-    public FastAMS(int width, int height, long seed){
+    public FastAMS(Integer width, Integer height, Long seed){
         this(width, height, seed, (byte) 32);
     }
 
@@ -137,9 +152,9 @@ public class FastAMS implements Synopsis, Serializable {
         }
 
         int position;
-        long[] hashValues = hashFunctions.generateHash(input);
+        int[] hashValues = hashFunctions.generateHash(input);
         for (int i = 0; i < height; i++) {
-            position = (int)(hashValues[i] % width); // compute the bucket position
+            position = Math.abs(hashValues[i] % width); // compute the bucket position
             boolean b = eh3_array[i].rand(input);
             int addition = (increment && b) || (!increment && !b) ? 1 : -1;
             array[i][position] += addition;
@@ -167,7 +182,7 @@ public class FastAMS implements Synopsis, Serializable {
     }
 
     @Override
-    public FastAMS merge(Synopsis other) throws Exception {
+    public FastAMS merge(Synopsis other) throws IllegalArgumentException {
         if (other instanceof FastAMS){
             FastAMS o = (FastAMS) other;
             if (width == o.getWidth() && height == o.getHeight() && n == o.getN() && Arrays.equals(seeds, o.getSeeds())){

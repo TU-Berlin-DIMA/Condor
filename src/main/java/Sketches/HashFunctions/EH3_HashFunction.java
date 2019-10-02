@@ -1,5 +1,7 @@
 package Sketches.HashFunctions;
 
+import java.io.IOException;
+import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.BitSet;
 
@@ -62,5 +64,19 @@ public class EH3_HashFunction implements Serializable {
             }
         }
         return result;
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws IOException {
+        out.writeObject(seed);
+        out.writeByte(n);
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+        seed = (BitSet) in.readObject();
+        n = in.readByte();
+    }
+
+    private void readObjectNoData() throws ObjectStreamException {
+        System.out.println("readObjectNoData() called - should give an exception");
     }
 }

@@ -35,6 +35,7 @@ import java.util.TreeMap;
 public class SplitAndMergeWithDDSketch implements Synopsis, Serializable {
 
     // TODO: check which error bounds apply using the ddsketch instead of backing sample
+    // TODO: not yet debugged !!!
 
     private int maxNumBuckets; // maximum number of Bars in the sketch
     private TreeMap<Double, Double> buckets; //
