@@ -1,7 +1,7 @@
 package Sketches;
 
-import Sketches.HashFunctions.EH3;
-import Sketches.HashFunctions.H3_HashFunction;
+import Sketches.HashFunctions.EH3_HashFunction;
+import Sketches.HashFunctions.H3_HashFunctions;
 import Synopsis.Synopsis;
 import org.apache.flink.util.XORShiftRandom;
 
@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 
 /**
- * implementation of the Fast AMS Sketch using H3 and EH3 Hash Functions.
+ * implementation of the Fast AMS Sketch using H3 and EH3_HashFunction Hash Functions.
  *
  * This sketch is used to estimate the F2 norm and can be updated in a streaming fashion.
  * The sketch supports updates, deletions and can be merged, given the seeds of the hash functions are the same.
@@ -27,8 +27,8 @@ public class FastAMS implements Synopsis, Serializable {
     private int[][] array;
     private int width;
     private int height;
-    private H3_HashFunction[] h3_array;
-    private EH3[] eh3_array;
+    private H3_HashFunctions hashFunctions;
+    private EH3_HashFunction[] eh3_array;
     private byte n;
     private BitSet[] seeds; // always have size n+1
 
@@ -40,7 +40,7 @@ public class FastAMS implements Synopsis, Serializable {
      * @param n         lenth in bits of the input objects
      * @param seed      seed for the RandomNumber Generator
      */
-    public FastAMS(int width, int height, byte n, long seed) {
+    public FastAMS(int width, int height, long seed, byte n) {
         if (n > 64){
             throw new IllegalArgumentException("n can't be larger than 64 (amount of bits of a Long)!");
         }
@@ -48,25 +48,26 @@ public class FastAMS implements Synopsis, Serializable {
         this.height = height;
         this.n = n;
         this.seeds = new BitSet[height];
-        h3_array = new H3_HashFunction[height];
-        eh3_array = new EH3[height];
-        computeSeeds(seed);
+        hashFunctions = new H3_HashFunctions(height, n, seed);
+        eh3_array = new EH3_HashFunction[height];
         array = new int[height][width];
 
+        // initialize the EH3 HashFunctions
+        computeSeeds(seed);
         for (int i = 0; i < height; i++) {
-            eh3_array[i] = new EH3(seeds[i], n);
-            h3_array[i] = new H3_HashFunction(n, seeds[i]);
+            eh3_array[i] = new EH3_HashFunction(seeds[i], n);
         }
     }
 
     /**
-     * Constructs a FastAMS Sketch object with n = 32 and random seed
+     * Constructs a FastAMS Sketch object with n = 32
      *
      * @param width     amount of buckets in each row - it is recommended to use powers of 2
      * @param height    amount of hash functions / rows in the sketch array
+     * @param seed      seed for the RandomNumber Generator
      */
-    public FastAMS(int width, int height){
-        this(width, height, (byte) 32, 0);
+    public FastAMS(int width, int height, long seed){
+        this(width, height, seed, (byte) 32);
     }
 
     /**
@@ -74,7 +75,7 @@ public class FastAMS implements Synopsis, Serializable {
      * @param seed
      */
     private void computeSeeds(long seed){
-        XORShiftRandom random = seed == 0 ? new XORShiftRandom() : new XORShiftRandom(seed);
+        XORShiftRandom random = new XORShiftRandom(seed);
         int length = (int)Math.ceil(n/8d);
         byte[] byteArray = new byte[length];
         for (int i = 0; i < height; i++) {
@@ -83,6 +84,8 @@ public class FastAMS implements Synopsis, Serializable {
             seeds[i].clear(n+1, n+8); // make sure the seeds are of size n+1 by clearing the overflow bits
         }
     }
+
+
 
     /**
      * Updates the sketch with the given element.
@@ -133,19 +136,54 @@ public class FastAMS implements Synopsis, Serializable {
             }
         }
 
-
         int position;
+        long[] hashValues = hashFunctions.generateHash(input);
         for (int i = 0; i < height; i++) {
-            position = (int)(h3_array[i].generateHash(input) % width); // compute the bucket position
+            position = (int)(hashValues[i] % width); // compute the bucket position
             boolean b = eh3_array[i].rand(input);
             int addition = (increment && b) || (!increment && !b) ? 1 : -1;
             array[i][position] += addition;
         }
     }
 
+    public int[][] getArray() {
+        return array;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public byte getN() {
+        return n;
+    }
+
+    public BitSet[] getSeeds() {
+        return seeds;
+    }
+
     @Override
     public FastAMS merge(Synopsis other) throws Exception {
-        return null;
+        if (other instanceof FastAMS){
+            FastAMS o = (FastAMS) other;
+            if (width == o.getWidth() && height == o.getHeight() && n == o.getN() && Arrays.equals(seeds, o.getSeeds())){
+                int[][] o_array = ((FastAMS) other).getArray();
+                for (int i = 0; i < height; i++) {
+                    for (int j = 0; j < width; j++) {
+                        array[i][j] += o_array[i][j];
+                    }
+                }
+                return this;
+            }else {
+                throw new IllegalArgumentException("Sketches have to be of same height, width, n and seeds / hash_functions to be merged");
+            }
+        }else {
+            throw new IllegalArgumentException("sketch can only be merged with other sketches of the same class");
+        }
     }
 
     /**
@@ -192,7 +230,7 @@ public class FastAMS implements Synopsis, Serializable {
         out.writeObject(array);
         out.writeInt(width);
         out.writeInt(height);
-        out.writeObject(h3_array);
+        out.writeObject(hashFunctions);
         out.writeObject(eh3_array);
         out.writeByte(n);
         out.writeObject(seeds);
@@ -202,8 +240,8 @@ public class FastAMS implements Synopsis, Serializable {
         array = (int[][])in.readObject();
         width = in.readInt();
         height = in.readInt();
-        h3_array = (H3_HashFunction[])in.readObject();
-        eh3_array = (EH3[]) in.readObject();
+        hashFunctions = (H3_HashFunctions) in.readObject();
+        eh3_array = (EH3_HashFunction[]) in.readObject();
         n = in.readByte();
         seeds = (BitSet[]) in.readObject();
     }
