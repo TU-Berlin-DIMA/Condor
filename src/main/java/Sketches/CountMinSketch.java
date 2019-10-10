@@ -2,12 +2,12 @@ package Sketches;
 
 
 import Sketches.HashFunctions.PairwiseIndependentHashFunctions;
+import InvertibleSynopsis;
 import Synopsis.Synopsis;
 
 import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
-import java.util.HashSet;
 
 /**
  * Implementation of classical Count-Min sketch to estimate the frequencies of the elements in a datastream.
@@ -15,10 +15,9 @@ import java.util.HashSet;
  * sketch.
  *
  * @param <T> the type of elements maintained by this sketch
- *
  * @author Rudi Poepsel Lemaitre
  */
-public class CountMinSketch<T> implements Synopsis<T>, Serializable {
+public class CountMinSketch<T> implements InvertibleSynopsis<T>, Serializable {
 
     private int width;
     private int height;
@@ -32,9 +31,9 @@ public class CountMinSketch<T> implements Synopsis<T>, Serializable {
     /**
      * Construct a Count-Min sketch
      *
-     * @param width value range of the hash functions
+     * @param width  value range of the hash functions
      * @param height number of hash functions
-     * @param seed for the randomness of the hash functions
+     * @param seed   for the randomness of the hash functions
      */
     public CountMinSketch(Integer width, Integer height, Long seed) {
         this.width = width;
@@ -45,7 +44,6 @@ public class CountMinSketch<T> implements Synopsis<T>, Serializable {
         this.elementsProcessed = 0;
 //        this.Elements = new HashSet<>();
     }
-
 
 
     /**
@@ -116,7 +114,7 @@ public class CountMinSketch<T> implements Synopsis<T>, Serializable {
     }
 
     public void setArray(int[][] array) {
-        if (!(array.length == height && array[0].length == width)){
+        if (!(array.length == height && array[0].length == width)) {
             throw new IllegalArgumentException("Sketches have to be the same size");
         }
         for (int i = 0; i < height; i++) {
@@ -141,11 +139,10 @@ public class CountMinSketch<T> implements Synopsis<T>, Serializable {
      * @throws Exception
      */
     @Override
-    public CountMinSketch merge(Synopsis other) throws Exception {
+    public CountMinSketch merge(Synopsis<T> other) throws Exception {
         if (other instanceof CountMinSketch) {
             CountMinSketch otherCM = (CountMinSketch) other;
-            if (otherCM.getWidth() == width && otherCM.getHeight() == height && hashFunctions.equals(otherCM.hashFunctions))
-            {
+            if (otherCM.getWidth() == width && otherCM.getHeight() == height && hashFunctions.equals(otherCM.hashFunctions)) {
                 int[][] a2 = otherCM.getArray();
                 for (int i = 0; i < height; i++) {
                     for (int j = 0; j < width; j++) {
@@ -161,7 +158,7 @@ public class CountMinSketch<T> implements Synopsis<T>, Serializable {
     }
 
     @Override
-    public CountMinSketch clone(){
+    public CountMinSketch clone() {
         CountMinSketch cm = new CountMinSketch(width, height, seed);
         cm.setElementsProcessed(this.elementsProcessed);
         cm.setArray(this.array);
@@ -169,17 +166,29 @@ public class CountMinSketch<T> implements Synopsis<T>, Serializable {
         return cm;
     }
 
-    public CountMinSketch invert(CountMinSketch otherCM) throws Exception {
-        if (otherCM.getWidth() == width && otherCM.getHeight() == height && hashFunctions.equals(otherCM.hashFunctions))
-        {
-            int[][] a2 = otherCM.getArray();
-            for (int i = 0; i < height; i++) {
-                for (int j = 0; j < width; j++) {
-                    array[i][j] -= a2[i][j];
+    @Override
+    public void decrement(T toDecrement) {
+        int[] indices = hashFunctions.hash(toDecrement);
+        for (int i = 0; i < height; i++) {
+            array[i][indices[i] % width]--;
+        }
+        elementsProcessed--;
+    }
+
+    @Override
+    public CountMinSketch<T> invert(InvertibleSynopsis<T> other) throws Exception {
+        if (other instanceof CountMinSketch) {
+            CountMinSketch otherCM = (CountMinSketch) other;
+            if (otherCM.getWidth() == width && otherCM.getHeight() == height && hashFunctions.equals(otherCM.hashFunctions)) {
+                int[][] a2 = otherCM.getArray();
+                for (int i = 0; i < height; i++) {
+                    for (int j = 0; j < width; j++) {
+                        array[i][j] -= a2[i][j];
+                    }
                 }
+                elementsProcessed -= otherCM.getElementsProcessed();
+                return this;
             }
-            elementsProcessed -= otherCM.getElementsProcessed();
-            return this;
         }
         throw new Exception("Sketches to invert have to be the same size and hash Functions");
     }
@@ -236,4 +245,6 @@ public class CountMinSketch<T> implements Synopsis<T>, Serializable {
     private void readObjectNoData() throws ObjectStreamException {
         System.out.println("readObjectNoData() called - should give an exception");
     }
+
+
 }
