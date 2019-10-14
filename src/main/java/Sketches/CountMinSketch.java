@@ -2,7 +2,7 @@ package Sketches;
 
 
 import Sketches.HashFunctions.PairwiseIndependentHashFunctions;
-import InvertibleSynopsis;
+import Synopsis.InvertibleSynopsis;
 import Synopsis.Synopsis;
 
 import java.io.IOException;

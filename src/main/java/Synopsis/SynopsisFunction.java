@@ -1,6 +1,7 @@
 package Synopsis;
 
-import Sketches.CountMinSketch;
+import de.tub.dima.scotty.core.windowFunction.AggregateFunction;
+import de.tub.dima.scotty.core.windowFunction.CommutativeAggregateFunction;
 import de.tub.dima.scotty.core.windowFunction.InvertibleAggregateFunction;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -9,13 +10,27 @@ import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
-public class InvertibleSynopsisAggregator<Input> implements InvertibleAggregateFunction<Tuple2<Integer,Input>, InvertibleSynopsis, InvertibleSynopsis>, Serializable {
+public class SynopsisFunction<Input> implements AggregateFunction<Tuple2<Integer,Input>, InvertibleSynopsis, InvertibleSynopsis>, Serializable {
     private int keyField;
     private Object[] constructorParam;
     private Constructor<? extends InvertibleSynopsis> constructor;
 
-    public InvertibleSynopsisAggregator(Class<? extends InvertibleSynopsis> sketchClass, Object[] constructorParam, int keyField){
+    public SynopsisFunction(int keyField, Class<? extends InvertibleSynopsis> sketchClass, Object[] constructorParam){
         this.keyField = keyField;
+        this.constructorParam = constructorParam;
+        Class<?>[] parameterClasses = new Class[constructorParam.length];
+        for (int i = 0; i < constructorParam.length; i++) {
+            parameterClasses[i] = constructorParam[i].getClass();
+        }
+        try {
+            this.constructor = sketchClass.getConstructor(parameterClasses);
+        } catch (NoSuchMethodException e) {
+            throw new IllegalArgumentException("Synopsis parameters didn't match any constructor");
+        }
+    }
+
+    public SynopsisFunction(Class<? extends InvertibleSynopsis> sketchClass, Object[] constructorParam){
+        this.keyField = -1;
         this.constructorParam = constructorParam;
         Class<?>[] parameterClasses = new Class[constructorParam.length];
         for (int i = 0; i < constructorParam.length; i++) {
@@ -40,27 +55,6 @@ public class InvertibleSynopsisAggregator<Input> implements InvertibleAggregateF
             e.printStackTrace();
         }
         return synopsis;
-    }
-
-    @Override
-    public InvertibleSynopsis invert(InvertibleSynopsis partialAggregate, InvertibleSynopsis toRemove) {
-        try {
-            return partialAggregate.invert(toRemove);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    @Override
-    public InvertibleSynopsis liftAndInvert(InvertibleSynopsis partialAggregate, Tuple2<Integer,Input> toRemove) {
-        if(toRemove.f1 instanceof Tuple && keyField != -1){
-            Input field = ((Tuple) toRemove.f1).getField(this.keyField);
-            partialAggregate.decrement(field);
-            return partialAggregate;
-        }
-        partialAggregate.decrement(toRemove.f1);
-        return partialAggregate;
     }
 
     @Override

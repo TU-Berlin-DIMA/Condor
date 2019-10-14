@@ -35,7 +35,7 @@ public class ScottyJob {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
-        DataStream<String> line = env.readTextFile("data/timestamped.csv");
+        DataStream<String> line = env.readTextFile("data/timestamped.csv").setParallelism(1);
         DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
                 .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
@@ -107,7 +107,7 @@ public class ScottyJob {
         @Nullable
         @Override
         public Watermark checkAndGetNextWatermark(Tuple3<Integer, Integer, Long> lastElement, long extractedTimestamp) {
-            return new Watermark(extractedTimestamp);
+            return new Watermark(extractedTimestamp-10000);
         }
 
         /**

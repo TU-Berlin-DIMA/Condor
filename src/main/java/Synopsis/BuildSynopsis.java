@@ -2,8 +2,14 @@ package Synopsis;
 
 import Sampling.SampleElement;
 import Synopsis.Synopsis;
+import de.tub.dima.scotty.core.AggregateWindow;
+import de.tub.dima.scotty.core.windowType.Window;
+import de.tub.dima.scotty.flinkconnector.KeyedScottyWindowOperator;
+import de.tub.dima.scotty.flinkconnector.demo.windowFunctions.SumWindowFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
+import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.functions.RichMapFunction;
+import org.apache.flink.api.common.functions.RichReduceFunction;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.configuration.Configuration;
@@ -16,10 +22,14 @@ import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks
 import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.TreeMap;
 
 /**
  * Class to organize the static functions to generate window based Synopses.
@@ -192,6 +202,21 @@ public final class BuildSynopsis {
         return reduce;
     }
 
+    public static <T, S extends Synopsis> SingleOutputStreamOperator<AggregateWindow<S>> scottyWindows(DataStream<T> inputStream, Window[] windows, int keyField, Class<S> sketchClass, Object... parameters){
+        KeyedStream<Tuple2<Integer, T>, Tuple> keyedStream = inputStream.map(new AddParallelismTuple<>()).keyBy(0);
+        if (InvertibleSynopsis.class.isAssignableFrom(sketchClass)){
+            KeyedScottyWindowOperator<Tuple, Tuple2<Integer,T>, S> processingFunction =
+                    new KeyedScottyWindowOperator<>(new InvertibleSynopsisFunction(keyField, sketchClass, parameters));
+            for (int i = 0; i < windows.length; i++) {
+                processingFunction.addWindow(windows[i]);
+            }
+            SingleOutputStreamOperator<AggregateWindow<S>> resultStream = keyedStream.process(processingFunction).flatMap(new MergePreAggregates());
+
+        }
+        return null;
+    }
+
+
 
     /**
      * Integer state for Stateful Functions
@@ -215,7 +240,107 @@ public final class BuildSynopsis {
         }
     }
 
+    /**
+     * Integer state for Stateful Functions
+     */
+    public static class WindowState implements ValueState<HashMap<WindowID,Tuple2<Integer,AggregateWindow<Synopsis>>>>{
+        HashMap<WindowID,Tuple2<Integer,AggregateWindow<Synopsis>>> openWindows;
+        int numberKeys;
 
+        public WindowState(int numberKeys) {
+            this.numberKeys = numberKeys;
+            this.openWindows = new HashMap<>();
+        }
+
+        @Override
+        public HashMap value() throws IOException {
+            return openWindows;
+        }
+
+        @Override
+        public void update(HashMap value) throws IOException {
+            this.openWindows = value;
+        }
+
+        @Override
+        public void clear() {
+            openWindows.clear();
+        }
+    }
+
+    public static class WindowID implements Comparable{
+        private long start;
+        private long end;
+
+        public WindowID(long start, long end) {
+            this.start = start;
+            this.end = end;
+        }
+
+        @Override
+        public int compareTo(@NotNull Object o) {
+            if (o instanceof WindowID){
+                if (((WindowID) o).start > this.start){
+                    return -1;
+                } else if (((WindowID) o).start < this.start){
+                    return 1;
+                } else if(((WindowID) o).start == this.start && ((WindowID) o).end > this.end){
+                    return -1;
+                } else if(((WindowID) o).start == this.start && ((WindowID) o).end < this.end){
+                    return 1;
+                } else /*if(((WindowID) o).start == this.start && ((WindowID) o).end == this.end)*/{
+                    return 0;
+                }
+            }
+            throw new IllegalArgumentException("Must be a WindowID to be compared");
+        }
+
+
+        @Override
+        public boolean equals(Object o) {
+            if (o instanceof WindowID){
+                if (((WindowID) o).start == this.start && ((WindowID) o).end == this.end){
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+
+    public static class MergePreAggregates<S extends Synopsis> extends RichFlatMapFunction<AggregateWindow<S>, AggregateWindow<S>>{
+
+        WindowState state;
+        int parallelismKeys;
+
+        public MergePreAggregates() {
+            this.parallelismKeys = this.getRuntimeContext().getMaxNumberOfParallelSubtasks();
+        }
+
+        @Override
+        public void open(Configuration parameters) throws Exception {
+            state = new WindowState(getRuntimeContext().getMaxNumberOfParallelSubtasks());
+        }
+
+        @Override
+        public void flatMap(AggregateWindow<S> value, Collector<AggregateWindow<S>> out) throws Exception {
+            HashMap<WindowID,Tuple2<Integer,AggregateWindow<S>>> openWindows = state.value();
+            WindowID windowID = new WindowID(value.getStart(), value.getEnd());
+            Tuple2<Integer,AggregateWindow<S>> synopsisAggregateWindow = openWindows.get(windowID);
+            if (synopsisAggregateWindow == null){
+                openWindows.put(windowID,new Tuple2<>(1,value));
+            } else if (synopsisAggregateWindow.f0 == parallelismKeys-1){
+                synopsisAggregateWindow.f1.getAggValues().addAll(value.getAggValues());
+                out.collect(synopsisAggregateWindow.f1);
+                openWindows.remove(windowID);
+            } else {
+                synopsisAggregateWindow.f1.getAggValues().addAll(value.getAggValues());
+                synopsisAggregateWindow.f0 += 1;
+            }
+            state.update(openWindows);
+        }
+
+    }
     /**
      * Stateful map functions to add the parallelism variable
      *
