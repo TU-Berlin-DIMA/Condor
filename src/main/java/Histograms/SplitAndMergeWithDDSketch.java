@@ -107,10 +107,11 @@ public class SplitAndMergeWithDDSketch implements Synopsis, Serializable {
                 }
                 binFrequency = buckets.merge(key, 1d, (a,b) -> a + b);
             } else{ // element is new leftmost boundary
-                key = buckets.ceilingKey(next);
-                binFrequency = buckets.get(key) + 1;
-                buckets.remove(key);   // remove old bin
-                buckets.put(next, binFrequency); // create new bin with new left boundary
+                double old_key = buckets.ceilingKey(next);
+                binFrequency = buckets.get(old_key) + 1;
+                buckets.remove(old_key);   // remove old bin
+                key = next;
+                buckets.put(key, binFrequency); // create new bin with new left boundary
             }
 
             if (binFrequency >= threshold){ // check whether the bucket frequency exceeds the threshold and has to be split
