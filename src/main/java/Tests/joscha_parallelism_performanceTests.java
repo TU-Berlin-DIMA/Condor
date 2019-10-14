@@ -2,9 +2,11 @@ package Tests;
 
 import Sketches.FastAMS;
 import Synopsis.BuildSynopsis;
-import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.functions.*;
+import org.apache.flink.api.common.state.ValueState;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -12,10 +14,12 @@ import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks;
 import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
 
 import javax.annotation.Nullable;
+import java.util.HashMap;
 
 public class joscha_parallelism_performanceTests {
     public static void main(String[] args) throws Exception {
@@ -24,15 +28,7 @@ public class joscha_parallelism_performanceTests {
         // set up the streaming execution environment
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
-
-        int keyField = 0;
-
-        Integer width = 64;
-        Integer height = 32;
-        Long seed = 11l;
-
-        Object[] parameters = new Object[]{width, height, seed};
-        Class<FastAMS> sketchClass = FastAMS.class;
+        env.setParallelism(8);
 
         Time windowTime = Time.minutes(1);
 
@@ -41,86 +37,43 @@ public class joscha_parallelism_performanceTests {
                 .assignTimestampsAndWatermarks(new BashHistogramTest.CustomTimeStampExtractor()); // extract the timestamps and add watermarks
 
 
-        SingleOutputStreamOperator<FastAMS> fastAMS = BuildSynopsis.timeBased(timestamped, windowTime, keyField, sketchClass, parameters);
+        SingleOutputStreamOperator aggregate = timestamped.map(new AddParallelismTuple())
+                .keyBy(0)
+                .timeWindow((windowTime))
+                .aggregate(new customAggregateFunction<>());// key by the new parallelism
 
-        fastAMS.writeAsText("output/fastAMS.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
-        DataStream<Long> queryResult = fastAMS.map(new MapFunction<FastAMS, Long>() {
-            @Override
-            public Long map(FastAMS sketch) throws Exception {
-                return sketch.estimateF2();
-            }
-        });
-
-        queryResult.writeAsText("output/FastAMS_queryResult.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+        aggregate.writeAsText("output/parallelism_test.txt", FileSystem.WriteMode.OVERWRITE);
 
         env.execute("Flink Streaming Java API Skeleton");
     }
 
     /**
-     * FlatMap to create Tuples from the incoming data
+     * Stateful map functions to add the parallelism variable
+     *
+     * @param <T0> type of input elements
      */
-    public static class CreateTuplesFlatMap implements FlatMapFunction<String, Tuple3<Integer, Integer, Long>> {
+    public static class AddParallelismTuple<T0> extends RichMapFunction<T0, Tuple2<Integer,T0>> {
+
+        ValueState<Integer> state;
+
         @Override
-        public void flatMap(String value, Collector<Tuple3<Integer, Integer, Long>> out) throws Exception {
-            String[] tuples = value.split(",");
-
-            if(tuples.length == 3) {
-
-                Integer key = new Integer(tuples[0]);
-                Integer val = new Integer(tuples[1]);
-                Long timestamp = new Long(tuples[2]);
-
-                if (key != null && val != null) {
-                    out.collect(new Tuple3<>(key, val, timestamp));
-                }
-            }
-        }
-    }
-
-    /**
-     * The Custom TimeStampExtractor which is used to assign Timestamps and Watermarks for our data
-     */
-    public static class CustomTimeStampExtractor implements AssignerWithPunctuatedWatermarks<Tuple3<Integer, Integer, Long>> {
-        /**
-         * Asks this implementation if it wants to emit a watermark. This method is called right after
-         * the {@link #extractTimestamp(Tuple3, long)}   method.
-         *
-         * <p>The returned watermark will be emitted only if it is non-null and its timestamp
-         * is larger than that of the previously emitted watermark (to preserve the contract of
-         * ascending watermarks). If a null value is returned, or the timestamp of the returned
-         * watermark is smaller than that of the last emitted one, then no new watermark will
-         * be generated.
-         *
-         * <p>For an example how to use this method, see the documentation of
-         * {@link AssignerWithPunctuatedWatermarks this class}.
-         *
-         * @param lastElement
-         * @param extractedTimestamp
-         * @return {@code Null}, if no watermark should be emitted, or the next watermark to emit.
-         */
-        @Nullable
-        @Override
-        public Watermark checkAndGetNextWatermark(Tuple3<Integer, Integer, Long> lastElement, long extractedTimestamp) {
-            return new Watermark(extractedTimestamp);
+        public void open(Configuration parameters) throws Exception {
+            state = new BuildSynopsis.IntegerState();
         }
 
-        /**
-         * Assigns a timestamp to an element, in milliseconds since the Epoch.
-         *
-         * <p>The method is passed the previously assigned timestamp of the element.
-         * That previous timestamp may have been assigned from a previous assigner,
-         * by ingestion time. If the element did not carry a timestamp before, this value is
-         * {@code Long.MIN_VALUE}.
-         *
-         * @param element                  The element that the timestamp will be assigned to.
-         * @param previousElementTimestamp The previous internal timestamp of the element,
-         *                                 or a negative value, if no timestamp has been assigned yet.
-         * @return The new timestamp.
-         */
         @Override
-        public long extractTimestamp(Tuple3<Integer, Integer, Long> element, long previousElementTimestamp) {
-            return element.f2;
+        public Tuple2<Integer,T0> map(T0 value) throws Exception {
+            Tuple2 newTuple = new Tuple2<Integer,T0>();
+            int currentNode = state.value();
+            int next = currentNode +1;
+            next = next % this.getRuntimeContext().getNumberOfParallelSubtasks();
+            state.update(next);
+
+            newTuple.setField(currentNode,0);
+            newTuple.setField(value,1);
+
+            return newTuple;
         }
     }
 }

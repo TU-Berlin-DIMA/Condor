@@ -4,12 +4,10 @@ import org.apache.flink.util.XORShiftRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.awt.*;
 import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.BitSet;
-import java.util.Random;
 
 /**
  * implementation of the H3 hash function which delivers a highly even distribution of hash keys to hash values.
@@ -27,11 +25,11 @@ public class H3_HashFunctions implements Serializable {
 
 
     public H3_HashFunctions(int numFunctions, byte numInputBits, long seed) {
+        this.n = numInputBits;
         if (n > 64){
             throw new IllegalArgumentException("input size n can't be larger than 64 bits (#bits of a Long)!");
         }
 
-        this.n = numInputBits;
         this.numFunctions = numFunctions;
         q_matrices = new BitSet[numFunctions][n]; // initialize numFunctions, n * H matrices
         XORShiftRandom random = new XORShiftRandom(seed);
