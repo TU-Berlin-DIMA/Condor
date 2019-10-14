@@ -10,12 +10,12 @@ import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
-public class SynopsisFunction<Input> implements AggregateFunction<Tuple2<Integer,Input>, InvertibleSynopsis, InvertibleSynopsis>, Serializable {
+public class SynopsisFunction<Input> implements AggregateFunction<Tuple2<Integer,Input>, Synopsis, Synopsis>, Serializable {
     private int keyField;
     private Object[] constructorParam;
-    private Constructor<? extends InvertibleSynopsis> constructor;
+    private Constructor<? extends Synopsis> constructor;
 
-    public SynopsisFunction(int keyField, Class<? extends InvertibleSynopsis> sketchClass, Object[] constructorParam){
+    public SynopsisFunction(int keyField, Class<? extends InvertibleSynopsis> synopsisClass, Object[] constructorParam){
         this.keyField = keyField;
         this.constructorParam = constructorParam;
         Class<?>[] parameterClasses = new Class[constructorParam.length];
@@ -23,13 +23,13 @@ public class SynopsisFunction<Input> implements AggregateFunction<Tuple2<Integer
             parameterClasses[i] = constructorParam[i].getClass();
         }
         try {
-            this.constructor = sketchClass.getConstructor(parameterClasses);
+            this.constructor = synopsisClass.getConstructor(parameterClasses);
         } catch (NoSuchMethodException e) {
             throw new IllegalArgumentException("Synopsis parameters didn't match any constructor");
         }
     }
 
-    public SynopsisFunction(Class<? extends InvertibleSynopsis> sketchClass, Object[] constructorParam){
+    public SynopsisFunction(Class<? extends Synopsis> synopsisClass, Object[] constructorParam){
         this.keyField = -1;
         this.constructorParam = constructorParam;
         Class<?>[] parameterClasses = new Class[constructorParam.length];
@@ -37,14 +37,14 @@ public class SynopsisFunction<Input> implements AggregateFunction<Tuple2<Integer
             parameterClasses[i] = constructorParam[i].getClass();
         }
         try {
-            this.constructor = sketchClass.getConstructor(parameterClasses);
+            this.constructor = synopsisClass.getConstructor(parameterClasses);
         } catch (NoSuchMethodException e) {
             throw new IllegalArgumentException("Synopsis parameters didn't match any constructor");
         }
     }
 
-    public InvertibleSynopsis createAggregate() {
-        InvertibleSynopsis synopsis = null;
+    public Synopsis createAggregate() {
+        Synopsis synopsis = null;
         try {
             synopsis = constructor.newInstance(constructorParam);
         } catch (InstantiationException e) {
@@ -58,8 +58,8 @@ public class SynopsisFunction<Input> implements AggregateFunction<Tuple2<Integer
     }
 
     @Override
-    public InvertibleSynopsis lift(Tuple2<Integer,Input> inputTuple) {
-        InvertibleSynopsis partialAggregate = createAggregate();
+    public Synopsis lift(Tuple2<Integer,Input> inputTuple) {
+        Synopsis partialAggregate = createAggregate();
         if(inputTuple.f1 instanceof Tuple && keyField != -1){
             Object field = ((Tuple) inputTuple.f1).getField(this.keyField);
             partialAggregate.update(field);
@@ -70,7 +70,7 @@ public class SynopsisFunction<Input> implements AggregateFunction<Tuple2<Integer
     }
 
     @Override
-    public InvertibleSynopsis combine(InvertibleSynopsis input, InvertibleSynopsis partialAggregate) {
+    public Synopsis combine(Synopsis input, Synopsis partialAggregate) {
         try {
             return input.merge(partialAggregate);
         } catch (Exception e) {
@@ -80,7 +80,7 @@ public class SynopsisFunction<Input> implements AggregateFunction<Tuple2<Integer
     }
 
     @Override
-    public InvertibleSynopsis liftAndCombine(InvertibleSynopsis partialAggregate, Tuple2<Integer,Input> inputTuple) {
+    public Synopsis liftAndCombine(Synopsis partialAggregate, Tuple2<Integer,Input> inputTuple) {
         if(inputTuple.f1 instanceof Tuple && keyField != -1){
             Object field = ((Tuple) inputTuple.f1).getField(this.keyField);
             partialAggregate.update(field);
@@ -91,7 +91,7 @@ public class SynopsisFunction<Input> implements AggregateFunction<Tuple2<Integer
     }
 
     @Override
-    public InvertibleSynopsis lower(InvertibleSynopsis inputInvertibleSynopsis) {
+    public Synopsis lower(Synopsis inputInvertibleSynopsis) {
         return inputInvertibleSynopsis;
     }
 }

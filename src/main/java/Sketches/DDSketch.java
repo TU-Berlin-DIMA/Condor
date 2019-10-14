@@ -1,6 +1,7 @@
 package Sketches;
 
 import Sketches.HashFunctions.PairwiseIndependentHashFunctions;
+import Synopsis.InvertibleSynopsis;
 import Synopsis.Synopsis;
 
 import java.io.IOException;
@@ -19,10 +20,9 @@ import java.util.TreeMap;
  * This algorithm was proposed by DataDog.
  *
  * @param <T> the type of elements maintained by this sketch
- *
  * @author Rudi Poepsel Lemaitre
  */
-public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
+public class DDSketch<T extends Number> implements InvertibleSynopsis<T>, Serializable {
     private int maxNumBins;
     private boolean isCollapsed;
     private double relativeAccuracy;
@@ -39,8 +39,8 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
      * Construct a DDSketch
      *
      * @param relativeAccuracy to define the query error bounds for each Quantile
-     * @param maxNumBins Maximum number of bins to be maintained, if this value is exceeded the lowest bins
-     *                   will be merged
+     * @param maxNumBins       Maximum number of bins to be maintained, if this value is exceeded the lowest bins
+     *                         will be merged
      */
     public DDSketch(Double relativeAccuracy, Integer maxNumBins) {
         if (relativeAccuracy <= 0 || relativeAccuracy >= 1) {
@@ -183,7 +183,7 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
      * Estimate the p-Quantile value considering only a given number of elements
      *
      * @param quantile p value of the quantile (0 < p < 1)
-     * @param count the number of elements to be considered as total
+     * @param count    the number of elements to be considered as total
      * @return the estimated quantile value considering a especified number
      */
     private double getValueAtQuantile(double quantile, long count) {
@@ -202,8 +202,8 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
 
         if (quantile <= 0.5) {
             long n = zeroCount;
-            for(Map.Entry<Integer,Integer> bin : counts.entrySet()) {
-                if (n > rank){
+            for (Map.Entry<Integer, Integer> bin : counts.entrySet()) {
+                if (n > rank) {
                     return value(bin.getKey());
                 }
                 n += bin.getValue();
@@ -211,8 +211,8 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
             return getMaxValue();
         } else {
             long n = count;
-            for(Map.Entry<Integer,Integer> bin : counts.descendingMap().entrySet()) {
-                if (n <= rank){
+            for (Map.Entry<Integer, Integer> bin : counts.descendingMap().entrySet()) {
+                if (n <= rank) {
                     return value(bin.getKey());
                 }
                 n -= bin.getValue();
@@ -223,6 +223,61 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
 
     public TreeMap<Integer, Integer> getCounts() {
         return counts;
+    }
+
+    @Override
+    public InvertibleSynopsis<T> invert(InvertibleSynopsis<T> toRemove) throws Exception {
+        if (toRemove instanceof DDSketch) {
+            DDSketch otherDD = (DDSketch) toRemove;
+            if (this.relativeAccuracy == otherDD.relativeAccuracy && this.maxNumBins == otherDD.maxNumBins) {
+                if (otherDD.getCounts().isEmpty()) {
+                    return this;
+                }
+                ((TreeMap<Integer, Integer>) otherDD.getCounts()).forEach(
+                        (key, value) -> counts.merge(key, value, (a, b) -> a - b)
+                );
+                int newGlobalCount = 0;
+                for(Map.Entry<Integer,Integer> entry : counts.entrySet()) {
+                    if (entry.getValue() <= 0){
+                        counts.remove(entry.getKey());
+                    } else{
+                        globalCount += entry.getValue();
+                    }
+                }
+
+                this.globalCount = newGlobalCount;
+                if (this.zeroCount > otherDD.zeroCount){
+                    this.zeroCount -= otherDD.zeroCount;
+                } else {
+                    this.zeroCount = 0;
+                }
+
+                return this;
+            }
+        }
+        throw new Exception("Sketches to merge have to be the same size and hash Functions");
+    }
+
+    @Override
+    public void decrement(T toDecrement) {
+        double elemValue = toDecrement.doubleValue();
+        checkValueTrackable(elemValue);
+        if (elemValue < minIndexedValue && zeroCount > 0) {
+            zeroCount--;
+        } else {
+            if (globalCount > 0) {
+                globalCount--;
+            }
+            int index = index(elemValue);
+            Integer bucket = counts.get(index);
+            if (bucket != null) {
+                if (bucket <= 1){
+                    counts.remove(index);
+                }else{
+                    counts.merge(index, -1, (a, b) -> a + b);
+                }
+            }
+        }
     }
 
     /**
@@ -236,8 +291,8 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
     public DDSketch merge(Synopsis other) throws Exception {
         if (other instanceof DDSketch) {
             DDSketch otherDD = (DDSketch) other;
-            if (this.relativeAccuracy == otherDD.relativeAccuracy && this.maxNumBins == otherDD.maxNumBins){
-                if (otherDD.getCounts().isEmpty()){
+            if (this.relativeAccuracy == otherDD.relativeAccuracy && this.maxNumBins == otherDD.maxNumBins) {
+                if (otherDD.getCounts().isEmpty()) {
                     return this;
                 }
                 ((TreeMap<Integer, Integer>) otherDD.getCounts()).forEach(
@@ -297,4 +352,5 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
     private void readObjectNoData() throws ObjectStreamException {
         System.out.println("readObjectNoData() called - should give an exception");
     }
+
 }

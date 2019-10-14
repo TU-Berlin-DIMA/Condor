@@ -47,14 +47,14 @@ public final class BuildSynopsis {
      * @param inputStream the data stream to build the Synopsis
      * @param windowTime the size of the time window
      * @param keyField the field of the tuple to build the Synopsis. Set to -1 to build the Synopsis over the whole tuple.
-     * @param sketchClass the type of Synopsis to be computed
+     * @param synopsisClass the type of Synopsis to be computed
      * @param parameters the initialization parameters for the Synopsis
      * @param <T> the type of the input elements
      * @param <S> the type of the Synopsis
      * @return stream of time window based Synopses
      */
-    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> timeBased(DataStream<T> inputStream, Time windowTime, int keyField, Class<S> sketchClass, Object... parameters){
-        SynopsisAggregator agg = new SynopsisAggregator(sketchClass, parameters, keyField);
+    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> timeBased(DataStream<T> inputStream, Time windowTime, int keyField, Class<S> synopsisClass, Object... parameters){
+        SynopsisAggregator agg = new SynopsisAggregator(synopsisClass, parameters, keyField);
 
         SingleOutputStreamOperator reduce = inputStream
                 .map(new AddParallelismTuple())
@@ -68,7 +68,7 @@ public final class BuildSynopsis {
                         Synopsis merged = value1.merge(value2);
                         return merged;
                     }
-                }).returns(sketchClass);
+                }).returns(synopsisClass);
         return reduce;
     }
 
@@ -81,14 +81,14 @@ public final class BuildSynopsis {
      *
      * @param inputStream the data stream to build the Synopsis
      * @param windowTime the size of the time window
-     * @param sketchClass the type of Synopsis to be computed
+     * @param synopsisClass the type of Synopsis to be computed
      * @param parameters the initialization parameters for the Synopsis
      * @param <T> the type of the input elements
      * @param <S> the type of the Synopsis
      * @return stream of time window based Synopses
      */
-    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> timeBased(DataStream<T> inputStream, Time windowTime, Class<S> sketchClass, Object... parameters){
-        return timeBased(inputStream, windowTime, -1, sketchClass, parameters);
+    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> timeBased(DataStream<T> inputStream, Time windowTime, Class<S> synopsisClass, Object... parameters){
+        return timeBased(inputStream, windowTime, -1, synopsisClass, parameters);
     }
 
     /**
@@ -101,14 +101,14 @@ public final class BuildSynopsis {
      * @param inputStream the data stream to build the Synopsis
      * @param windowTime the size of the time window
      * @param keyField the field of the tuple to build the Synopsis. Set to -1 to build the Synopsis over the whole tuple.
-     * @param sketchClass the type of Synopsis to be computed
+     * @param synopsisClass the type of Synopsis to be computed
      * @param parameters the initialization parameters for the Synopsis
      * @param <T> the type of the input elements
      * @param <S> the type of the Synopsis
      * @return stream of time window based Synopses
      */
-    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> debugAggimeBased(DataStream<T> inputStream, Time windowTime, int keyField, Class<S> sketchClass, Object... parameters){
-        SynopsisAggregator agg = new SynopsisAggregator(sketchClass, parameters, keyField);
+    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> debugAggimeBased(DataStream<T> inputStream, Time windowTime, int keyField, Class<S> synopsisClass, Object... parameters){
+        SynopsisAggregator agg = new SynopsisAggregator(synopsisClass, parameters, keyField);
 
         SingleOutputStreamOperator reduce1 = inputStream
                 .map(new AddParallelismTuple())
@@ -124,7 +124,7 @@ public final class BuildSynopsis {
                         Synopsis merged = value1.merge(value2);
                         return merged;
                     }
-                }).returns(sketchClass);
+                }).returns(synopsisClass);
         return reduce;
     }
 
@@ -137,14 +137,14 @@ public final class BuildSynopsis {
      * @param inputStream the data stream to build the Synopsis
      * @param windowSize the size of the count window
      * @param keyField the field of the tuple to build the Synopsis. Set to -1 to build the Synopsis over the whole tuple.
-     * @param sketchClass the type of Synopsis to be computed
+     * @param synopsisClass the type of Synopsis to be computed
      * @param parameters the initialization parameters for the Synopsis
      * @param <T> the type of the input elements
      * @param <S> the type of the Synopsis
      * @return stream of count window based Synopses
      */
-    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> countBased(DataStream<T> inputStream, long windowSize, int keyField, Class<S> sketchClass, Object... parameters){
-        SynopsisAggregator agg = new SynopsisAggregator(sketchClass, parameters, keyField);
+    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> countBased(DataStream<T> inputStream, long windowSize, int keyField, Class<S> synopsisClass, Object... parameters){
+        SynopsisAggregator agg = new SynopsisAggregator(synopsisClass, parameters, keyField);
         int parallelism = inputStream.getExecutionEnvironment().getParallelism();
 
         SingleOutputStreamOperator reduce = inputStream
@@ -158,7 +158,7 @@ public final class BuildSynopsis {
                     public Synopsis reduce(Synopsis value1, Synopsis value2) throws Exception {
                         return value1.merge(value2);
                     }
-                }).returns(sketchClass);
+                }).returns(synopsisClass);
         return reduce;
     }
 
@@ -170,20 +170,20 @@ public final class BuildSynopsis {
      *
      * @param inputStream the data stream to build the Synopsis
      * @param windowSize the size of the count window
-     * @param sketchClass the type of Synopsis to be computed
+     * @param synopsisClass the type of Synopsis to be computed
      * @param parameters the initialization parameters for the Synopsis
      * @param <T> the type of the input elements
      * @param <S> the type of the Synopsis
      * @return stream of count window based Synopses
      */
-    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> countBased(DataStream<T> inputStream, long windowSize, Class<S> sketchClass, Object... parameters){
-        return countBased(inputStream, windowSize, -1, sketchClass, parameters);
+    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> countBased(DataStream<T> inputStream, long windowSize, Class<S> synopsisClass, Object... parameters){
+        return countBased(inputStream, windowSize, -1, synopsisClass, parameters);
     }
 
 
 
-    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> sampleTimeBased(DataStream<T> inputStream, Time windowTime, int keyField, Class<S> sketchClass, Object... parameters){
-        SynopsisAggregator agg = new SynopsisAggregator(sketchClass, parameters, keyField);
+    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> sampleTimeBased(DataStream<T> inputStream, Time windowTime, int keyField, Class<S> synopsisClass, Object... parameters){
+        SynopsisAggregator agg = new SynopsisAggregator(synopsisClass, parameters, keyField);
         SingleOutputStreamOperator reduce1 = inputStream
                 .process(new ConvertToSample())
                 .assignTimestampsAndWatermarks(new SampleTimeStampExtractor())
@@ -198,22 +198,24 @@ public final class BuildSynopsis {
                     public Synopsis reduce(Synopsis value1, Synopsis value2) throws Exception {
                         return value1.merge(value2);
                     }
-                }).returns(sketchClass);
+                }).returns(synopsisClass);
         return reduce;
     }
 
-    public static <T, S extends Synopsis> SingleOutputStreamOperator<AggregateWindow<S>> scottyWindows(DataStream<T> inputStream, Window[] windows, int keyField, Class<S> sketchClass, Object... parameters){
+    public static <T, S extends Synopsis> SingleOutputStreamOperator<AggregateWindow<S>> scottyWindows(DataStream<T> inputStream, Window[] windows, int keyField, Class<S> synopsisClass, Object... parameters){
         KeyedStream<Tuple2<Integer, T>, Tuple> keyedStream = inputStream.map(new AddParallelismTuple<>()).keyBy(0);
-        if (InvertibleSynopsis.class.isAssignableFrom(sketchClass)){
-            KeyedScottyWindowOperator<Tuple, Tuple2<Integer,T>, S> processingFunction =
-                    new KeyedScottyWindowOperator<>(new InvertibleSynopsisFunction(keyField, sketchClass, parameters));
-            for (int i = 0; i < windows.length; i++) {
-                processingFunction.addWindow(windows[i]);
-            }
-            SingleOutputStreamOperator<AggregateWindow<S>> resultStream = keyedStream.process(processingFunction).flatMap(new MergePreAggregates());
-
+        KeyedScottyWindowOperator<Tuple, Tuple2<Integer,T>, S> processingFunction;
+        if (InvertibleSynopsis.class.isAssignableFrom(synopsisClass)){
+            processingFunction =
+                    new KeyedScottyWindowOperator<>(new InvertibleSynopsisFunction(keyField, synopsisClass, parameters));
+        } else {
+            processingFunction =
+                    new KeyedScottyWindowOperator<>(new SynopsisFunction(keyField, synopsisClass, parameters));
         }
-        return null;
+        for (int i = 0; i < windows.length; i++) {
+            processingFunction.addWindow(windows[i]);
+        }
+        return keyedStream.process(processingFunction).flatMap(new MergePreAggregates());
     }
 
 

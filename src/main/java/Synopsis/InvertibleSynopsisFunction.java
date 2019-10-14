@@ -15,7 +15,7 @@ public class InvertibleSynopsisFunction<Input> implements InvertibleAggregateFun
     private Object[] constructorParam;
     private Constructor<? extends InvertibleSynopsis> constructor;
 
-    public InvertibleSynopsisFunction(int keyField, Class<? extends InvertibleSynopsis> sketchClass, Object... constructorParam){
+    public InvertibleSynopsisFunction(int keyField, Class<? extends InvertibleSynopsis> synopsisClass, Object... constructorParam){
         this.keyField = keyField;
         this.constructorParam = constructorParam;
         Class<?>[] parameterClasses = new Class[constructorParam.length];
@@ -23,13 +23,13 @@ public class InvertibleSynopsisFunction<Input> implements InvertibleAggregateFun
             parameterClasses[i] = constructorParam[i].getClass();
         }
         try {
-            this.constructor = sketchClass.getConstructor(parameterClasses);
+            this.constructor = synopsisClass.getConstructor(parameterClasses);
         } catch (NoSuchMethodException e) {
             throw new IllegalArgumentException("Synopsis parameters didn't match any constructor");
         }
     }
 
-    public InvertibleSynopsisFunction(Class<? extends InvertibleSynopsis> sketchClass, Object... constructorParam){
+    public InvertibleSynopsisFunction(Class<? extends InvertibleSynopsis> synopsisClass, Object... constructorParam){
         this.keyField = -1;
         this.constructorParam = constructorParam;
         Class<?>[] parameterClasses = new Class[constructorParam.length];
@@ -37,7 +37,7 @@ public class InvertibleSynopsisFunction<Input> implements InvertibleAggregateFun
             parameterClasses[i] = constructorParam[i].getClass();
         }
         try {
-            this.constructor = sketchClass.getConstructor(parameterClasses);
+            this.constructor = synopsisClass.getConstructor(parameterClasses);
         } catch (NoSuchMethodException e) {
             throw new IllegalArgumentException("Synopsis parameters didn't match any constructor");
         }
