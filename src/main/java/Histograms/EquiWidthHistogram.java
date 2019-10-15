@@ -65,7 +65,7 @@ public class EquiWidthHistogram<T extends Number> implements Synopsis<T> {
     }
 
     @Override
-    public EquiWidthHistogram merge(Synopsis other) throws IllegalArgumentException {
+    public EquiWidthHistogram merge(Synopsis other) {
         if (other instanceof EquiWidthHistogram){
             EquiWidthHistogram o = (EquiWidthHistogram) other;
             if (lowerBound == o.getLowerBound()

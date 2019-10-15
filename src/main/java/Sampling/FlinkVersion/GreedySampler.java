@@ -1,4 +1,4 @@
-package Sampling;
+package Sampling.FlinkVersion;
 
 import Synopsis.Synopsis;
 import org.apache.flink.util.XORShiftRandom;
@@ -41,7 +41,7 @@ public class GreedySampler<T> implements Synopsis<T>, Serializable {
      * @throws Exception
      */
     @Override
-    public GreedySampler merge(Synopsis other) throws Exception {
+    public GreedySampler merge(Synopsis other) {
         return null;
     }
 }

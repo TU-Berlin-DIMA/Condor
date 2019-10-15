@@ -63,7 +63,7 @@ public class HyperLogLogSketch<T> implements Synopsis<T>, Serializable {
      * @param synopsis the synopsis to merge
      * @return the merged HyperLogLogSketch Datastructure
      */
-    public HyperLogLogSketch merge(Synopsis synopsis) throws Exception {
+    public HyperLogLogSketch merge(Synopsis synopsis){
         if (synopsis.getClass().isInstance(HyperLogLogSketch.class)){
             throw new IllegalArgumentException("Sketches can only be merged with other Sketches of the same Type \n" +
                     "otherHLL.getClass() = " + synopsis.getClass() + "\n" +
@@ -103,7 +103,7 @@ public class HyperLogLogSketch<T> implements Synopsis<T>, Serializable {
     /**
      * @return an estimation of the number of distinct items
      */
-    public long distinctItemsEstimator() throws Exception {
+    public long distinctItemsEstimator() {
         double alpha;
         switch (this.logRegNum) { //set the constant alpha for the log log estimator based on the number of registers
             case 4: alpha = 0.673;
@@ -130,7 +130,7 @@ public class HyperLogLogSketch<T> implements Synopsis<T>, Serializable {
         if ((zeroRegs > 0) && (rawEstimate < (2.5 * this.regNum)))
             result = Math.round(this.regNum * (Math.log(this.regNum / (double) zeroRegs)));
         else if (rawEstimate > (Long.MAX_VALUE / 30))
-            throw new Exception("The Estimate approaches Long.MAX_VALUE which possible amount of hash values. This will lead to a bad estimator. \n" +
+            throw new IllegalArgumentException("The Estimate approaches Long.MAX_VALUE which possible amount of hash values. This will lead to a bad estimator. \n" +
                     "In order to better estimate that many distinct values change increase the possible amount of hash values!");
         this.distinctItemCount = result;
         return result;

@@ -139,7 +139,7 @@ public class CountMinSketch<T> implements InvertibleSynopsis<T>, Serializable {
      * @throws Exception
      */
     @Override
-    public CountMinSketch merge(Synopsis<T> other) throws Exception {
+    public CountMinSketch merge(Synopsis<T> other) {
         if (other instanceof CountMinSketch) {
             CountMinSketch otherCM = (CountMinSketch) other;
             if (otherCM.getWidth() == width && otherCM.getHeight() == height && hashFunctions.equals(otherCM.hashFunctions)) {
@@ -154,7 +154,7 @@ public class CountMinSketch<T> implements InvertibleSynopsis<T>, Serializable {
                 return this;
             }
         }
-        throw new Exception("Sketches to merge have to be the same size and hash Functions");
+        throw new IllegalArgumentException("Sketches to merge have to be the same size and hash Functions");
     }
 
     @Override
@@ -176,7 +176,7 @@ public class CountMinSketch<T> implements InvertibleSynopsis<T>, Serializable {
     }
 
     @Override
-    public CountMinSketch<T> invert(InvertibleSynopsis<T> other) throws Exception {
+    public CountMinSketch<T> invert(InvertibleSynopsis<T> other) {
         if (other instanceof CountMinSketch) {
             CountMinSketch otherCM = (CountMinSketch) other;
             if (otherCM.getWidth() == width && otherCM.getHeight() == height && hashFunctions.equals(otherCM.hashFunctions)) {
@@ -190,7 +190,7 @@ public class CountMinSketch<T> implements InvertibleSynopsis<T>, Serializable {
                 return this;
             }
         }
-        throw new Exception("Sketches to invert have to be the same size and hash Functions");
+        throw new IllegalArgumentException("Sketches to invert have to be the same size and hash Functions");
     }
 
 

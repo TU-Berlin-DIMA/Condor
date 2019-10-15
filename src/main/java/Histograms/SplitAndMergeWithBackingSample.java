@@ -1,6 +1,6 @@
 package Histograms;
 
-import Sampling.ReservoirSampler;
+import Sampling.FlinkVersion.ReservoirSampler;
 import Synopsis.Synopsis;
 import com.esotericsoftware.minlog.Log;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -215,7 +215,7 @@ public class SplitAndMergeWithBackingSample implements Synopsis, Serializable {
     }
 
     @Override
-    public SplitAndMergeWithBackingSample merge(Synopsis other) throws Exception {
+    public SplitAndMergeWithBackingSample merge(Synopsis other) {
         if (other instanceof SplitAndMergeWithBackingSample){
 
             sample = sample.merge(((SplitAndMergeWithBackingSample) other).getSample());

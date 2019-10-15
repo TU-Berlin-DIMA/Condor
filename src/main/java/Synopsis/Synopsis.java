@@ -26,6 +26,6 @@ public interface Synopsis<T> extends java.io.Serializable{
 	 * @return merged synopsis
 	 * @throws Exception
 	 */
-	Synopsis<T> merge(Synopsis<T> other) throws Exception;
+	Synopsis<T> merge(Synopsis<T> other);
 
 }

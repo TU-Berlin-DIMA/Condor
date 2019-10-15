@@ -1,52 +1,45 @@
 package Sampling;
 
 import Synopsis.Synopsis;
+import org.apache.flink.streaming.api.TimeCharacteristic;
+
 import java.io.Serializable;
-import java.util.*;
+import java.util.Iterator;
+import java.util.TreeSet;
 
-/**
- * Implementation of the traditional FiFo Sampling algorithm with a given sample size. This Sampler just collect
- * the elements and put them in a Queue of bounded size, if the Queue has reached its maximum capacity the oldest
- * element will be removed from it.
- *
- * @param <T> the type of elements maintained by this sampler
- *
- * @author Rudi Poepsel Lemaitre
- */
-public class FiFoSampler<T> implements Synopsis<T>, Serializable {
-    private LinkedList<T> sample;
+public class FiFoSampler<T> implements SamplerWithTimestamps<T>, Serializable {
+    private TreeSet<SampleElement<T>> sample;
     private int sampleSize;
-    private int merged;
+    private boolean eventTime;
 
-    /**
-     * Construct an empty FiFoSampler
-     *
-     * @param sampleSize maximal size of the sampler
-     */
-    public FiFoSampler(Integer sampleSize) {
-        this.sample = new LinkedList<>();
+    public FiFoSampler(Integer sampleSize, TimeCharacteristic timeCharacteristic) {
+        this.sample = new TreeSet<>();
         this.sampleSize = sampleSize;
-        this.merged = 1;
+        if (timeCharacteristic == TimeCharacteristic.EventTime) {
+            this.eventTime = true;
+        } else {
+            this.eventTime = false;
+        }
     }
 
 
     /**
-     * Insert the new element to the Queue and remove oldest if the Queue has reached the desired sampleSize.
+     * Update the sketch with a value T
      *
-     * @param element to be added in the Queue
+     * @param element
      */
     @Override
-    public void update(T element) {
+    public void update(SampleElement element) {
         if (sample.size() < sampleSize) {
-            sample.addLast(element);
-        } else {
+            sample.add(element);
+        } else if(sample.first().getTimeStamp() < element.getTimeStamp()){
             sample.pollFirst();
-            sample.addLast(element);
+            sample.add(element);
         }
 
     }
 
-    public LinkedList<T> getSample() {
+    public TreeSet<SampleElement<T>> getSample() {
         return sample;
     }
 
@@ -54,43 +47,49 @@ public class FiFoSampler<T> implements Synopsis<T>, Serializable {
         return sampleSize;
     }
 
+    public boolean isEventTime() {
+        return eventTime;
+    }
+
     /**
-     * Function to Merge two FiFo Samples. This function takes advantage of the ordering of the elements given by
-     * the {@code Synopsis.BuildSynopsis} retaining only the newest elements that entered the window.
+     * Function to Merge two Sketches
      *
-     * @param other FiFo Sample to be merged with
-     * @return merged FiFo Sample
+     * @param other
+     * @return
      * @throws Exception
      */
     @Override
-    public FiFoSampler merge(Synopsis other) throws Exception {
+    public FiFoSampler merge(Synopsis other) {
         if (other instanceof FiFoSampler
-                && ((FiFoSampler) other).getSampleSize() == this.sampleSize) {
+                && ((FiFoSampler) other).getSampleSize() == this.sampleSize
+                && ((FiFoSampler) other).isEventTime() == this.eventTime) {
 
-            LinkedList<T> otherSample = ((FiFoSampler) other).getSample();
-            LinkedList<T> mergeResult = new LinkedList<>();
+            TreeSet<SampleElement<T>> otherSample = ((FiFoSampler) other).getSample();
+            TreeSet<SampleElement<T>> mergeResult = new TreeSet<>();
             while (mergeResult.size() != sampleSize && !(otherSample.isEmpty() && this.sample.isEmpty())) {
-                if(!otherSample.isEmpty()){
-                    mergeResult.addFirst(otherSample.pollLast());
-                }
-                for (int i = 0; i < merged; i++) {
-                    if (mergeResult.size() != sampleSize && !this.sample.isEmpty()){
-                        mergeResult.addFirst(this.sample.pollLast());
+                if (!otherSample.isEmpty() && !this.sample.isEmpty()){
+                    if (otherSample.last().compareTo(this.sample.last()) > 0){
+                        mergeResult.add(otherSample.pollLast());
+                    } else {
+                        mergeResult.add(this.sample.pollLast());
                     }
+                } else if (otherSample.isEmpty()){
+                    mergeResult.add(this.sample.pollLast());
+                } else if (this.sample.isEmpty()){
+                    mergeResult.add(otherSample.pollLast());
                 }
             }
-            this.merged += 1;
             this.sample = mergeResult;
         } else {
-            throw new Exception("FiFoSamplers to merge have to be the same size");
+            throw new IllegalArgumentException("FiFoSamplers to merge have to be the same size");
         }
         return this;
     }
 
     @Override
     public String toString(){
-        String s = new String(merged+" FiFo sample size: " + this.sampleSize+"\n");
-        Iterator<T> iterator = this.sample.iterator();
+        String s = new String("FiFo sample size: " + this.sampleSize+"\n");
+        Iterator<SampleElement<T>> iterator = this.sample.iterator();
         while (iterator.hasNext()){
             s += iterator.next().toString()+", ";
         }

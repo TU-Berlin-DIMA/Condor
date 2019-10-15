@@ -226,7 +226,7 @@ public class DDSketch<T extends Number> implements InvertibleSynopsis<T>, Serial
     }
 
     @Override
-    public InvertibleSynopsis<T> invert(InvertibleSynopsis<T> toRemove) throws Exception {
+    public InvertibleSynopsis<T> invert(InvertibleSynopsis<T> toRemove) {
         if (toRemove instanceof DDSketch) {
             DDSketch otherDD = (DDSketch) toRemove;
             if (this.relativeAccuracy == otherDD.relativeAccuracy && this.maxNumBins == otherDD.maxNumBins) {
@@ -255,7 +255,7 @@ public class DDSketch<T extends Number> implements InvertibleSynopsis<T>, Serial
                 return this;
             }
         }
-        throw new Exception("Sketches to merge have to be the same size and hash Functions");
+        throw new IllegalArgumentException("Sketches to merge have to be the same size and hash Functions");
     }
 
     @Override
@@ -288,7 +288,7 @@ public class DDSketch<T extends Number> implements InvertibleSynopsis<T>, Serial
      * @throws Exception in case
      */
     @Override
-    public DDSketch merge(Synopsis other) throws Exception {
+    public DDSketch merge(Synopsis other) {
         if (other instanceof DDSketch) {
             DDSketch otherDD = (DDSketch) other;
             if (this.relativeAccuracy == otherDD.relativeAccuracy && this.maxNumBins == otherDD.maxNumBins) {
@@ -308,7 +308,7 @@ public class DDSketch<T extends Number> implements InvertibleSynopsis<T>, Serial
                 return this;
             }
         }
-        throw new Exception("Sketches to merge have to be the same size and hash Functions");
+        throw new IllegalArgumentException("Sketches to merge have to be the same size and hash Functions");
     }
 
     @Override

@@ -186,7 +186,7 @@ public class CuckooFilter<T> implements Synopsis<T>, Serializable {
      * @throws Exception
      */
     @Override
-    public CuckooFilter merge(Synopsis other) throws Exception {
+    public CuckooFilter merge(Synopsis other) {
         if (other instanceof CuckooFilter) {
             CuckooFilter<T> otherCF = (CuckooFilter) other;
             if (!this.full && !otherCF.full && otherCF.getA() == this.a && otherCF.getB() == this.b && otherCF.getBuckets().length == this.buckets.length
@@ -213,11 +213,11 @@ public class CuckooFilter<T> implements Synopsis<T>, Serializable {
                     this.elementsProcessed += otherCF.getElementsProcessed();
                     return this;
                 } else {
-                    throw new Exception("Cuckoo Filter is considered full");
+                    throw new IllegalArgumentException("Cuckoo Filter is considered full");
                 }
             }
         }
-        throw new Exception("Sketches to merge have to be the same size and hash Functions");
+        throw new IllegalArgumentException("Sketches to merge have to be the same size and hash Functions");
 
     }
 

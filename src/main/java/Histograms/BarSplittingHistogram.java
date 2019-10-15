@@ -156,7 +156,7 @@ public class BarSplittingHistogram implements Synopsis, Serializable {
     }
 
     @Override
-    public BarSplittingHistogram merge(Synopsis other) throws Exception {
+    public BarSplittingHistogram merge(Synopsis other) {
         if (other instanceof BarSplittingHistogram){
             BarSplittingHistogram o = (BarSplittingHistogram) other;
             BarSplittingHistogram base;

@@ -1,4 +1,4 @@
-package Sampling;
+package Sampling.FlinkVersion;
 
 import Synopsis.Synopsis;
 import org.apache.flink.util.XORShiftRandom;

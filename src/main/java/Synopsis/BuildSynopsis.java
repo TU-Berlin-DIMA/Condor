@@ -1,15 +1,13 @@
 package Synopsis;
 
 import Sampling.SampleElement;
-import Synopsis.Synopsis;
+import Sampling.SamplerWithTimestamps;
 import de.tub.dima.scotty.core.AggregateWindow;
 import de.tub.dima.scotty.core.windowType.Window;
 import de.tub.dima.scotty.flinkconnector.KeyedScottyWindowOperator;
-import de.tub.dima.scotty.flinkconnector.demo.windowFunctions.SumWindowFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.functions.RichMapFunction;
-import org.apache.flink.api.common.functions.RichReduceFunction;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.configuration.Configuration;
@@ -22,14 +20,11 @@ import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks
 import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.api.windowing.time.Time;
-import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
-import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.TreeMap;
 
 /**
  * Class to organize the static functions to generate window based Synopses.
@@ -44,16 +39,16 @@ public final class BuildSynopsis {
      * {@link KeyedStream#timeWindow} will accumulate the a Synopsis via the {@link SynopsisAggregator}. Afterwards
      * the partial results of the partitions will be reduced (merged) to a single Synopsis representing the whole window.
      *
-     * @param inputStream the data stream to build the Synopsis
-     * @param windowTime the size of the time window
-     * @param keyField the field of the tuple to build the Synopsis. Set to -1 to build the Synopsis over the whole tuple.
+     * @param inputStream   the data stream to build the Synopsis
+     * @param windowTime    the size of the time window
+     * @param keyField      the field of the tuple to build the Synopsis. Set to -1 to build the Synopsis over the whole tuple.
      * @param synopsisClass the type of Synopsis to be computed
-     * @param parameters the initialization parameters for the Synopsis
-     * @param <T> the type of the input elements
-     * @param <S> the type of the Synopsis
+     * @param parameters    the initialization parameters for the Synopsis
+     * @param <T>           the type of the input elements
+     * @param <S>           the type of the Synopsis
      * @return stream of time window based Synopses
      */
-    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> timeBased(DataStream<T> inputStream, Time windowTime, int keyField, Class<S> synopsisClass, Object... parameters){
+    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> timeBased(DataStream<T> inputStream, Time windowTime, int keyField, Class<S> synopsisClass, Object... parameters) {
         SynopsisAggregator agg = new SynopsisAggregator(synopsisClass, parameters, keyField);
 
         SingleOutputStreamOperator reduce = inputStream
@@ -79,15 +74,15 @@ public final class BuildSynopsis {
      * {@link KeyedStream#timeWindow} will accumulate the a Synopsis via the {@link SynopsisAggregator}. Afterwards
      * the partial results of the partitions will be reduced (merged) to a single Synopsis representing the whole window.
      *
-     * @param inputStream the data stream to build the Synopsis
-     * @param windowTime the size of the time window
+     * @param inputStream   the data stream to build the Synopsis
+     * @param windowTime    the size of the time window
      * @param synopsisClass the type of Synopsis to be computed
-     * @param parameters the initialization parameters for the Synopsis
-     * @param <T> the type of the input elements
-     * @param <S> the type of the Synopsis
+     * @param parameters    the initialization parameters for the Synopsis
+     * @param <T>           the type of the input elements
+     * @param <S>           the type of the Synopsis
      * @return stream of time window based Synopses
      */
-    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> timeBased(DataStream<T> inputStream, Time windowTime, Class<S> synopsisClass, Object... parameters){
+    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> timeBased(DataStream<T> inputStream, Time windowTime, Class<S> synopsisClass, Object... parameters) {
         return timeBased(inputStream, windowTime, -1, synopsisClass, parameters);
     }
 
@@ -98,16 +93,16 @@ public final class BuildSynopsis {
      * {@link KeyedStream#timeWindow} will accumulate the a Synopsis via the {@link SynopsisAggregator}. Afterwards
      * the partial results of the partitions will be reduced (merged) to a single Synopsis representing the whole window.
      *
-     * @param inputStream the data stream to build the Synopsis
-     * @param windowTime the size of the time window
-     * @param keyField the field of the tuple to build the Synopsis. Set to -1 to build the Synopsis over the whole tuple.
+     * @param inputStream   the data stream to build the Synopsis
+     * @param windowTime    the size of the time window
+     * @param keyField      the field of the tuple to build the Synopsis. Set to -1 to build the Synopsis over the whole tuple.
      * @param synopsisClass the type of Synopsis to be computed
-     * @param parameters the initialization parameters for the Synopsis
-     * @param <T> the type of the input elements
-     * @param <S> the type of the Synopsis
+     * @param parameters    the initialization parameters for the Synopsis
+     * @param <T>           the type of the input elements
+     * @param <S>           the type of the Synopsis
      * @return stream of time window based Synopses
      */
-    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> debugAggimeBased(DataStream<T> inputStream, Time windowTime, int keyField, Class<S> synopsisClass, Object... parameters){
+    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> debugAggimeBased(DataStream<T> inputStream, Time windowTime, int keyField, Class<S> synopsisClass, Object... parameters) {
         SynopsisAggregator agg = new SynopsisAggregator(synopsisClass, parameters, keyField);
 
         SingleOutputStreamOperator reduce1 = inputStream
@@ -134,23 +129,23 @@ public final class BuildSynopsis {
      * {@link KeyedStream#countWindow} will accumulate the a Synopsis via the {@link SynopsisAggregator}. Afterwards
      * the partial results of the partitions will be reduced (merged) to a single Synopsis representing the whole window.
      *
-     * @param inputStream the data stream to build the Synopsis
-     * @param windowSize the size of the count window
-     * @param keyField the field of the tuple to build the Synopsis. Set to -1 to build the Synopsis over the whole tuple.
+     * @param inputStream   the data stream to build the Synopsis
+     * @param windowSize    the size of the count window
+     * @param keyField      the field of the tuple to build the Synopsis. Set to -1 to build the Synopsis over the whole tuple.
      * @param synopsisClass the type of Synopsis to be computed
-     * @param parameters the initialization parameters for the Synopsis
-     * @param <T> the type of the input elements
-     * @param <S> the type of the Synopsis
+     * @param parameters    the initialization parameters for the Synopsis
+     * @param <T>           the type of the input elements
+     * @param <S>           the type of the Synopsis
      * @return stream of count window based Synopses
      */
-    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> countBased(DataStream<T> inputStream, long windowSize, int keyField, Class<S> synopsisClass, Object... parameters){
+    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> countBased(DataStream<T> inputStream, long windowSize, int keyField, Class<S> synopsisClass, Object... parameters) {
         SynopsisAggregator agg = new SynopsisAggregator(synopsisClass, parameters, keyField);
         int parallelism = inputStream.getExecutionEnvironment().getParallelism();
 
         SingleOutputStreamOperator reduce = inputStream
                 .map(new AddParallelismTuple())
                 .keyBy(0)
-                .countWindow(windowSize/parallelism)
+                .countWindow(windowSize / parallelism)
                 .aggregate(agg)
                 .countWindowAll(parallelism)
                 .reduce(new ReduceFunction<S>() { // Merge all sketches in the global window
@@ -168,21 +163,20 @@ public final class BuildSynopsis {
      * {@link KeyedStream#countWindow} will accumulate the a Synopsis via the {@link SynopsisAggregator}. Afterwards
      * the partial results of the partitions will be reduced (merged) to a single Synopsis representing the whole window.
      *
-     * @param inputStream the data stream to build the Synopsis
-     * @param windowSize the size of the count window
+     * @param inputStream   the data stream to build the Synopsis
+     * @param windowSize    the size of the count window
      * @param synopsisClass the type of Synopsis to be computed
-     * @param parameters the initialization parameters for the Synopsis
-     * @param <T> the type of the input elements
-     * @param <S> the type of the Synopsis
+     * @param parameters    the initialization parameters for the Synopsis
+     * @param <T>           the type of the input elements
+     * @param <S>           the type of the Synopsis
      * @return stream of count window based Synopses
      */
-    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> countBased(DataStream<T> inputStream, long windowSize, Class<S> synopsisClass, Object... parameters){
+    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> countBased(DataStream<T> inputStream, long windowSize, Class<S> synopsisClass, Object... parameters) {
         return countBased(inputStream, windowSize, -1, synopsisClass, parameters);
     }
 
 
-
-    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> sampleTimeBased(DataStream<T> inputStream, Time windowTime, int keyField, Class<S> synopsisClass, Object... parameters){
+    public static <T, S extends Synopsis> SingleOutputStreamOperator<S> sampleTimeBased(DataStream<T> inputStream, Time windowTime, int keyField, Class<S> synopsisClass, Object... parameters) {
         SynopsisAggregator agg = new SynopsisAggregator(synopsisClass, parameters, keyField);
         SingleOutputStreamOperator reduce1 = inputStream
                 .process(new ConvertToSample())
@@ -202,28 +196,37 @@ public final class BuildSynopsis {
         return reduce;
     }
 
-    public static <T, S extends Synopsis> SingleOutputStreamOperator<AggregateWindow<S>> scottyWindows(DataStream<T> inputStream, Window[] windows, int keyField, Class<S> synopsisClass, Object... parameters){
-        KeyedStream<Tuple2<Integer, T>, Tuple> keyedStream = inputStream.map(new AddParallelismTuple<>()).keyBy(0);
-        KeyedScottyWindowOperator<Tuple, Tuple2<Integer,T>, S> processingFunction;
-        if (InvertibleSynopsis.class.isAssignableFrom(synopsisClass)){
-            processingFunction =
-                    new KeyedScottyWindowOperator<>(new InvertibleSynopsisFunction(keyField, synopsisClass, parameters));
-        } else {
-            processingFunction =
+    public static <T, S extends Synopsis> SingleOutputStreamOperator<AggregateWindow<S>> scottyWindows(DataStream<T> inputStream, Window[] windows, int keyField, Class<S> synopsisClass, Object... parameters) {
+        if (SamplerWithTimestamps.class.isAssignableFrom(synopsisClass)) {
+            KeyedStream<Tuple2<Integer, SampleElement<T>>, Tuple> keyedStream = inputStream.process(new ConvertToSample<>()).map(new AddParallelismTuple<>()).keyBy(0);
+            KeyedScottyWindowOperator<Tuple, Tuple2<Integer, SampleElement<T>>, S> processingFunction =
                     new KeyedScottyWindowOperator<>(new SynopsisFunction(keyField, synopsisClass, parameters));
+            for (int i = 0; i < windows.length; i++) {
+                processingFunction.addWindow(windows[i]);
+            }
+            return keyedStream.process(processingFunction).flatMap(new MergePreAggregates());
+        } else {
+            KeyedStream<Tuple2<Integer, T>, Tuple> keyedStream = inputStream.map(new AddParallelismTuple<>()).keyBy(0);
+            KeyedScottyWindowOperator<Tuple, Tuple2<Integer, T>, S> processingFunction;
+            if (InvertibleSynopsis.class.isAssignableFrom(synopsisClass)) {
+                processingFunction =
+                        new KeyedScottyWindowOperator<>(new InvertibleSynopsisFunction(keyField, synopsisClass, parameters));
+            } else {
+                processingFunction =
+                        new KeyedScottyWindowOperator<>(new SynopsisFunction(keyField, synopsisClass, parameters));
+            }
+            for (int i = 0; i < windows.length; i++) {
+                processingFunction.addWindow(windows[i]);
+            }
+            return keyedStream.process(processingFunction).flatMap(new MergePreAggregates());
         }
-        for (int i = 0; i < windows.length; i++) {
-            processingFunction.addWindow(windows[i]);
-        }
-        return keyedStream.process(processingFunction).flatMap(new MergePreAggregates());
     }
-
 
 
     /**
      * Integer state for Stateful Functions
      */
-    public static class IntegerState implements ValueState<Integer>{
+    public static class IntegerState implements ValueState<Integer> {
         int value;
 
         @Override
@@ -245,8 +248,8 @@ public final class BuildSynopsis {
     /**
      * Integer state for Stateful Functions
      */
-    public static class WindowState implements ValueState<HashMap<WindowID,Tuple2<Integer,AggregateWindow<Synopsis>>>>{
-        HashMap<WindowID,Tuple2<Integer,AggregateWindow<Synopsis>>> openWindows;
+    public static class WindowState implements ValueState<HashMap<WindowID, Tuple2<Integer, AggregateWindow<Synopsis>>>> {
+        HashMap<WindowID, Tuple2<Integer, AggregateWindow<Synopsis>>> openWindows;
         int numberKeys;
 
         public WindowState(int numberKeys) {
@@ -270,7 +273,7 @@ public final class BuildSynopsis {
         }
     }
 
-    public static class WindowID implements Comparable{
+    public static class WindowID implements Comparable {
         private long start;
         private long end;
 
@@ -280,17 +283,17 @@ public final class BuildSynopsis {
         }
 
         @Override
-        public int compareTo(@NotNull Object o) {
-            if (o instanceof WindowID){
-                if (((WindowID) o).start > this.start){
+        public int compareTo( Object o) {
+            if (o instanceof WindowID) {
+                if (((WindowID) o).start > this.start) {
                     return -1;
-                } else if (((WindowID) o).start < this.start){
+                } else if (((WindowID) o).start < this.start) {
                     return 1;
-                } else if(((WindowID) o).start == this.start && ((WindowID) o).end > this.end){
+                } else if (((WindowID) o).start == this.start && ((WindowID) o).end > this.end) {
                     return -1;
-                } else if(((WindowID) o).start == this.start && ((WindowID) o).end < this.end){
+                } else if (((WindowID) o).start == this.start && ((WindowID) o).end < this.end) {
                     return 1;
-                } else /*if(((WindowID) o).start == this.start && ((WindowID) o).end == this.end)*/{
+                } else /*if(((WindowID) o).start == this.start && ((WindowID) o).end == this.end)*/ {
                     return 0;
                 }
             }
@@ -300,8 +303,8 @@ public final class BuildSynopsis {
 
         @Override
         public boolean equals(Object o) {
-            if (o instanceof WindowID){
-                if (((WindowID) o).start == this.start && ((WindowID) o).end == this.end){
+            if (o instanceof WindowID) {
+                if (((WindowID) o).start == this.start && ((WindowID) o).end == this.end) {
                     return true;
                 }
             }
@@ -310,7 +313,7 @@ public final class BuildSynopsis {
     }
 
 
-    public static class MergePreAggregates<S extends Synopsis> extends RichFlatMapFunction<AggregateWindow<S>, AggregateWindow<S>>{
+    public static class MergePreAggregates<S extends Synopsis> extends RichFlatMapFunction<AggregateWindow<S>, AggregateWindow<S>> {
 
         WindowState state;
         int parallelismKeys;
@@ -326,12 +329,12 @@ public final class BuildSynopsis {
 
         @Override
         public void flatMap(AggregateWindow<S> value, Collector<AggregateWindow<S>> out) throws Exception {
-            HashMap<WindowID,Tuple2<Integer,AggregateWindow<S>>> openWindows = state.value();
+            HashMap<WindowID, Tuple2<Integer, AggregateWindow<S>>> openWindows = state.value();
             WindowID windowID = new WindowID(value.getStart(), value.getEnd());
-            Tuple2<Integer,AggregateWindow<S>> synopsisAggregateWindow = openWindows.get(windowID);
-            if (synopsisAggregateWindow == null){
-                openWindows.put(windowID,new Tuple2<>(1,value));
-            } else if (synopsisAggregateWindow.f0 == parallelismKeys-1){
+            Tuple2<Integer, AggregateWindow<S>> synopsisAggregateWindow = openWindows.get(windowID);
+            if (synopsisAggregateWindow == null) {
+                openWindows.put(windowID, new Tuple2<>(1, value));
+            } else if (synopsisAggregateWindow.f0 == parallelismKeys - 1) {
                 synopsisAggregateWindow.f1.getAggValues().addAll(value.getAggValues());
                 out.collect(synopsisAggregateWindow.f1);
                 openWindows.remove(windowID);
@@ -343,12 +346,13 @@ public final class BuildSynopsis {
         }
 
     }
+
     /**
      * Stateful map functions to add the parallelism variable
      *
      * @param <T0> type of input elements
      */
-    public static class AddParallelismTuple<T0> extends RichMapFunction<T0, Tuple2<Integer,T0>> {
+    public static class AddParallelismTuple<T0> extends RichMapFunction<T0, Tuple2<Integer, T0>> {
 
         ValueState<Integer> state;
 
@@ -358,40 +362,27 @@ public final class BuildSynopsis {
         }
 
         @Override
-        public Tuple2<Integer,T0> map(T0 value) throws Exception {
-            Tuple2 newTuple = new Tuple2<Integer,T0>();
+        public Tuple2<Integer, T0> map(T0 value) throws Exception {
+            Tuple2 newTuple = new Tuple2<Integer, T0>();
             int currentNode = state.value();
-            int next = currentNode +1;
+            int next = currentNode + 1;
             next = next % this.getRuntimeContext().getNumberOfParallelSubtasks();
             state.update(next);
 
-            newTuple.setField(currentNode,0);
-            newTuple.setField(value,1);
+            newTuple.setField(currentNode, 0);
+            newTuple.setField(value, 1);
 
             return newTuple;
         }
     }
 
-    public static class ConvertToSample<T>
-            extends ProcessFunction<T, SampleElement> {
 
-        /**
-         * Process one element from the input stream.
-         *
-         * <p>This function can output zero or more elements using the {@link Collector} parameter
-         * and also update internal state or set timers using the {@link Context} parameter.
-         *
-         * @param value The input value.
-         * @param ctx   A {@link Context} that allows querying the timestamp of the element and getting
-         *              a {@link TimerService} for registering timers and querying the time. The
-         *              context is only valid during the invocation of this method, do not store it.
-         * @param out   The collector for returning result values.
-         * @throws Exception This method may throw exceptions. Throwing an exception will cause the operation
-         *                   to fail and may trigger recovery.
-         */
+    public static class ConvertToSample<T>
+            extends ProcessFunction<T, SampleElement<T>> {
+
         @Override
-        public void processElement(T value, Context ctx, Collector<SampleElement> out) throws Exception {
-            SampleElement<T> sample = new SampleElement<>(value, ctx.timestamp());
+        public void processElement(T value, Context ctx, Collector<SampleElement<T>> out) throws Exception {
+            SampleElement<T> sample = new SampleElement<>(value, ctx.timestamp() != null ? ctx.timestamp() : ctx.timerService().currentProcessingTime());
             out.collect(sample);
         }
     }

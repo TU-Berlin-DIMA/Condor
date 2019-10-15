@@ -95,7 +95,7 @@ public class BloomFilter<T> implements Synopsis<T>, Serializable {
      * @throws Exception
      */
     @Override
-    public BloomFilter merge(Synopsis other) throws Exception {
+    public BloomFilter merge(Synopsis other) {
         if (other instanceof BloomFilter) {
             BloomFilter otherBF = (BloomFilter) other;
             if (otherBF.getnHashFunctions() == nHashFunctions && otherBF.getNumberBits() == numberBits && hashFunctions.equals(otherBF.hashFunctions))
@@ -104,7 +104,7 @@ public class BloomFilter<T> implements Synopsis<T>, Serializable {
                 elementsProcessed += otherBF.getElementsProcessed();
             }
         } else {
-            throw new Exception("Sketches to merge have to be the same size and hash Functions");
+            throw new IllegalArgumentException("Sketches to merge have to be the same size and hash Functions");
         }
         return this;
     }

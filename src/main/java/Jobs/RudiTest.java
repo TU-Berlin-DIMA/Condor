@@ -1,8 +1,5 @@
 package Jobs;
 
-import Sampling.FiFoSampler;
-import Sketches.BloomFilter;
-import Sketches.CuckooFilter;
 import Sketches.DDSketch;
 import Synopsis.BuildSynopsis;
 import org.apache.flink.api.common.functions.FlatMapFunction;
@@ -16,7 +13,6 @@ import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
-import org.apache.flink.util.XORShiftRandom;
 
 import javax.annotation.Nullable;
 
