@@ -1,10 +1,8 @@
 package Tests;
 
 import Sketches.HashFunctions.EfficientH3Functions;
-import Sketches.HashFunctions.H3_HashFunctions;
 import Sketches.HashFunctions.PairwiseIndependentHashFunctions;
 
-import java.util.BitSet;
 
 public class HashFunctionsPerformanceTest {
 
