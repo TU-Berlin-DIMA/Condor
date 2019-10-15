@@ -120,5 +120,4 @@ public class PairwiseIndependentHashFunctions implements Serializable {
 	private void readObjectNoData() throws ObjectStreamException{
 		System.out.println("readObjectNoData() called - should give an exception");
 	}
-
 }

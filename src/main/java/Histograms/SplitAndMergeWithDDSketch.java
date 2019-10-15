@@ -35,6 +35,7 @@ import java.util.TreeMap;
 public class SplitAndMergeWithDDSketch implements Synopsis, Serializable {
 
     // TODO: check which error bounds apply using the ddsketch instead of backing sample
+    // TODO: not yet debugged !!!
 
     private int maxNumBuckets; // maximum number of Bars in the sketch
     private TreeMap<Double, Double> buckets; //
@@ -49,7 +50,7 @@ public class SplitAndMergeWithDDSketch implements Synopsis, Serializable {
     /**
      * standard constructor. gamma is defaulted to 0.5 which
      * @param numBuckets    number of buckets the histogram is supposed to have
-     * @param sketchAccuracy    accuracy bound of the DDSketch used to compute the quantiles
+     * @param sketchAccuracy    accuracy bound of the DDSketch used to compute the quantiles - has to be between 0 and 1 -> the smaller it is, the more accurate the sketch is going to be
      */
     public SplitAndMergeWithDDSketch(Integer numBuckets, Double sketchAccuracy) {
         this(numBuckets, sketchAccuracy, 0.5);
@@ -62,7 +63,7 @@ public class SplitAndMergeWithDDSketch implements Synopsis, Serializable {
      * @param sketchAccuracy    accuracy bound of the DDSketch used to compute the quantiles
      * @param gamma     performance tuning parameter. should lie between -1 and 2 (defaults to 0.5)
      */
-    public SplitAndMergeWithDDSketch(int numBuckets, double sketchAccuracy, double gamma) {
+    public SplitAndMergeWithDDSketch(Integer numBuckets, Double sketchAccuracy, Double gamma) {
         if (gamma <= -1){
             throw new IllegalArgumentException("gamma has to be greater than -1 (!)");
         }else if (gamma > 2){
@@ -80,15 +81,22 @@ public class SplitAndMergeWithDDSketch implements Synopsis, Serializable {
      * private update method called by the public update (tuple) and merge function.
      * Adds frequencies for a certain value to the Histogram.
      *
-     * @param input f0: value, f1: corresponding frequency
+     * @param input attribute value
      */
-    public void update(Tuple2<Double, Double> input){
-        totalFrequencies += input.f1;
+    public void update(Object input){
+
+        Double next;
+        if (input instanceof Number){
+            next = ((Number) input).doubleValue();
+        }else {
+            throw new IllegalArgumentException("input has to be a number!");
+        }
+        ddSketch.update(next);
+        totalFrequencies ++;
         Double binFrequency;
-        Double next = input.f0;
         // 1st step: add frequency to existing bin
         if (buckets.isEmpty()){ // special case for first input
-            buckets.put(next, input.f1);
+            buckets.put(next, 1d);
             rightMostBoundary = next;
         }else { // usual case if a bucket already exists
             Double key;
@@ -97,12 +105,13 @@ public class SplitAndMergeWithDDSketch implements Synopsis, Serializable {
                 if (key == buckets.lastKey() && next > rightMostBoundary){ // if next is greater than current right boundary it becomes the new boundary
                     rightMostBoundary = next;
                 }
-                binFrequency = buckets.merge(key, input.f1, (a,b) -> a + b);
+                binFrequency = buckets.merge(key, 1d, (a,b) -> a + b);
             } else{ // element is new leftmost boundary
-                key = buckets.ceilingKey(next);
-                binFrequency = buckets.get(key) + input.f1;
-                buckets.remove(key);   // remove old bin
-                buckets.put(next, binFrequency); // create new bin with new left boundary
+                double old_key = buckets.ceilingKey(next);
+                binFrequency = buckets.get(old_key) + 1;
+                buckets.remove(old_key);   // remove old bin
+                key = next;
+                buckets.put(key, binFrequency); // create new bin with new left boundary
             }
 
             if (binFrequency >= threshold){ // check whether the bucket frequency exceeds the threshold and has to be split
@@ -226,28 +235,6 @@ public class SplitAndMergeWithDDSketch implements Synopsis, Serializable {
         }
         double quantile = freq / totalFrequencies;
         return ddSketch.getValueAtQuantile(quantile);
-    }
-
-    /**
-     * If the element is a Number the bucket the given value falls into has its frequency increased by one.
-     *
-     * @param element new incoming element. If it is an instance of this class it merges with it instead.
-     */
-    @Override
-    public void update(Object element) {
-        if (element instanceof Number){
-            update(new Tuple2<Double, Double>((double)element, 1d)); //standard case in which just a single element is added to the sketch
-        }else {
-            if(element instanceof SplitAndMergeWithDDSketch){
-                try {
-                    this.merge((SplitAndMergeWithDDSketch)element);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }else {
-                logger.warn("update element has to be an integer or SplitAndMergeWithDDSketch! - is: " + element.getClass());
-            }
-        }
     }
 
     public TreeMap<Double, Double> getBuckets() {

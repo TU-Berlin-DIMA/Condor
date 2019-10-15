@@ -1,13 +1,16 @@
 package Sketches.HashFunctions;
 
+import java.io.IOException;
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.util.BitSet;
 
 /**
- * Implementation of the EH3 random bit generator
+ * Implementation of the EH3_HashFunction random bit generator
  *
  * @author joschavonhein
  */
-public class EH3 {
+public class EH3_HashFunction implements Serializable {
     private BitSet seed;
     private byte n; // input length in bits
 
@@ -24,14 +27,14 @@ public class EH3 {
      * @param seed  has to have n+1 bits
      * @param n     input length in bits
      */
-    public EH3(BitSet seed, byte n) {
+    public EH3_HashFunction(BitSet seed, byte n) {
         this.seed = seed;
         this.n = n;
     }
 
     /**
      * Random number generator. Returns either true or false, depending on input and seed.
-     * Based on the EH3 scheme.
+     * Based on the EH3_HashFunction scheme.
      * @param input bits
      * @return  true =1 , false = 0
      */
@@ -61,5 +64,19 @@ public class EH3 {
             }
         }
         return result;
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws IOException {
+        out.writeObject(seed);
+        out.writeByte(n);
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+        seed = (BitSet) in.readObject();
+        n = in.readByte();
+    }
+
+    private void readObjectNoData() throws ObjectStreamException {
+        System.out.println("readObjectNoData() called - should give an exception");
     }
 }
