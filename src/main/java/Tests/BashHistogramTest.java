@@ -17,7 +17,7 @@ import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
 import javax.annotation.Nullable;
-/*
+
 public class BashHistogramTest {
     public static void main(String[] args) throws Exception {
 
@@ -64,7 +64,7 @@ public class BashHistogramTest {
     /**
      * FlatMap to create Tuples from the incoming data
      */
-  /*  public static class CreateTuplesFlatMap implements FlatMapFunction<String, Tuple3<Integer, Integer, Long>> {
+    public static class CreateTuplesFlatMap implements FlatMapFunction<String, Tuple3<Integer, Integer, Long>> {
         @Override
         public void flatMap(String value, Collector<Tuple3<Integer, Integer, Long>> out) throws Exception {
             String[] tuples = value.split(",");
@@ -85,7 +85,7 @@ public class BashHistogramTest {
     /**
      * The Custom TimeStampExtractor which is used to assign Timestamps and Watermarks for our data
      */
- /*   public static class CustomTimeStampExtractor implements AssignerWithPunctuatedWatermarks<Tuple3<Integer, Integer, Long>> {
+    public static class CustomTimeStampExtractor implements AssignerWithPunctuatedWatermarks<Tuple3<Integer, Integer, Long>> {
         /**
          * Asks this implementation if it wants to emit a watermark. This method is called right after
          * the {@link #extractTimestamp(Tuple3, long)}   method.
@@ -103,7 +103,7 @@ public class BashHistogramTest {
          * @param extractedTimestamp
          * @return {@code Null}, if no watermark should be emitted, or the next watermark to emit.
          */
-    /*    @Nullable
+        @Nullable
         @Override
         public Watermark checkAndGetNextWatermark(Tuple3<Integer, Integer, Long> lastElement, long extractedTimestamp) {
             return new Watermark(extractedTimestamp);
@@ -122,9 +122,9 @@ public class BashHistogramTest {
          *                                 or a negative value, if no timestamp has been assigned yet.
          * @return The new timestamp.
          */
-  /*      @Override
+        @Override
         public long extractTimestamp(Tuple3<Integer, Integer, Long> element, long previousElementTimestamp) {
             return element.f2;
         }
     }
-}*/
+}

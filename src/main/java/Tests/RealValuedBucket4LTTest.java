@@ -32,10 +32,13 @@ public class RealValuedBucket4LTTest {
 
     @Test
     public void getFrequencyTest() throws Exception {
-        RealValuedBucket4LT Histogram4LT = new RealValuedBucket4LT(1.0,10.0);
-        int [] frequencies = new int [] {12,18,16,6,6,14,13,15};
+        RealValuedBucket4LT Histogram4LT = new RealValuedBucket4LT(0.0,200.0);
+        int [] frequencies = new int [] {10,13,16,16,9,12,14,10};
         Histogram4LT.build(frequencies);
-        Histogram4LT.getFrequency(5,10);
+        System.out.println(Histogram4LT.toString());
+        //System.out.println(Histogram4LT.getFrequency(5,10));
+        System.out.println(Histogram4LT.getFrequency(0,75));
+       // System.out.println(Histogram4LT.getFrequency(51,75));
 
     }
 
