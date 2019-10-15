@@ -36,12 +36,9 @@ public class EfficientH3Functions {
         int[] result = new int[numFunctions];
         for (int i = 0; i < numFunctions; i++) {
             int current = 0;
-
             for (int j = 0; j < 32; j++) {
-                int a = 1 << j;
-                if ((a & input) > 0){
-                    current ^= q_matrices[i][j];
-                }
+                current = ((1 & input) * current) ^ q_matrices[i][j];
+                input >>>= 1;
             }
             result[i] = current;
         }
