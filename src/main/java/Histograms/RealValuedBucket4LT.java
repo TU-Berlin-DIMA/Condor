@@ -90,6 +90,12 @@ public class RealValuedBucket4LT implements Serializable {
         if (queryLowerBound == queryUpperBound || queryLowerBound > this.upperBound || queryUpperBound < this.lowerBound){
             return 0; // if bounds are equal -> end of recursive calls
         }
+        if (queryLowerBound <= lowerBound && queryUpperBound <= upperBound){
+            queryLowerBound=lowerBound;// if bounds contain bucket bounds completely simply return the root
+        }
+        if (queryLowerBound >= lowerBound && queryUpperBound >= upperBound){
+            queryUpperBound=upperBound; // if bounds contain bucket bounds completely simply return the root
+        }
         int frequency = 0;
         double distance = (upperBound-lowerBound) / 8d;
         double newQueryLowerBound = queryLowerBound;
@@ -176,7 +182,7 @@ public class RealValuedBucket4LT implements Serializable {
 
                     frequency += (rightIndex - leftIndex) * countL4[bucketIndex]; // add partial buckets to frequency
                     //System.out.println((rightIndex - leftIndex) * countL4[bucketIndex]);
-                    //System.out.println(frequency);
+                    //System.out.println((rightIndex - leftIndex) *countL4[bucketIndex]);
                 }
 
             }

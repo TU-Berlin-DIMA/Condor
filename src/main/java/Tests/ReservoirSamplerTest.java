@@ -25,7 +25,6 @@ public class ReservoirSamplerTest {
 
         try{
             inputStream = new Scanner(file);
-
             while(inputStream.hasNext()){
                 String line= inputStream.next();
                 // this adds the currently parsed line to the 2-dimensional string array

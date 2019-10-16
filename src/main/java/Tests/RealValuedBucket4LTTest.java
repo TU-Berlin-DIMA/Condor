@@ -2,10 +2,8 @@ package Tests;
 import Histograms.RealValuedBucket4LT;
 import org.junit.Test;
 import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Before;
-import org.junit.After;
-import org.decimal4j.util.DoubleRounder;
+import java.util.Arrays;
+import java.util.stream.*;
 
 public class RealValuedBucket4LTTest {
 
@@ -23,7 +21,6 @@ public class RealValuedBucket4LTTest {
         int [] frequencies = new int [] {12,18,16,6,6,14,13,15};
         Histogram4LT.build(frequencies);
         String lowerLevel = Integer.toBinaryString(Histogram4LT.getLowerLevels());
-        System.out.println(lowerLevel);
         Assert.assertEquals("10000110010011010110101101010111",lowerLevel);}
     @Test(expected = IllegalArgumentException.class)
     public void illegalQueryboundry(){
@@ -32,14 +29,32 @@ public class RealValuedBucket4LTTest {
 
     @Test
     public void getFrequencyTest() throws Exception {
-        RealValuedBucket4LT Histogram4LT = new RealValuedBucket4LT(0.0,200.0);
-        int [] frequencies = new int [] {10,13,16,16,9,12,14,10};
+        RealValuedBucket4LT Histogram4LT = new RealValuedBucket4LT(0.0,240.0);
+        int [] frequencies = new int [] {481,477,520,492,552,489,474,515};//{10,13,16,16,9,12,14,10};
+        //int totalfrequency= IntStream.of(frequencies).sum();
+        Arrays.sort(frequencies);
+        int maxfrquency= frequencies[7];
+        double worstCaseError= (30*(Histogram4LT.getUpperBound()-Histogram4LT.getLowerBound()))/(double)32;// 30 is the highest frequency of discrete integers in 0,1,2,...,240(using numpy.unique on dataset)
         Histogram4LT.build(frequencies);
         System.out.println(Histogram4LT.toString());
-        //System.out.println(Histogram4LT.getFrequency(5,10));
-        System.out.println(Histogram4LT.getFrequency(0,75));
-        System.out.println(Histogram4LT.getFrequency(51,75));
+
+        System.out.println(Histogram4LT.getFrequency(185,200));
+        //System.out.println(Histogram4LT.getFrequency(0,180));
+        //System.out.println(worstCaseError);
+        Assert.assertTrue(Math.abs(Histogram4LT.getFrequency(-25,100)-1635) <=worstCaseError);
+        Assert.assertTrue(Math.abs(Histogram4LT.getFrequency(180,300)-989) <=worstCaseError);
+        Assert.assertTrue(Math.abs(Histogram4LT.getFrequency(90,150)-1044) <=worstCaseError);
+        Assert.assertTrue(Math.abs(Histogram4LT.getFrequency(185,200)-228) <=worstCaseError);
+        Assert.assertTrue(Histogram4LT.getFrequency(0,240)==4000);
+        Assert.assertTrue(Histogram4LT.getFrequency(-80,0)==0);
+        Assert.assertTrue(Histogram4LT.getFrequency(600,1000)==0);
+        Assert.assertTrue(Histogram4LT.getFrequency(155,155)==0);
+
 
     }
+    /*public double errorComputation(int estimated,int actuall){
+        return Math.abs(estimated-actuall)/(double)actuall;
+
+    }*/
 
 }
