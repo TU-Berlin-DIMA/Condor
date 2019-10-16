@@ -32,21 +32,19 @@ public class EfficientH3Functions {
      * @return  Hash values as Long Array
      */
     public int[] generateHash(int input){
-        input = input == 0 ? 1 : input; // input must not be 0
+        // input = input == 0 ? 1 : input; // input must not be 0
         int[] result = new int[numFunctions];
         for (int i = 0; i < numFunctions; i++) {
             int current = 0;
-
             for (int j = 0; j < 32; j++) {
-                int a = 1 << j;
-                if ((a & input) > 0){
-                    current ^= q_matrices[i][j];
-                }
+                current = ((1 & input) * current) ^ q_matrices[i][j];
+                input >>>= 1;
             }
             result[i] = current;
         }
         return result;
     }
+
 
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
         out.writeObject(q_matrices);

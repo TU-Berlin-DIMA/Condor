@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.ObjectStreamException;
 
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.util.Random;
 
 /**
@@ -16,12 +17,11 @@ import java.util.Random;
 public class PairwiseIndependentHashFunctions implements Serializable {
 
 
-	private final int[] a;
-	private final int[] b;
+	private final BigInteger[] a;
+	private final BigInteger[] b;
 	private int numFunctions;
 	private Random rand;
-	private final int p = 1610612741; // prime
-
+	private final BigInteger p = new BigInteger("1610612741"); // prime
 
 	/**
 	 * Create a new family of pairwise independent hash functions.
@@ -32,12 +32,12 @@ public class PairwiseIndependentHashFunctions implements Serializable {
 	public PairwiseIndependentHashFunctions(int numFunctions, long seed) {
 		this.rand = new XORShiftRandom(seed);
 		this.numFunctions = numFunctions;
-		a = new int[numFunctions];
-		b = new int[numFunctions];
+		a = new BigInteger[numFunctions];
+		b = new BigInteger[numFunctions];
 
 		for (int i = 0; i < numFunctions; i++){
-			a[i] = rand.nextInt(p);
-			b[i] = rand.nextInt(p);
+			a[i] = new BigInteger(32, rand);
+			b[i] = new BigInteger(32, rand);
 		}
 	}
 
@@ -49,49 +49,42 @@ public class PairwiseIndependentHashFunctions implements Serializable {
 	public PairwiseIndependentHashFunctions(int numFunctions) {
 		this.rand = new XORShiftRandom();
 		this.numFunctions = numFunctions;
-		a = new int[numFunctions];
-		b = new int[numFunctions];
+		a = new BigInteger[numFunctions];
+		b = new BigInteger[numFunctions];
 
 		for (int i = 0; i < numFunctions; i++){
-			a[i] = rand.nextInt(p);
-			b[i] = rand.nextInt(p);
+			a[i] = new BigInteger(32, rand);
+			b[i] = new BigInteger(32, rand);
 		}
-
 	}
-
 
 	/**
 	 * Calculate the hash values of the incoming object for all the functions of the family.
 	 *
-	 * @param o object to calculate the hash values
+	 * @param o object to calculate the hash values - equals method has to be implemented correctly (!)
 	 * @return an array containing the hash values given this family of functions
 	 */
 	public int[] hash(Object o) {
 		int[] result = new int[numFunctions];
-
 		for (int i = 0; i < numFunctions; i++){
-			int temp = (a[i]* o.hashCode() + b[i])%p;
-			if (temp < 0){
-				temp *= -1;
-			}
-			result[i] = temp;
+			BigInteger hashCode = new BigInteger(Integer.toString(o.hashCode()));
+			result[i]  = (((a[i].multiply(hashCode)).add(b[i])).mod(p)).intValue();
 		}
-
 		return result;
 	}
 
-	public int[] getA() {
+	public BigInteger[] getA() {
 		return a;
 	}
 
-	public int[] getB() {
+	public BigInteger[] getB() {
 		return b;
 	}
 
 	public boolean equals(PairwiseIndependentHashFunctions other){
 		if (other.numFunctions == numFunctions){
 			for (int i = 0; i < numFunctions; i++){
-				if (a[i] != other.getA()[i] || b[i] != other.getB()[i]){
+				if (!a[i].equals(other.getA()[i]) || !b[i].equals(other.getB()[i])){
 					return false;
 				}
 			}
@@ -102,8 +95,8 @@ public class PairwiseIndependentHashFunctions implements Serializable {
 	private void writeObject(java.io.ObjectOutputStream out) throws IOException {
 		out.writeInt(numFunctions);
 		for (int i = 0; i < numFunctions; i++){
-			out.writeInt(a[i]);
-			out.writeInt(b[i]);
+			out.writeObject(a[i]);
+			out.writeObject(b[i]);
 		}
 		out.writeObject(rand);
 	}
@@ -111,8 +104,8 @@ public class PairwiseIndependentHashFunctions implements Serializable {
 	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException{
 		numFunctions = in.readInt();
 		for (int i = 0; i < numFunctions; i++){
-			a[i] = in.readInt();
-			b[i] = in.readInt();
+			a[i] = (BigInteger) in.readObject();
+			b[i] = (BigInteger) in.readObject();
 		}
 		rand = (Random) in.readObject();
 	}

@@ -1,7 +1,7 @@
 package Sketches;
 
 import Sketches.HashFunctions.EH3_HashFunction;
-import Sketches.HashFunctions.H3_HashFunctions;
+import Sketches.HashFunctions.EfficientH3Functions;
 import Synopsis.Synopsis;
 import org.apache.flink.util.XORShiftRandom;
 
@@ -27,9 +27,9 @@ public class FastAMS implements Synopsis, Serializable {
     private int[][] array;
     private int width;
     private int height;
-    private H3_HashFunctions hashFunctions;
+    private EfficientH3Functions hashFunctions;
     private EH3_HashFunction[] eh3_array;
-    private byte n;
+    private final byte n = 32;
     private BitSet[] seeds; // always have size n+1
 
     @Override
@@ -52,18 +52,16 @@ public class FastAMS implements Synopsis, Serializable {
      *
      * @param width     amount of buckets in each row - it is recommended to use powers of 2
      * @param height    amount of hash functions / rows in the sketch array
-     * @param n         lenth in bits of the input objects
      * @param seed      seed for the RandomNumber Generator
      */
-    public FastAMS(Integer width, Integer height, Long seed, Byte n) {
+    public FastAMS(Integer width, Integer height, Long seed) {
         if (n > 64){
             throw new IllegalArgumentException("n can't be larger than 64 (amount of bits of a Long)!");
         }
         this.width = width;
         this.height = height;
-        this.n = n;
         this.seeds = new BitSet[height];
-        hashFunctions = new H3_HashFunctions(height, n, seed);
+        hashFunctions = new EfficientH3Functions(height, seed);
         eh3_array = new EH3_HashFunction[height];
         array = new int[height][width];
 
@@ -72,17 +70,6 @@ public class FastAMS implements Synopsis, Serializable {
         for (int i = 0; i < height; i++) {
             eh3_array[i] = new EH3_HashFunction(seeds[i], n);
         }
-    }
-
-    /**
-     * Constructs a FastAMS Sketch object with n = 32
-     *
-     * @param width     amount of buckets in each row - it is recommended to use powers of 2
-     * @param height    amount of hash functions / rows in the sketch array
-     * @param seed      seed for the RandomNumber Generator
-     */
-    public FastAMS(Integer width, Integer height, Long seed){
-        this(width, height, seed, (byte) 32);
     }
 
     /**
@@ -123,36 +110,20 @@ public class FastAMS implements Synopsis, Serializable {
     public void update(Object element, boolean increment) {
         // make sure input element is converted to BitSet of correct length - otherwise throw exception
         BitSet input = new BitSet(n);
+        int f;
         if(element instanceof Integer){
-            if (n == 32){
-                long[] a = {(long)((int)element)};
-                input = BitSet.valueOf(a);
-            }else {
-                throw new IllegalArgumentException("input has to be an integer, double, BitSet of size n or n == 32");
-            }
-        }else if (element instanceof Double){
-            if (n == 64){
-                long[] a = {((Double)element).longValue()};
-                input = BitSet.valueOf(a);
-            }else {
-                throw new IllegalArgumentException("input has to be an integer, double, BitSet of size n or n == 32");
-            }
-        }else if (element instanceof BitSet){
-            input = (BitSet) element;
-            if (input.length() >n){
-                throw new IllegalArgumentException("input has to be an integer, double, BitSet of size n or n == 32");
-            }
+            f = (int) element;
+            long[] a = {(long)f};
+            input = BitSet.valueOf(a);
+
         }else {
-            if (n == 32){
-                long[] a = {(long)element.hashCode()};
-                input = BitSet.valueOf(a);
-            }else {
-                throw new IllegalArgumentException("input has to be an integer, double, BitSet of size n or n == 32");
-            }
+            f = element.hashCode();
+            long[] a = {(long)f};
+            input = BitSet.valueOf(a);
         }
 
         int position;
-        int[] hashValues = hashFunctions.generateHash(input);
+        int[] hashValues = hashFunctions.generateHash(f);
         for (int i = 0; i < height; i++) {
             position = Math.abs(hashValues[i] % width); // compute the bucket position
             boolean b = eh3_array[i].rand(input);
@@ -247,7 +218,6 @@ public class FastAMS implements Synopsis, Serializable {
         out.writeInt(height);
         out.writeObject(hashFunctions);
         out.writeObject(eh3_array);
-        out.writeByte(n);
         out.writeObject(seeds);
     }
 
@@ -255,9 +225,8 @@ public class FastAMS implements Synopsis, Serializable {
         array = (int[][])in.readObject();
         width = in.readInt();
         height = in.readInt();
-        hashFunctions = (H3_HashFunctions) in.readObject();
+        hashFunctions = (EfficientH3Functions) in.readObject();
         eh3_array = (EH3_HashFunction[]) in.readObject();
-        n = in.readByte();
         seeds = (BitSet[]) in.readObject();
     }
 
