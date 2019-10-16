@@ -38,7 +38,7 @@ public class RealValuedBucket4LTTest {
         System.out.println(Histogram4LT.toString());
         //System.out.println(Histogram4LT.getFrequency(5,10));
         System.out.println(Histogram4LT.getFrequency(0,75));
-       // System.out.println(Histogram4LT.getFrequency(51,75));
+        System.out.println(Histogram4LT.getFrequency(51,75));
 
     }
 

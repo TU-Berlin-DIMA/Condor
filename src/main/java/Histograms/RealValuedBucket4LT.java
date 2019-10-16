@@ -159,7 +159,7 @@ public class RealValuedBucket4LT implements Serializable {
                     for (int i = 0; i < 8; i++) {
                         if (leftIndex <= i && rightIndex >= i+1){
                             frequency += countL4[i];
-                            newQueryLowerBound = Math.max(newQueryLowerBound, (int) Math.ceil(distance * i + 1 + lowerBound));
+                            newQueryLowerBound = Math.max(newQueryLowerBound, (int) Math.ceil(distance * (i + 1) + lowerBound));
                             newQueryUpperBound = Math.min(newQueryUpperBound, (int) Math.floor(distance * i) + lowerBound);
 
                         }
