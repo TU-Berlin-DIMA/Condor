@@ -25,7 +25,7 @@ public class BiasedReservoirSampler<T> implements Synopsis<T>, Serializable {
     private XORShiftRandom rand;
     private int actualSize;
     private int merged = 1;
-    private LinkedList<Integer> latestPositions;
+    private LinkedList<Integer> latestPositions;//keep track of where elements replaced???
 
     /**
      * Construct a new empty Biased Reservoir Sampler with a bounded size.

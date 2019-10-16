@@ -26,7 +26,7 @@ public class joscha_parallelism_performanceTests {
 
 
         // set up the streaming execution environment
-        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+       /* final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
         env.setParallelism(8);
 
@@ -45,7 +45,7 @@ public class joscha_parallelism_performanceTests {
 
         aggregate.writeAsText("output/parallelism_test.txt", FileSystem.WriteMode.OVERWRITE);
 
-        env.execute("Flink Streaming Java API Skeleton");
+        env.execute("Flink Streaming Java API Skeleton");*/
     }
 
     /**
@@ -53,7 +53,7 @@ public class joscha_parallelism_performanceTests {
      *
      * @param <T0> type of input elements
      */
-    public static class AddParallelismTuple<T0> extends RichMapFunction<T0, Tuple2<Integer,T0>> {
+   /* public static class AddParallelismTuple<T0> extends RichMapFunction<T0, Tuple2<Integer,T0>> {
 
         ValueState<Integer> state;
 
@@ -75,5 +75,5 @@ public class joscha_parallelism_performanceTests {
 
             return newTuple;
         }
-    }
+    }*/
 }

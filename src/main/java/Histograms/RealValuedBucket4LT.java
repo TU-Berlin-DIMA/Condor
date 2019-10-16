@@ -68,6 +68,9 @@ public class RealValuedBucket4LT implements Serializable {
     public int getRoot() {
         return root;
     }
+    public int getLowerLevels() {
+        return lowerLevels;
+    }
 
     /**
      * Method which approximately computes the frequencies based on the given query-range.
@@ -94,19 +97,22 @@ public class RealValuedBucket4LT implements Serializable {
 
         double leftIndex = Math.max((queryLowerBound - lowerBound) * 8 / (upperBound-lowerBound), 0d);
         double rightIndex = Math.min((queryUpperBound - lowerBound) * 8 / (upperBound-lowerBound), 8d); // real valued right index exclusive
-
         int delta2_1 = lowerLevels >>> 26; // extract delta of second level - six bits
         int[] countL2 = new int[2];
         // compute the counts of the second level
         countL2[0] = (int) Math.round(delta2_1 / Math.pow(2, 6) * root);
         countL2[1] = root - countL2[0];
-        if (leftIndex == 0 && rightIndex >= 4){ // first second level bucket fully contained in query range
+        if (leftIndex == 0 && rightIndex >= 4){
+            // first second level bucket fully contained in query range
+            System.out.println("2nd level left");
             frequency += countL2[0];
             frequency += getFrequency((int) Math.ceil(distance*4) + lowerBound, queryUpperBound);
         }else if (leftIndex <= 4 && rightIndex == 8){ // second second level bucket fully contained in query range
+            System.out.println("2nd level right");
             frequency += countL2[1];
             frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*4) + lowerBound);
         }else {
+
             // extract deltas of level 3 (5 bits each)
             int delta3_1 = (lowerLevels >>> 21) & 31;
             int delta3_3 = (lowerLevels >>> 16) & 31;
@@ -124,10 +130,14 @@ public class RealValuedBucket4LT implements Serializable {
                         frequency += countL3[i];
                         newQueryLowerBound = Math.max(newQueryLowerBound, (int) Math.ceil(distance * (i * 2 + 2)) + lowerBound);
                         newQueryUpperBound = Math.min(newQueryUpperBound, (int) Math.floor(distance * (i * 2)) + lowerBound);
+
                     }
                 }
-                frequency += getFrequency(queryLowerBound, newQueryUpperBound);
-                frequency += getFrequency(newQueryLowerBound, queryUpperBound);
+                //System.out.println(newQueryLowerBound);
+                //System.out.println(newQueryUpperBound);
+                System.out.println("3rd level");
+                frequency += getFrequency(queryLowerBound, newQueryUpperBound);//0-0
+                frequency += getFrequency(newQueryLowerBound, queryUpperBound);//50-75
             } else {
                 // extract the deltas of level 4 (4 bits each)
                 int delta4_1 = (lowerLevels >>> 12) & 15;
@@ -151,13 +161,22 @@ public class RealValuedBucket4LT implements Serializable {
                             frequency += countL4[i];
                             newQueryLowerBound = Math.max(newQueryLowerBound, (int) Math.ceil(distance * (i + 1) + lowerBound));
                             newQueryUpperBound = Math.min(newQueryUpperBound, (int) Math.floor(distance * i) + lowerBound);
+
                         }
                     }
-                    frequency += getFrequency(queryLowerBound, newQueryUpperBound);
-                    frequency += getFrequency(newQueryLowerBound, queryUpperBound);
+                    //System.out.println(newQueryLowerBound);
+                    //System.out.println(newQueryUpperBound);
+                    System.out.println("4th level");
+                    frequency += getFrequency(queryLowerBound, newQueryUpperBound);//50-50
+                    frequency += getFrequency(newQueryLowerBound, queryUpperBound);//51-75
+
                 }else {
+                    System.out.println("4th level CVA");
                     int bucketIndex = (int) Math.floor(leftIndex);
+
                     frequency += (rightIndex - leftIndex) * countL4[bucketIndex]; // add partial buckets to frequency
+                    //System.out.println((rightIndex - leftIndex) * countL4[bucketIndex]);
+                    //System.out.println(frequency);
                 }
 
             }

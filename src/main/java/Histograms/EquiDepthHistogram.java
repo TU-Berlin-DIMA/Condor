@@ -14,6 +14,7 @@ public class EquiDepthHistogram {
     private double rightMostBoundary;
     private double totalFrequencies;
     private int numBuckets;
+    private double perbucketFrequency;
 
     /**
      * Constructor with all necessary parameters
@@ -26,6 +27,7 @@ public class EquiDepthHistogram {
         this.rightMostBoundary = rightMostBoundary;
         this.totalFrequencies = totalFrequencies;
         this.numBuckets = leftBoundaries.length;
+        this.perbucketFrequency = this.totalFrequencies /this.numBuckets;
     }
 
     /**
@@ -39,46 +41,78 @@ public class EquiDepthHistogram {
         if (upperBound - lowerBound < 0){
             throw new IllegalArgumentException("upper Bound can't be smaller than lower Bound!");
         }
+        if (upperBound < leftBoundaries[0] || lowerBound > rightMostBoundary){
+            throw new IllegalArgumentException("query Bound can't be out of histogram domain");
+        }
 
         boolean first = false;
         boolean last = false;
-        int bucketsInRange = 0;
         double result = 0;
+        double rightMostBucketBound=0;
+        int lowerBucket=-1;//numBuckets-1;
+        int upperBucket=-3;//numBuckets-1;
 
-        // edge case that lower Bound is in last Bucket
-        if (lowerBound >= leftBoundaries[numBuckets-1]){
-            double fraction = (Math.min(rightMostBoundary, upperBound)-lowerBound)/(rightMostBoundary-leftBoundaries[numBuckets-1]);
-            return fraction * totalFrequencies / numBuckets;
+       //case Query range starts from amount lower than first leftboundry and ends in histogram domain
+       if(lowerBound < leftBoundaries[0] && upperBound >= leftBoundaries[0]){
+           lowerBucket = 0;
+           lowerBound= leftBoundaries[0];
+           first=true;}
+        //case Query range starts in histogram domain and ends in amounts greater than rightmostboundry
+        if(upperBound >= rightMostBoundary && lowerBound <= rightMostBoundary){
+            upperBucket=numBuckets-1;
+            upperBound=rightMostBoundary;
+            last=true;
         }
 
-        for (int i = 0; i < numBuckets; i++) {
-            // edge case that range is contained in a single bucket
-            if (lowerBound >= leftBoundaries[i] && i < numBuckets-1 && upperBound < leftBoundaries[i+1]){
-                double fraction = (upperBound-lowerBound) / (leftBoundaries[i+1]-leftBoundaries[i]);
-                return fraction * totalFrequencies / numBuckets;
-            }
-
-            // add leftmost bucket part to query result
-            if (!first && leftBoundaries[i] >= lowerBound){
-                first = true;
-                if (i > 0){
-                    double leftMostBucketFraction = (leftBoundaries[i] - lowerBound) / (leftBoundaries[i] - leftBoundaries[i-1]);
-                    result += leftMostBucketFraction * totalFrequencies/numBuckets;
-                }
-            }
-
-            // count amount of fully contained buckets in range
-            if (first && !last){
-                if (upperBound < leftBoundaries[i]){
-                    last = true;
-                    double rightmostBucketFraction = (upperBound - leftBoundaries[i-1]) / (leftBoundaries[i] - leftBoundaries[i-1]);
-                    result += rightmostBucketFraction * totalFrequencies/numBuckets; // add rightmost bucket part to query result
-                }
-                bucketsInRange++;
-            }
+        //case Query range starts at last bucket
+        if(lowerBound >= leftBoundaries[numBuckets-1] && lowerBound <= rightMostBoundary){
+            lowerBucket=numBuckets-1;
+            first=true;
         }
-        result += bucketsInRange * totalFrequencies / numBuckets;
-        return result;
+        //case Query range ends at last bucket
+        if(upperBound >= leftBoundaries[numBuckets-1] && upperBound <= rightMostBoundary){
+            upperBucket=numBuckets-1;
+            last=true;
+        }
+
+
+       for (int i = 0; i < numBuckets-1; i++) {
+
+           if (!first) {
+               if (lowerBound >= leftBoundaries[i] && lowerBound <= leftBoundaries[i + 1]) {
+                   lowerBucket = i;
+                   first = true;
+               }
+           }
+           if (!last) {
+               if (upperBound <= leftBoundaries[i + 1] ) {
+                   upperBucket = i;
+                   last = true;
+                   //System.out.println("");
+               }
+           }
+       }
+       if(upperBucket==numBuckets-1){
+           rightMostBucketBound=rightMostBoundary;
+
+       }
+       else{
+           rightMostBucketBound=leftBoundaries[upperBucket+1];
+       }
+       if (upperBucket == lowerBucket) {
+            double fraction = (upperBound-lowerBound)/(rightMostBucketBound-leftBoundaries[lowerBucket]);
+            result= fraction * perbucketFrequency;
+       }
+       else{
+            int midBucket= upperBucket-lowerBucket-1;
+            double leftmostFraction = (Math.min(upperBound,leftBoundaries[lowerBucket+1])-lowerBound)/(leftBoundaries[lowerBucket+1]-leftBoundaries [lowerBucket]);
+            double rightmostFraction = (upperBound-leftBoundaries[upperBucket])/(rightMostBucketBound-leftBoundaries[upperBucket]);
+
+            result = (midBucket+leftmostFraction+rightmostFraction) * perbucketFrequency;
+
+       }
+      return result;
+
     }
 
     @Override

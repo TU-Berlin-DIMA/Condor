@@ -25,14 +25,15 @@ public class EquiWidthHistogram<T extends Number> implements Synopsis<T> {
      * @param numBuckets number of Buckets
      * @throws IllegalArgumentException
      */
+
     public EquiWidthHistogram(Double lowerBound, Double upperBound, Integer numBuckets) throws IllegalArgumentException {
+        if (lowerBound == null || upperBound == null || upperBound - lowerBound <= 0 || numBuckets <= 0){
+            throw new IllegalArgumentException("lower bound has to be smaller than upper bound!");
+        }
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
         this.numBuckets = numBuckets;
         this.frequency = new int[numBuckets];
-        if (lowerBound == null || upperBound == null || upperBound - lowerBound <= 0){
-            throw new IllegalArgumentException("lower bound has to be smaller than upper bound!");
-        }
         this.bucketLength = (upperBound - lowerBound) / (double) numBuckets;
     }
 
@@ -58,6 +59,10 @@ public class EquiWidthHistogram<T extends Number> implements Synopsis<T> {
 
     public int getNumBuckets() {
         return numBuckets;
+    }
+
+    public double getBucketLength() {
+        return this.bucketLength;
     }
 
     public int[] getFrequency() {
@@ -96,11 +101,17 @@ public class EquiWidthHistogram<T extends Number> implements Synopsis<T> {
         if (upperBound < this.lowerBound){
             return 0;
         }
+        if (lowerBound > this.upperBound){
+            return 0;
+        }
         int indexLB = (int) Math.floor((lowerBound - this.lowerBound) / bucketLength); // the index of the leftmost bucket of the query range
         int indexUB = (int) Math.floor((upperBound - this.lowerBound) / bucketLength); // the index of the rightmost bucket of the query range
+        if(indexLB == indexUB){
+            return (( upperBound-lowerBound) / bucketLength) * frequency[indexLB];
+        }
         double leftMostBucketShare = 0, rightMostBucketShare = 0;
         if (indexLB >= 0 && indexLB <numBuckets){
-            double bucketUB = this.lowerBound + (indexLB+1) * bucketLength;
+            double bucketUB = this.lowerBound + (indexLB+1) * bucketLength; //what is the upper bound for the leftmost bucket
             leftMostBucketShare = ((bucketUB - lowerBound) / bucketLength) * frequency[indexLB]; //compute the frequency of the part of the leftmost bucket
             indexLB++;
         }else {
@@ -116,6 +127,7 @@ public class EquiWidthHistogram<T extends Number> implements Synopsis<T> {
         for (int i = indexLB; i < indexUB; i++) {
             resultFrequency += frequency[i];
         }
+
         return resultFrequency;
     }
 

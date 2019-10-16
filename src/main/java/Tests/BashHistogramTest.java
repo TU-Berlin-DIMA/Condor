@@ -45,7 +45,7 @@ public class BashHistogramTest {
 
         bash.writeAsText("output/BASHHistogram.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
-        SingleOutputStreamOperator<EquiDepthHistogram> equiDepthHistograms = bash.map(b -> b.buildEquiDepthHistogram());
+        SingleOutputStreamOperator<EquiDepthHistogram> equiDepthHistograms = bash.map(b -> b.EquiDepthHistogram());
 
         equiDepthHistograms.writeAsText("output/EquiDepth.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
