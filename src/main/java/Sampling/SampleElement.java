@@ -1,5 +1,4 @@
 package Sampling;
-
 import java.io.Serializable;
 
 /**
@@ -36,7 +35,6 @@ public class SampleElement<T> implements Serializable, Comparable<SampleElement>
     public long getTimeStamp() {
         return timeStamp;
     }
-
 
     @Override
     public int compareTo(SampleElement o) {

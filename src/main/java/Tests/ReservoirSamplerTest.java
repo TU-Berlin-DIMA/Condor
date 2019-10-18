@@ -1,14 +1,14 @@
 package Tests;
-        import Sampling.ReservoirSampler;
-        /*import org.hamcrest.core.IsEqual;
-        import org.hamcrest.core.IsNot;*/
-        import org.junit.Assert;
-        import org.junit.Test;
-        import java.util.Scanner;
-        import java.util.ArrayList;
-        import java.io.File;
-        import java.lang.Math;
-        import java.io.FileNotFoundException;
+import Sampling.ReservoirSampler;
+/*import org.hamcrest.core.IsEqual;
+import org.hamcrest.core.IsNot;*/
+import org.junit.Assert;
+import org.junit.Test;
+import java.util.Scanner;
+import java.util.ArrayList;
+import java.io.File;
+import java.lang.Math;
+import java.io.FileNotFoundException;
 
 
 public class ReservoirSamplerTest {

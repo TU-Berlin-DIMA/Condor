@@ -14,7 +14,7 @@ public class RealValuedBucket4LTTest {
     public void frequencylengthTest() throws Exception {
         RealValuedBucket4LT Histogram4LT = new RealValuedBucket4LT(1.0,10.0);
         int [] frequencies = new int [] {12,18,16,6,6,14,13,15,22};
-         Histogram4LT.build(frequencies);}
+        Histogram4LT.build(frequencies);}
     @Test
     public void buildTest() throws Exception {
         RealValuedBucket4LT Histogram4LT = new RealValuedBucket4LT(0.0,18.0);
@@ -38,13 +38,14 @@ public class RealValuedBucket4LTTest {
         Histogram4LT.build(frequencies);
         System.out.println(Histogram4LT.toString());
 
-        System.out.println(Histogram4LT.getFrequency(185,200));
-        //System.out.println(Histogram4LT.getFrequency(0,180));
-        //System.out.println(worstCaseError);
         Assert.assertTrue(Math.abs(Histogram4LT.getFrequency(-25,100)-1635) <=worstCaseError);
         Assert.assertTrue(Math.abs(Histogram4LT.getFrequency(180,300)-989) <=worstCaseError);
         Assert.assertTrue(Math.abs(Histogram4LT.getFrequency(90,150)-1044) <=worstCaseError);
         Assert.assertTrue(Math.abs(Histogram4LT.getFrequency(185,200)-228) <=worstCaseError);
+        Assert.assertTrue(Math.abs(Histogram4LT.getFrequency(75,85)-189)<=worstCaseError);
+        Assert.assertTrue(Math.abs(Histogram4LT.getFrequency(-10,25)-403)<=worstCaseError);
+        Assert.assertTrue(Math.abs(Histogram4LT.getFrequency(230,250)-170)<=worstCaseError);
+        Assert.assertTrue(Math.abs(Histogram4LT.getFrequency(87,185)-1662)<=worstCaseError);
         Assert.assertTrue(Histogram4LT.getFrequency(0,240)==4000);
         Assert.assertTrue(Histogram4LT.getFrequency(-80,0)==0);
         Assert.assertTrue(Histogram4LT.getFrequency(600,1000)==0);

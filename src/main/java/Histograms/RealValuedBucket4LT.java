@@ -110,11 +110,9 @@ public class RealValuedBucket4LT implements Serializable {
         countL2[1] = root - countL2[0];
         if (leftIndex == 0 && rightIndex >= 4){
             // first second level bucket fully contained in query range
-            System.out.println("2nd level left");
             frequency += countL2[0];
             frequency += getFrequency((int) Math.ceil(distance*4) + lowerBound, queryUpperBound);
         }else if (leftIndex <= 4 && rightIndex == 8){ // second second level bucket fully contained in query range
-            System.out.println("2nd level right");
             frequency += countL2[1];
             frequency += getFrequency(queryLowerBound,  (int) Math.floor(distance*4) + lowerBound);
         }else {
@@ -139,9 +137,6 @@ public class RealValuedBucket4LT implements Serializable {
 
                     }
                 }
-                //System.out.println(newQueryLowerBound);
-                //System.out.println(newQueryUpperBound);
-                System.out.println("3rd level");
                 frequency += getFrequency(queryLowerBound, newQueryUpperBound);//0-0
                 frequency += getFrequency(newQueryLowerBound, queryUpperBound);//50-75
             } else {
@@ -170,19 +165,13 @@ public class RealValuedBucket4LT implements Serializable {
 
                         }
                     }
-                    //System.out.println(newQueryLowerBound);
-                    //System.out.println(newQueryUpperBound);
-                    System.out.println("4th level");
                     frequency += getFrequency(queryLowerBound, newQueryUpperBound);//50-50
                     frequency += getFrequency(newQueryLowerBound, queryUpperBound);//51-75
 
                 }else {
-                    System.out.println("4th level CVA");
                     int bucketIndex = (int) Math.floor(leftIndex);
 
                     frequency += (rightIndex - leftIndex) * countL4[bucketIndex]; // add partial buckets to frequency
-                    //System.out.println((rightIndex - leftIndex) * countL4[bucketIndex]);
-                    //System.out.println((rightIndex - leftIndex) *countL4[bucketIndex]);
                 }
 
             }

@@ -2,7 +2,6 @@ package Sampling;
 
 import Synopsis.Synopsis;
 import org.apache.flink.util.XORShiftRandom;
-
 import java.io.Serializable;
 import java.util.LinkedList;
 
