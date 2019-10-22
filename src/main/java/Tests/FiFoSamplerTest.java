@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Scanner;
 import java.io.File;
-import java.lang.Math;
 import java.io.FileNotFoundException;
 
 public class FiFoSamplerTest {

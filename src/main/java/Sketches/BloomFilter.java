@@ -100,11 +100,17 @@ public class BloomFilter<T> implements Synopsis<T>, Serializable {
             BloomFilter otherBF = (BloomFilter) other;
             if (otherBF.getnHashFunctions() == nHashFunctions && otherBF.getNumberBits() == numberBits && hashFunctions.equals(otherBF.hashFunctions))
             {
+
                 hashmap.and(otherBF.getHashmap());
                 elementsProcessed += otherBF.getElementsProcessed();
             }
+            else {
+
+                throw new Exception("Sketches to merge have to be the same size and hash Functions");
+            }
         } else {
-            throw new Exception("Sketches to merge have to be the same size and hash Functions");
+
+            throw new Exception("merge arguments should be of the same sketch type");
         }
         return this;
     }
