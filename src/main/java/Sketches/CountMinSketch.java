@@ -1,9 +1,7 @@
 package Sketches;
 
-
 import Sketches.HashFunctions.PairwiseIndependentHashFunctions;
 import Synopsis.Synopsis;
-
 import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.io.Serializable;

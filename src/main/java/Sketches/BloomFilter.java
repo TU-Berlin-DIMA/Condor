@@ -100,7 +100,6 @@ public class BloomFilter<T> implements Synopsis<T>, Serializable {
             BloomFilter otherBF = (BloomFilter) other;
             if (otherBF.getnHashFunctions() == nHashFunctions && otherBF.getNumberBits() == numberBits && hashFunctions.equals(otherBF.hashFunctions))
             {
-
                 hashmap.and(otherBF.getHashmap());
                 elementsProcessed += otherBF.getElementsProcessed();
             }
