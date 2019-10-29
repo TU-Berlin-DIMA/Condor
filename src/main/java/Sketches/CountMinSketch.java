@@ -131,7 +131,7 @@ public class CountMinSketch<T> implements Synopsis<T>, Serializable {
                 int[][] a2 = otherCM.getArray();
                 for (int i = 0; i < height; i++) {
                     for (int j = 0; j < width; j++) {
-                        array[i][j] += a2[i][j];
+                         array[i][j] += a2[i][j];
                     }
                 }
                 elementsProcessed += otherCM.getElementsProcessed();

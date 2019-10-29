@@ -34,7 +34,7 @@ public class BloomFilterTest {
     public void queryTest(){
         int positivecount=0;
         //int trueNegativecount=0;
-        BloomFilter bloomFilter= new BloomFilter( 1500, 3000,200);//what if it is 3000
+        BloomFilter bloomFilter= new BloomFilter( 1500, 3000,200);
         for (int i = 600; i< 2100; i++){
             bloomFilter.update(i);
         }
@@ -49,7 +49,6 @@ public class BloomFilterTest {
                 trueNegativecount++;
             }
         }*/
-
         double ratioArgument= Math.exp(-(bloomFilter.getnHashFunctions()*1500)/3000.0);
         double fprateEstimate= Math.pow((1-ratioArgument),bloomFilter.getnHashFunctions());
         double falsePositivecount= positivecount-bloomFilter.getElementsProcessed();
@@ -89,7 +88,5 @@ public class BloomFilterTest {
         BitSet mergeresult= bloomFilter.merge(other).getHashmap();
         Assert.assertTrue(intersectBitset.equals(mergeresult));
         Assert.assertTrue(bloomFilter.getElementsProcessed()==1670);
-
-
     }
 }
