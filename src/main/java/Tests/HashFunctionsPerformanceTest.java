@@ -8,6 +8,16 @@ public class HashFunctionsPerformanceTest {
 
     public static void main(String[] args){
 
+        EfficientH3Functions temp = new EfficientH3Functions(1, 2);
+
+        String s = "";
+        for (int i = 0; i < 100; i++) {
+            s += temp.generateHash(i)[0] + "\n";
+        }
+        System.out.println(s);
+
+
+
         EfficientH3Functions h3_hashFunctions = new EfficientH3Functions(32, 1000l);
         PairwiseIndependentHashFunctions pairwiseIndependentHashFunctions = new PairwiseIndependentHashFunctions(32, 1000l);
         final int ITERATIONS = 1000000;
@@ -26,5 +36,6 @@ public class HashFunctionsPerformanceTest {
         }
         endTime = System.currentTimeMillis();
         System.out.println("H3 HashFunctions: "+ (endTime - startTime) + " hashes[0] = " + hashes[0]);
+
     }
 }

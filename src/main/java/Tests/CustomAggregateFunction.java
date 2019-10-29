@@ -5,7 +5,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 
 import java.util.HashMap;
 
-public class customAggregateFunction <T0> implements AggregateFunction<Tuple2<Integer, T0>, HashMap<Integer, Integer>, HashMap<Integer, Integer>> {
+public class CustomAggregateFunction<T0> implements AggregateFunction<Tuple2<Integer, T0>, HashMap<Integer, Integer>, HashMap<Integer, Integer>> {
 
     @Override
     public HashMap<Integer, Integer> createAccumulator() {
