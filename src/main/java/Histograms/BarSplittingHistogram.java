@@ -16,6 +16,7 @@ import java.util.TreeMap;
  * Designed for streaming window applications in Flink.
  * Supports method to create an approximate Equi-Depth Histogram from the Sketch data.
  * Based on ideas in the paper: "Fast and Accurate Computation of Equi-Depth Histograms over Data Streams" - ACM International Conference Proceeding Series 2011
+ * This sketch is written specifically for windowed streaming jobs - with the equi-depth histogram built at the end of arbitrary windows.
  *
  * @author joschavonhein
  */

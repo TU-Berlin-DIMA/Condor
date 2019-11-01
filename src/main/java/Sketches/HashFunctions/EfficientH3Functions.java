@@ -37,7 +37,7 @@ public class EfficientH3Functions {
         for (int i = 0; i < numFunctions; i++) {
             int current = 0;
             for (int j = 0; j < 32; j++) {
-                current = ((1 & input) * current) ^ q_matrices[i][j];
+                current = current ^ ((1 & input) * q_matrices[i][j]);
                 input >>>= 1;
             }
             result[i] = current;
