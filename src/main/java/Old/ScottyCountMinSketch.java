@@ -54,9 +54,9 @@ public class ScottyCountMinSketch<Input> implements InvertibleAggregateFunction<
 
     @Override
     public CountMinSketch<Input> liftAndCombine(CountMinSketch<Input> partialAggregate, Input inputTuple) {
-        CountMinSketch clone = partialAggregate.clone();
-        clone.update(inputTuple);
-        return clone;
+        //CountMinSketch clone = partialAggregate.clone();
+        partialAggregate.update(inputTuple);
+        return partialAggregate;
     }
 
     @Override

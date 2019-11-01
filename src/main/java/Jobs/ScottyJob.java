@@ -7,6 +7,7 @@ import de.tub.dima.scotty.core.windowType.TumblingWindow;
 import de.tub.dima.scotty.core.windowType.WindowMeasure;
 import de.tub.dima.scotty.flinkconnector.KeyedScottyWindowOperator;
 import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.core.fs.FileSystem;
@@ -15,10 +16,15 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks;
+import org.apache.flink.streaming.api.functions.sink.SinkFunction;
+import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.util.Collector;
 
 import javax.annotation.Nullable;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class ScottyJob {
     public static void main(String[] args) throws Exception {
@@ -27,16 +33,61 @@ public class ScottyJob {
         // set up the streaming execution environment
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+        env.setParallelism(1);
 
-        DataStream<String> line = env.readTextFile("data/timestamped.csv").setParallelism(1);
-        DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
-                .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
+        DataStream<Tuple3<Integer,Integer,Long>> timestamped = env.addSource(new SourceFunction<Tuple3<Integer,Integer,Long>>() {
+            @Override
+            public void run(SourceContext<Tuple3<Integer,Integer,Long>> ctx) throws Exception {
+                BufferedReader reader;
+                try {
+                    reader = new BufferedReader(new FileReader(
+                            "data/timestamped.csv"));
+                    String line = reader.readLine();
+                    long ln = 0;
+                    while (line != null) {
+                        //ctx.collect(line);
+                        String[] tuples = line.split(",");
 
+                        if(tuples.length == 3) {
+
+                            Integer key = new Integer(tuples[0]);
+                            Integer val = new Integer(tuples[1]);
+                            Long timestamp = ln;
+
+                            if (key != null && val != null) {
+                                ctx.collect(new Tuple3<>(key, val, timestamp));
+                                ln++;
+                            }
+
+                        }
+                    }
+                    reader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void cancel() {
+
+            }
+        }).assignTimestampsAndWatermarks(new CustomTimeStampExtractor());;
+
+        // DataStream<String> line = env.readTextFile("data/timestamped.csv").setParallelism(1);
+       // DataStream<Tuple3<Integer, Integer, Long>> timestamped = line.flatMap(new CreateTuplesFlatMap()) // Create the tuples from the incoming Data
+         //       .assignTimestampsAndWatermarks(new CustomTimeStampExtractor()); // extract the timestamps and add watermarks
+       /* timestamped.addSink(new SinkFunction<Tuple3<Integer, Integer, Long>>() {
+            @Override
+            public void invoke(Tuple3<Integer, Integer, Long> value) throws Exception {
+                System.out.println(value.f2);
+            }
+        });
+*/
         KeyedScottyWindowOperator<Tuple, Tuple3<Integer, Integer, Long>, CountMinSketch<Tuple3<Integer, Integer, Long>>> windowOperator =
-                new KeyedScottyWindowOperator<>(new ScottyCountMinSketch<>(10,10,1));
+                new KeyedScottyWindowOperator<>(new ScottyCountMinSketch<>(10,5,1));
 
 // Add multiple windows to the same operator
-        windowOperator.addWindow(new TumblingWindow(WindowMeasure.Time, 1000));
+        windowOperator.addWindow(new TumblingWindow(WindowMeasure.Time, 10000));
 //        windowOperator.addWindow(new SlidingWindow(WindowMeasure.Time, 1000, 5000));
 //        windowOperator.addWindow(new SessionWindow(WindowMeasure.Time,1000));
 
@@ -46,7 +97,7 @@ public class ScottyJob {
 
 // Add operator to Flink job
         SingleOutputStreamOperator<AggregateWindow<CountMinSketch<Tuple3<Integer, Integer, Long>>>> finalSketch = timestamped.keyBy(0)
-                .process(windowOperator);
+                .process(windowOperator).setParallelism(1);
 
 
         finalSketch.flatMap(new FlatMapFunction<AggregateWindow<CountMinSketch<Tuple3<Integer, Integer, Long>>>, String>() {
@@ -57,8 +108,13 @@ public class ScottyJob {
                 }
             }
         })
-
-        .writeAsText("output/scottyTest.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+//.addSink(new SinkFunction<String>() {
+//    @Override
+//    public void invoke(String value) throws Exception {
+//            System.out.println(value);
+//    }
+//}).setParallelism(1);
+.writeAsText("output/scottyTest.txt", FileSystem.WriteMode.OVERWRITE);
 
         env.execute("Flink Streaming Java API Skeleton");
     }
@@ -110,7 +166,7 @@ public class ScottyJob {
         @Nullable
         @Override
         public Watermark checkAndGetNextWatermark(Tuple3<Integer, Integer, Long> lastElement, long extractedTimestamp) {
-            return new Watermark(extractedTimestamp-1000);
+            return new Watermark(extractedTimestamp-10000);
         }
 
         /**
