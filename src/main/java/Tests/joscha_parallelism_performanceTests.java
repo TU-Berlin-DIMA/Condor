@@ -16,7 +16,7 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.XORShiftRandom;
 
 import java.util.HashMap;
-
+/*
 public class joscha_parallelism_performanceTests {
     public static void main(String[] args) throws Exception {
 
@@ -47,17 +47,17 @@ public class joscha_parallelism_performanceTests {
                         return value1;
                     }
                 });// key by the new parallelism*/
-
+/*
         aggregate.writeAsText("output/parallelism_test.txt", FileSystem.WriteMode.OVERWRITE);
 
         env.execute("Flink Streaming Java API Skeleton");
     }
-
+*/
     /**
      * Stateful map functions to add the parallelism variable
      *
      * @param <T0> type of input elements
-     */
+   /*
     public static class AddParallelismTuple<T0> extends RichMapFunction<T0, Tuple2<Integer,T0>> {
 
         ValueState<Integer> state;
@@ -83,3 +83,4 @@ public class joscha_parallelism_performanceTests {
         }
     }
 }
+*/

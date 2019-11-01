@@ -17,15 +17,14 @@ import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
 import javax.annotation.Nullable;
-
+/*
 public class BashHistogramTest {
     public static void main(String[] args) throws Exception {
 
 
         // set up the streaming execution environment
 
-<<<<<<< HEAD
-=======
+
         int keyField = 0;
 
         Integer numFinalBuckets = 27;
@@ -59,7 +58,7 @@ public class BashHistogramTest {
         queryResult.writeAsText("output/EquiDepthtHistogramQueryOutput.txt", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
         env.execute("Flink Streaming Java API Skeleton");
->>>>>>> 0b239cdf8adab3af6cc773724e77c5fb73dab7fe
+
     }
 
-}
+}*/
