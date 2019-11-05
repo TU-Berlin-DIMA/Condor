@@ -218,8 +218,9 @@ public class CuckooFilter<T> implements Synopsis<T>, Serializable {
                     throw new Exception("Cuckoo Filter is considered full");
                 }
             }
+            throw new Exception("Sketches to merge have to be the same size and hash Functions");
         }
-        throw new Exception("Sketches to merge have to be the same size and hash Functions");
+        throw new Exception("Sketches to merge have to be the same type");
 
     }
 
