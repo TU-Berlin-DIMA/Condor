@@ -9,7 +9,9 @@ import java.lang.Math;
 
 import java.util.ArrayList;
 import java.util.BitSet;
-
+/**
+ * @author Zahra Salmani
+ */
 public class BloomFilterTest {
 
     @Test

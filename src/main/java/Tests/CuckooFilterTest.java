@@ -4,9 +4,10 @@ import Sketches.CuckooFilter;
 import Sketches.CountMinSketch;
 //import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
-
+/**
+ * @author Zahra Salmani
+ */
 public class CuckooFilterTest {
 
     @Test

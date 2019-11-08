@@ -6,7 +6,9 @@ import org.junit.BeforeClass;
 import org.junit.Before;
 import org.junit.After;
 import org.decimal4j.util.DoubleRounder;
-
+/**
+ * @author Zahra Salmani
+ */
 public class EquiDepthHistogramTest {
 
    //@Before

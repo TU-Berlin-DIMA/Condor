@@ -10,7 +10,9 @@ import java.util.Arrays;
 import java.io.File;
 import java.lang.Double;
 import java.io.FileNotFoundException;
-
+/**
+ * @author Zahra Salmani
+ */
 public class EquiWidthHistogramTest {
     @Test(expected = IllegalArgumentException.class)
     public void illegalboundTest(){

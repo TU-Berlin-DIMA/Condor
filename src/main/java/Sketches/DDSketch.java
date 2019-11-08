@@ -77,7 +77,6 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
                 Double.MAX_VALUE / (1 + relativeAccuracy) // so that value >= Double.MAX_VALUE
         );
     }
-
     /**
      * Test if the value can be inserted in the structure.
      */
@@ -112,7 +111,6 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
         }
     }
 
-
     /**
      * Given a value calculate the index of the corresponding Bin.
      *
@@ -125,10 +123,10 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
     }
 
     /**
-     * Calculate the representative value from the given index acording to the relative accuracy
+     * Calculate the representative value from the given index according to the relative accuracy
      *
      * @param index to calcule the value from
-     * @return the reprentative value
+     * @return the representative value
      */
     public double value(int index) {
         return Math.exp(index * logGamma) * (1 + relativeAccuracy);
@@ -255,6 +253,12 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
         }
         throw new Exception("Sketches to merge have to be the same size and hash Functions");
     }
+    public int getGlobalCount()
+    { return globalCount;}
+
+    public int getZeroCount()
+    {return zeroCount;}
+
 
     @Override
     public String toString() {

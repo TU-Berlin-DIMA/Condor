@@ -4,7 +4,9 @@ import org.junit.Test;
 import org.junit.Assert;
 import java.util.Arrays;
 import java.util.stream.*;
-
+/**
+ * @author Zahra Salmani
+ */
 public class RealValuedBucket4LTTest {
 
     @Test(expected = IllegalArgumentException.class)

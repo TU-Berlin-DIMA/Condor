@@ -7,7 +7,9 @@ import java.util.LinkedList;
 import java.util.Scanner;
 import java.io.File;
 import java.io.FileNotFoundException;
-
+/**
+ * @author Zahra Salmani
+ */
 public class FiFoSamplerTest {
     @Test
     public void updateTest() {
