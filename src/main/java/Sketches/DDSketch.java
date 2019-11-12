@@ -54,9 +54,9 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
         this.maxIndexedValue = maxIndexableValue();
         this.zeroCount = 0;
         this.globalCount = 0;
-
         this.counts = new TreeMap<>();
     }
+
 
     /**
      * @return the lowest value that can be indexed
@@ -129,6 +129,8 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
      * @return the representative value
      */
     public double value(int index) {
+        double exp = Math.exp(index * logGamma);
+        double x= exp * (1 + relativeAccuracy);
         return Math.exp(index * logGamma) * (1 + relativeAccuracy);
     }
 
