@@ -129,8 +129,6 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
      * @return the representative value
      */
     public double value(int index) {
-        double exp = Math.exp(index * logGamma);
-        double x= exp * (1 + relativeAccuracy);
         return Math.exp(index * logGamma) * (1 + relativeAccuracy);
     }
 
@@ -196,26 +194,38 @@ public class DDSketch<T extends Number> implements Synopsis<T>, Serializable {
         }
 
         final long rank = (long) (quantile * (count - 1));
+
         if (rank < zeroCount) {
+            //System.out.println("zero rank");
             return 0;
         }
 
         if (quantile <= 0.5) {
+            //System.out.println(counts.entrySet());
+            //System.out.println("rank:");
+            //System.out.println(rank);
             long n = zeroCount;
             for(Map.Entry<Integer,Integer> bin : counts.entrySet()) {
+                //System.out.println(bin);
+                n += bin.getValue();
                 if (n > rank){
+                    //double v=bin.getKey();
+                    //System.out.println(v);
                     return value(bin.getKey());
                 }
-                n += bin.getValue();
+
+                //System.out.println("n:");
+                //System.out.println(n);
             }
             return getMaxValue();
         } else {
             long n = count;
             for(Map.Entry<Integer,Integer> bin : counts.descendingMap().entrySet()) {
+                n -= bin.getValue();
                 if (n <= rank){
                     return value(bin.getKey());
                 }
-                n -= bin.getValue();
+
             }
             return getMinValue();
         }

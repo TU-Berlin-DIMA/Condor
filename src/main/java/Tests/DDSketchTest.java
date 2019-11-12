@@ -45,6 +45,7 @@ public class DDSketchTest {
         Assertions.assertTrue(counts.size()==1);
         Assertions.assertTrue(ddSketch.getZeroCount()==10);
 
+        //check indexing
         int[]  indexarray= new int[]{0,34,54,69,80,89,97,103,109,115,119,124,128,131,135,138,141,144,147,
                 149,152,154,156,158,160,162,164,166,168,170,171,173,174,176,177,179,180,181,183,184,185,186,
                 188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,
@@ -54,8 +55,9 @@ public class DDSketchTest {
 
         int[] countarray= new int[]{18,19,10,18,12,14,16,24,17,16,18,15,15,26,13,18,22,13,15,17,16,11,10,
                 16,15,15,16,10,22,11,10,14,18,9,16,18,19,15,25,15,21,17,13,19,9,8,21,20,10,10,21,19,18,24,
-                15,11,10,41,19,13,20,32,17,16,35,17,18,42,13,27,19,45,15,33,44,18,25,33,40,17,29,24,34,32,28,
-                30,37,37,30,49,38,28,58,39,33,41,51,33,64,58,37,67,56,60,44,49,48,40,60,60,69,59,47,59,44,68,54,51,69,65,78,71,82,57,76,87,83,71};
+                15,11,10,41,19,13,20,32,17,16,35,17,18,42,13,27,19,45,15,33,44,18,25,33,40,17,29,24,34,32,
+                28,30,37,37,30,49,38,28,58,39,33,41,51,33,64,58,37,67,56,60,44,49,48,40,60,60,69,59,47,59,
+                44,68,54,51,69,65,78,71,82,57,76,87,83,71};
 
         TreeMap<Integer, Integer> refrenceCount = new TreeMap<>();
         for(int i=0;i<indexarray.length;i++){
@@ -84,7 +86,7 @@ public class DDSketchTest {
     }
     @Test
     public void getValueAtQuantileTest(){
-        double relativeAccuracy= 0.01;
+        double relativeAccuracy= 0.1;
         DDSketch ddSketch=new DDSketch(relativeAccuracy,2000);
         String fileName= "data/dataset.csv";
         File file= new File(fileName);
@@ -94,27 +96,34 @@ public class DDSketchTest {
             inputStream = new Scanner(file);
             while(inputStream.hasNext()){
                 String line= inputStream.next();
+                //line=line.substring(0, line.length() - 1);
                 ddSketch.update(Integer.parseInt(line));
             }
             inputStream.close();
         }catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        ddSketch.getValueAtQuantile(0.01);
-        System.out.println(ddSketch.getValueAtQuantile(0.0));
-        System.out.println(ddSketch.getValueAtQuantile(0.01));
-        System.out.println(ddSketch.getValueAtQuantile(0.05));
-        System.out.println(ddSketch.getValueAtQuantile(0.2));
-        System.out.println(ddSketch.getValueAtQuantile(0.5));
-        System.out.println(ddSketch.getValueAtQuantile(0.75));
-        System.out.println(ddSketch.getValueAtQuantile(1));
-        System.out.println(ddSketch.getCounts().size());
+        /*Assertions.assertTrue(Math.abs(ddSketch.getValueAtQuantile(0.0)-61)<=(relativeAccuracy*61));
+        Assertions.assertTrue(Math.abs(ddSketch.getValueAtQuantile(0.05)-84)<=(relativeAccuracy*84));
+        Assertions.assertTrue(Math.abs(ddSketch.getValueAtQuantile(0.2)-92)<=(relativeAccuracy*92));
+        Assertions.assertTrue(Math.abs(ddSketch.getValueAtQuantile(0.5)-100)<=(relativeAccuracy*100));
+        Assertions.assertTrue(Math.abs(ddSketch.getValueAtQuantile(0.75)-107)<=(relativeAccuracy*107));
+        Assertions.assertTrue(Math.abs(ddSketch.getValueAtQuantile(1.0)-141)<=(relativeAccuracy*141));*/
+
+
         Assertions.assertTrue(Math.abs(ddSketch.getValueAtQuantile(0.0)-0)<=(relativeAccuracy*0));
-        Assertions.assertTrue(Math.abs(ddSketch.getValueAtQuantile(0.01)-2)<=(relativeAccuracy*2));
-        Assertions.assertTrue(Math.abs(ddSketch.getValueAtQuantile(0.05)-12)<=(relativeAccuracy*12));
-        Assertions.assertTrue(Math.abs(ddSketch.getValueAtQuantile(0.2)-51)<=(relativeAccuracy*51));
+        Assertions.assertTrue(Math.abs(ddSketch.getValueAtQuantile(0.05)-13)<=(relativeAccuracy*13));
+        Assertions.assertTrue(Math.abs(ddSketch.getValueAtQuantile(0.2)-50)<=(relativeAccuracy*50));
         Assertions.assertTrue(Math.abs(ddSketch.getValueAtQuantile(0.5)-121)<=(relativeAccuracy*121));
-        Assertions.assertTrue(Math.abs(ddSketch.getValueAtQuantile(0.75)-179)<=(relativeAccuracy*179));
-        Assertions.assertTrue(Math.abs(ddSketch.getValueAtQuantile(1)-239)<=(relativeAccuracy*239));
+        Assertions.assertTrue(Math.abs(ddSketch.getValueAtQuantile(0.75)-182)<=(relativeAccuracy*182));
+        Assertions.assertTrue(Math.abs(ddSketch.getValueAtQuantile(1.0)-239)<=(relativeAccuracy*239));
+        System.out.println(Math.abs(ddSketch.getValueAtQuantile(0.0)));
+        System.out.println(Math.abs(ddSketch.getValueAtQuantile(0.05)));
+        System.out.println(Math.abs(ddSketch.getValueAtQuantile(0.2)));
+        System.out.println(Math.abs(ddSketch.getValueAtQuantile(0.5)));
+        System.out.println(Math.abs(ddSketch.getValueAtQuantile(0.75)-182));
+        System.out.println(Math.abs(ddSketch.getValueAtQuantile(1.0)));
+
+
     }
 }
