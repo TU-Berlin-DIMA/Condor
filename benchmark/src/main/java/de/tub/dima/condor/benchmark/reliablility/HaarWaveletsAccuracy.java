@@ -1,14 +1,16 @@
 package de.tub.dima.condor.benchmark.reliablility;
 
 import de.tub.dima.condor.benchmark.sources.input.NYCTaxiRideSource;
+import de.tub.dima.condor.benchmark.sources.utils.NYCExtractKeyField;
 import de.tub.dima.condor.benchmark.sources.utils.NYCTimestampsAndWatermarks;
+import de.tub.dima.condor.flinkScottyConnector.processor.BuildSynopsis;
 import de.tub.dima.condor.core.synopsis.Wavelets.DistributedWaveletsManager;
 import de.tub.dima.condor.core.synopsis.Wavelets.WaveletSynopsis;
-import de.tub.dima.condor.flinkScottyConnector.processor.BuildSynopsisOld;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.java.tuple.Tuple11;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.TimeCharacteristic;
+import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -31,26 +33,25 @@ public class HaarWaveletsAccuracy {
 		// Get the parallelism
 		int parallelism = Integer.parseInt(args[0]);
 
-
-		int waveletSize = 10000;
-		if (Integer.parseInt(args[0]) == 1 || Integer.parseInt(args[0]) == 256){
-			waveletSize = 1000;
-		}
-
-		// initialize NYCTaxi DataSource
+		// Initialize NYCTaxi DataSource
 		DataStreamSource<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> messageStream = env
 				.addSource(new NYCTaxiRideSource(-1, 200000,  new ArrayList<>())).setParallelism(1);
-
 
 		final SingleOutputStreamOperator<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> timestamped = messageStream
 				.assignTimestampsAndWatermarks(new NYCTimestampsAndWatermarks());
 
-		// Set up other configuration parameters
-		Class<WaveletSynopsis> synopsisClass = WaveletSynopsis.class;
+		// We want to build the equi-width histogram based on the value of field 6 (startLon)
+		SingleOutputStreamOperator<Short> inputStream = timestamped.map(new NYCExtractKeyField(10));
 
+		int waveletSize = 10000;
+		if (Integer.parseInt(args[0]) == 1){
+			waveletSize = 1000;
+		} else if (Integer.parseInt(args[0]) == 256){
+			waveletSize = 1000;
+		}
 
 //		SingleOutputStreamOperator<WaveletSynopsis> synopsesStream = BuildSynopsis.timeBased(timestamped, Time.milliseconds(10000),10, synopsisClass, new Object[]{10000});
-		SingleOutputStreamOperator<DistributedWaveletsManager> synopsesStream = BuildSynopsisOld.timeBased(timestamped, env.getParallelism() * 10, Time.milliseconds(10000), null, 10, WaveletSynopsis.class, DistributedWaveletsManager.class, waveletSize);
+		SingleOutputStreamOperator<DistributedWaveletsManager> synopsesStream = BuildSynopsis.timeBased(timestamped, env.getParallelism() * 10, Time.milliseconds(10000), null, 10, WaveletSynopsis.class, DistributedWaveletsManager.class, waveletSize);
 
 		SingleOutputStreamOperator<Double> result = synopsesStream.flatMap(new rangeSumPassengerCount());
 //        result.writeAsText("EDADS/output/avgPassengerCount.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);

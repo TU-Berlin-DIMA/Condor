@@ -43,7 +43,7 @@ public class EquiWidthHistogramAccuracy {
                 .assignTimestampsAndWatermarks(new NYCTimestampsAndWatermarks());
 
         // We want to build the equi-width histogram based on the value of field 6 (startLon)
-        SingleOutputStreamOperator<Long> inputStream = timestamped.map(new NYCExtractKeyField(6));
+        SingleOutputStreamOperator<Double> inputStream = timestamped.map(new NYCExtractKeyField(6));
 
         // Set up other configuration parameters
         Class<EquiWidthHistogram> synopsisClass = EquiWidthHistogram.class;
