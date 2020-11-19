@@ -53,7 +53,7 @@ public class HaarWaveletsSlicing {
 		Class<DistributedWaveletsManager> managerClass = DistributedWaveletsManager.class;
 		int miniBatchSize = parallelism * 10;
 		Window[] windows = {new SlidingWindow(WindowMeasure.Time, 5000,2500)};
-		Object[] synopsisParameters = new Object[]{1000};
+		Object[] synopsisParameters = new Object[]{10000};
 
 		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism, miniBatchSize, sliceManagerClass, managerClass);
 
