@@ -65,6 +65,17 @@ public class BuildConfiguration <S extends Synopsis, SM extends NonMergeableSyno
         this.managerClass = managerClass;
     }
 
+    public BuildConfiguration(DataStream<T> inputStream, Class<S> synopsisClass, Window[] windows, Object[] synParams, int parallelism, Integer miniBatchSize, Class<SM> sliceManagerClass, Class<M> managerClass) {
+        this.inputStream = inputStream;
+        this.synopsisClass = synopsisClass;
+        this.windows = windows;
+        this.synParams = synParams;
+        this.parallelism = parallelism;
+        this.miniBatchSize = miniBatchSize;
+        this.sliceManagerClass = sliceManagerClass;
+        this.managerClass = managerClass;
+    }
+
     public BuildConfiguration(DataStream<T> inputStream, Class<S> synopsisClass, Window[] windows, Object[] synParams, int parallelism, RichMapFunction<T, Tuple2<Key, Value>> stratificationKeyExtractor) {
         this.inputStream = inputStream;
         this.synopsisClass = synopsisClass;
@@ -81,6 +92,7 @@ public class BuildConfiguration <S extends Synopsis, SM extends NonMergeableSyno
         this.synParams = synParams;
         this.parallelism = parallelism;
     }
+
 
     public DataStream<T> getInputStream() {
         return inputStream;

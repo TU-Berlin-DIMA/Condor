@@ -3,9 +3,16 @@ package de.tub.dima.condor.benchmark.reliablility;
 import de.tub.dima.condor.benchmark.sources.input.NYCTaxiRideSource;
 import de.tub.dima.condor.benchmark.sources.utils.NYCExtractKeyField;
 import de.tub.dima.condor.benchmark.sources.utils.NYCTimestampsAndWatermarks;
+import de.tub.dima.condor.core.synopsis.Sketches.CountMinSketch;
+import de.tub.dima.condor.core.synopsis.WindowedSynopsis;
 import de.tub.dima.condor.flinkScottyConnector.processor.BuildSynopsis;
 import de.tub.dima.condor.core.synopsis.Wavelets.DistributedWaveletsManager;
 import de.tub.dima.condor.core.synopsis.Wavelets.WaveletSynopsis;
+import de.tub.dima.condor.flinkScottyConnector.processor.SynopsisBuilder;
+import de.tub.dima.condor.flinkScottyConnector.processor.configs.BuildConfiguration;
+import de.tub.dima.scotty.core.windowType.TumblingWindow;
+import de.tub.dima.scotty.core.windowType.Window;
+import de.tub.dima.scotty.core.windowType.WindowMeasure;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.java.tuple.Tuple11;
 import org.apache.flink.core.fs.FileSystem;
@@ -40,36 +47,38 @@ public class HaarWaveletsAccuracy {
 		final SingleOutputStreamOperator<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> timestamped = messageStream
 				.assignTimestampsAndWatermarks(new NYCTimestampsAndWatermarks());
 
-		// We want to build the equi-width histogram based on the value of field 6 (startLon)
+		// We want to build the Haar wavelets based on the value of field 6 (startLon)
 		SingleOutputStreamOperator<Short> inputStream = timestamped.map(new NYCExtractKeyField(10));
 
-		int waveletSize = 10000;
-		if (Integer.parseInt(args[0]) == 1){
-			waveletSize = 1000;
-		} else if (Integer.parseInt(args[0]) == 256){
-			waveletSize = 1000;
-		}
+		// Set up other configuration parameters
+		Class<WaveletSynopsis> synopsisClass = WaveletSynopsis.class;
+		Class<DistributedWaveletsManager> managerClass = DistributedWaveletsManager.class;
+		int miniBatchSize = parallelism * 10;
+		Window[] windows = {new TumblingWindow(WindowMeasure.Time, 10000)};
+		Object[] synopsisParameters = new Object[]{1000};
 
-//		SingleOutputStreamOperator<WaveletSynopsis> synopsesStream = BuildSynopsis.timeBased(timestamped, Time.milliseconds(10000),10, synopsisClass, new Object[]{10000});
-		SingleOutputStreamOperator<DistributedWaveletsManager> synopsesStream = BuildSynopsis.timeBased(timestamped, env.getParallelism() * 10, Time.milliseconds(10000), null, 10, WaveletSynopsis.class, DistributedWaveletsManager.class, waveletSize);
+		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism, miniBatchSize, null, managerClass);
 
+		// Build the synopses
+		SingleOutputStreamOperator<WindowedSynopsis<DistributedWaveletsManager>> synopsesStream = SynopsisBuilder.build(env, config);
+
+		//  Compute the range sum for every 10,000 entries
 		SingleOutputStreamOperator<Double> result = synopsesStream.flatMap(new rangeSumPassengerCount());
-//        result.writeAsText("EDADS/output/avgPassengerCount.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
-		result.writeAsText("/share/hadoop/EDADS/accuracyResults/haar-wavelets_result_"+Integer.parseInt(args[0])+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+		result.writeAsText("/share/hadoop/EDADS/accuracyResults/haar-wavelets_result_"+parallelism+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
 		env.execute("Haar Wavelets accuracy test");
 	}
 
-	private static class rangeSumPassengerCount implements FlatMapFunction<DistributedWaveletsManager, Double> {
+	private static class rangeSumPassengerCount implements FlatMapFunction<WindowedSynopsis<DistributedWaveletsManager>, Double> {
 
 		@Override
-		public void flatMap(DistributedWaveletsManager waveletsManager, Collector<Double> out) throws Exception {
+		public void flatMap(WindowedSynopsis<DistributedWaveletsManager> waveletsManager, Collector<Double> out) throws Exception {
 			//estimate the range sums of the passengers counts
 			int rangeSize = 10000;
 			for (int i = 0; i < 2999998; i+=rangeSize) {
 				try {
-					out.collect(waveletsManager.rangeSumQuery(i,i+rangeSize-1));
+					out.collect(waveletsManager.getSynopsis().rangeSumQuery(i,i+rangeSize-1));
 				} catch (IllegalArgumentException e){
 					System.out.println("[ "+i+", "+(i+rangeSize-1)+" ]");
 				}
