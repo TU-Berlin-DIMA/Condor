@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import static org.apache.flink.streaming.api.windowing.time.Time.seconds;
 
 /**
- * Created by Rudi on 22/10/2020.
+ * Created by Rudi Poepsel Lemaitre on 22/10/2020.
  */
 public class EquiWidthHistogramAccuracy {
     public static void main(String[] args) throws Exception {

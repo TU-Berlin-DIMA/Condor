@@ -90,7 +90,7 @@
               </filters>
               <transformers>
                 <transformer>
-                  <mainClass />
+                  <mainClass>de.tub.dima.condor.benchmark.reliablility.CountMinAccuracy</mainClass>
                 </transformer>
               </transformers>
             </configuration>

@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 
 public class ParallelThroughputLogger<T> extends RichFlatMapFunction<T, T> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Benchmark.ParallelThroughputLogger.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ParallelThroughputLogger.class);
 
     private long totalReceived;
     private long lastTotalReceived;

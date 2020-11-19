@@ -65,6 +65,11 @@
 			<artifactId>flink-connector</artifactId>
 			<version>0.4</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.datasketches</groupId>
+			<artifactId>datasketches-java</artifactId>
+			<version>1.1.0-incubating</version>
+		</dependency>
 		
 
 		<!-- Add logging framework, to produce console output when running in the IDE. -->
@@ -104,11 +109,7 @@
 			<version>2.7</version>
 			<scope>compile</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.apache.datasketches</groupId>
-			<artifactId>datasketches-java</artifactId>
-			<version>1.1.0-incubating</version>
-		</dependency>
+
 	</dependencies>
 
 	<build>
@@ -161,7 +162,7 @@
 							</filters>
 							<transformers>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-									<mainClass><!-- Add main class here --></mainClass>
+									<mainClass>de.tub.dima.condor.benchmark.reliablility.CountMinAccuracy<!-- Add main class here --></mainClass>
 								</transformer>
 							</transformers>
 						</configuration>

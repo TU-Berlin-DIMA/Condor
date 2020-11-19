@@ -36,6 +36,7 @@ public class SynopsisBuilder {
             (StreamExecutionEnvironment env, BuildConfiguration config) throws Exception {
 
         env.setParallelism(config.parallelism);
+        env.setMaxParallelism(config.parallelism);
 
         if(config.stratificationKeyExtractor == null){ // Stratified
             if(config.windows[0] instanceof TumblingWindow && config.windows.length == 1) {

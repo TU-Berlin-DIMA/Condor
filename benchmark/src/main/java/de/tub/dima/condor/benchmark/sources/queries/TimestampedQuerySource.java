@@ -1,6 +1,6 @@
 package de.tub.dima.condor.benchmark.sources.queries;
 
-import ApproximateDataAnalytics.TimestampedQuery;
+import de.tub.dima.condor.flinkScottyConnector.evaluator.utils.TimestampedQuery;
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
 import org.apache.flink.streaming.api.windowing.time.Time;
 
