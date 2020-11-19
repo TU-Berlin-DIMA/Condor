@@ -1,6 +1,7 @@
 package de.tub.dima.condor.benchmark.reliablility;
 
 import de.tub.dima.condor.benchmark.sources.input.NYCTaxiRideSource;
+import de.tub.dima.condor.benchmark.sources.utils.NYCExtractKeyField;
 import de.tub.dima.condor.benchmark.sources.utils.NYCTimestampsAndWatermarks;
 import de.tub.dima.condor.flinkScottyConnector.processor.BuildSynopsis;
 import de.tub.dima.condor.core.synopsis.Wavelets.DistributedWaveletsManager;
@@ -29,13 +30,18 @@ public class HaarWaveletsAccuracy {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
-		env.setParallelism(Integer.parseInt(args[0]));
-		env.setMaxParallelism(Integer.parseInt(args[0]));
+		// Get the parallelism
+		int parallelism = Integer.parseInt(args[0]);
 
-		BuildSynopsis.setParallelismKeys(Integer.parseInt(args[0]));
-//
-//		env.setParallelism(1);
-//		env.setMaxParallelism(1);
+		// Initialize NYCTaxi DataSource
+		DataStreamSource<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> messageStream = env
+				.addSource(new NYCTaxiRideSource(-1, 200000,  new ArrayList<>())).setParallelism(1);
+
+		final SingleOutputStreamOperator<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> timestamped = messageStream
+				.assignTimestampsAndWatermarks(new NYCTimestampsAndWatermarks());
+
+		// We want to build the equi-width histogram based on the value of field 6 (startLon)
+		SingleOutputStreamOperator<Short> inputStream = timestamped.map(new NYCExtractKeyField(10));
 
 		int waveletSize = 10000;
 		if (Integer.parseInt(args[0]) == 1){
@@ -43,13 +49,6 @@ public class HaarWaveletsAccuracy {
 		} else if (Integer.parseInt(args[0]) == 256){
 			waveletSize = 1000;
 		}
-
-		DataStreamSource<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> messageStream = env
-				.addSource(new NYCTaxiRideSource(-1, 200000,  new ArrayList<>())).setParallelism(1);
-
-
-		final SingleOutputStreamOperator<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> timestamped = messageStream
-				.assignTimestampsAndWatermarks(new NYCTimestampsAndWatermarks());
 
 //		SingleOutputStreamOperator<WaveletSynopsis> synopsesStream = BuildSynopsis.timeBased(timestamped, Time.milliseconds(10000),10, synopsisClass, new Object[]{10000});
 		SingleOutputStreamOperator<DistributedWaveletsManager> synopsesStream = BuildSynopsis.timeBased(timestamped, env.getParallelism() * 10, Time.milliseconds(10000), null, 10, WaveletSynopsis.class, DistributedWaveletsManager.class, waveletSize);
