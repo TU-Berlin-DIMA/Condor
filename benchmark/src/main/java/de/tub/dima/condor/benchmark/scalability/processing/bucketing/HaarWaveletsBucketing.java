@@ -1,9 +1,10 @@
-package de.tub.dima.condor.benchmark.reliablility;
+package de.tub.dima.condor.benchmark.scalability.processing.bucketing;
 
 import de.tub.dima.condor.benchmark.sources.input.NYCTaxiRideSource;
 import de.tub.dima.condor.benchmark.sources.utils.NYCExtractKeyField;
 import de.tub.dima.condor.benchmark.sources.utils.NYCTimestampsAndWatermarks;
-import de.tub.dima.condor.core.synopsis.Sketches.HyperLogLogSketch;
+import de.tub.dima.condor.core.synopsis.Wavelets.DistributedWaveletsManager;
+import de.tub.dima.condor.core.synopsis.Wavelets.WaveletSynopsis;
 import de.tub.dima.condor.core.synopsis.WindowedSynopsis;
 import de.tub.dima.condor.flinkScottyConnector.processor.SynopsisBuilder;
 import de.tub.dima.condor.flinkScottyConnector.processor.configs.BuildConfiguration;
@@ -19,15 +20,13 @@ import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.util.Collector;
 
-import java.util.ArrayList;
-
 /**
  * Created by Rudi Poepsel Lemaitre.
  */
-public class HLLSketchAccuracy {
+public class HaarWaveletsBucketing {
 	public static void run(int parallelism, String outputDir) throws Exception {
 
-		System.out.println("HyperLogLog sketch accuracy test");
+		System.out.println("Haar Wavelets accuracy test");
 		// set up the streaming execution Environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
@@ -40,33 +39,42 @@ public class HLLSketchAccuracy {
 		final SingleOutputStreamOperator<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> timestamped = messageStream
 				.assignTimestampsAndWatermarks(new NYCTimestampsAndWatermarks());
 
-		// We want to build the hyperloglog sketch based on the value of field 1 (taxiId)
-		SingleOutputStreamOperator<Long> inputStream = timestamped.map(new NYCExtractKeyField(1)).returns(Long.class);
+		// We want to build the Haar wavelets based on the value of field 10 (passengerCnt)
+		SingleOutputStreamOperator<Short> inputStream = timestamped.map(new NYCExtractKeyField(10)).returns(Short.class);
 
 		// Set up other configuration parameters
-		Class<HyperLogLogSketch> synopsisClass = HyperLogLogSketch.class;
+		Class<WaveletSynopsis> synopsisClass = WaveletSynopsis.class;
+		Class<DistributedWaveletsManager> managerClass = DistributedWaveletsManager.class;
+		int miniBatchSize = parallelism * 10;
 		Window[] windows = {new TumblingWindow(WindowMeasure.Time, 10000)};
-		Object[] synopsisParameters = new Object[]{16, 7L};
+		Object[] synopsisParameters = new Object[]{1000};
 
-		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);
+		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism, miniBatchSize, null, managerClass);
 
 		// Build the synopses
-		SingleOutputStreamOperator<WindowedSynopsis<HyperLogLogSketch>> synopsesStream = SynopsisBuilder.build(env, config);
+		SingleOutputStreamOperator<WindowedSynopsis<DistributedWaveletsManager>> synopsesStream = SynopsisBuilder.build(env, config);
 
-		// Predict the number of distinct taxiID’s
-		SingleOutputStreamOperator<Long> result = synopsesStream.flatMap(new countDistinct());
+		//  Compute the range sums of the passengers counts for every 10,000 entries
+		SingleOutputStreamOperator<Double> result = synopsesStream.flatMap(new rangeSumPassengerCount());
 
-		result.writeAsText(outputDir+"/hll_result_"+parallelism+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+		result.writeAsText(outputDir+"/haar-wavelets_result_"+parallelism+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
-		env.execute("HyperLogLog sketch accuracy test");
+		env.execute("Haar Wavelets accuracy test");
 	}
 
-	private static class countDistinct implements FlatMapFunction<WindowedSynopsis<HyperLogLogSketch>, Long> {
+	private static class rangeSumPassengerCount implements FlatMapFunction<WindowedSynopsis<DistributedWaveletsManager>, Double> {
 
 		@Override
-		public void flatMap(WindowedSynopsis<HyperLogLogSketch> hllSketch, Collector<Long> out) throws Exception {
-			// Predict the number of distinct taxiID’s
-			out.collect(hllSketch.getSynopsis().distinctItemsEstimator());
+		public void flatMap(WindowedSynopsis<DistributedWaveletsManager> waveletsManager, Collector<Double> out) throws Exception {
+			// Estimate the range sums of the passengers counts
+			int rangeSize = 10000;
+			for (int i = 0; i < 2999998; i+=rangeSize) {
+				try {
+					out.collect(waveletsManager.getSynopsis().rangeSumQuery(i,i+rangeSize-1));
+				} catch (IllegalArgumentException e){
+					System.out.println("[ "+i+", "+(i+rangeSize-1)+" ]");
+				}
+			}
 		}
 	}
 

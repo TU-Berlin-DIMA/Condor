@@ -23,7 +23,7 @@ import org.apache.flink.util.Collector;
 import java.util.ArrayList;
 
 /**
- * Created by Rudi Poepsel Lemaitre on 22/10/2020.
+ * Created by Rudi Poepsel Lemaitre.
  */
 public class HaarWaveletsAccuracy {
 	public static void run(int parallelism, String outputDir) throws Exception {

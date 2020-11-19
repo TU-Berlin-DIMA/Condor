@@ -22,17 +22,18 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.util.Collector;
 
 import java.util.ArrayList;
 
 /**
- * Created by Rudi Poepsel Lemaitre on 22/10/2020.
+ * Created by Rudi Poepsel Lemaitre.
  */
 public class CountMinBucketing {
 	public static void run(int parallelism, long runtime) throws Exception {
 
-		System.out.println("Count-Min sketch scalability test");
+		System.out.println("Count-Min sketch - bucketing scalability test "+parallelism);
 
 		// Set up the streaming execution Environment
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -45,7 +46,7 @@ public class CountMinBucketing {
 		final SingleOutputStreamOperator<Tuple3<Integer, Integer, Long>> timestamped = messageStream
 				.assignTimestampsAndWatermarks(new SyntecticTimestampsAndWatermarks());
 
-		// We want to build the count-min sketch based on the value of field 0
+		// We want to build the synopsis based on the value of field 0
 		SingleOutputStreamOperator<Integer> inputStream = timestamped.map(new SyntecticExtractKeyField(0)).returns(Integer.class);
 
 		// Set up other configuration parameters
@@ -58,24 +59,13 @@ public class CountMinBucketing {
 		// Build the synopses
 		SingleOutputStreamOperator<WindowedSynopsis<CountMinSketch>> synopsesStream = SynopsisBuilder.build(env, config);
 
-		// Query the estimated number of entries in the dataset of each taxiID between [2013000001, 2013013223]
-		SingleOutputStreamOperator<Integer> result = synopsesStream.flatMap(new queryFrequency());
-
-		result.writeAsText("/share/hadoop/EDADS/accuracyResults/count-min_result_"+parallelism+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
-
-		env.execute("Count-Min sketch accuracy test");
-	}
-
-	private static class queryFrequency implements FlatMapFunction<WindowedSynopsis<CountMinSketch>, Integer> {
-
-		@Override
-		public void flatMap(WindowedSynopsis<CountMinSketch> cmSketch, Collector<Integer> out) throws Exception {
-			// Estimate the frequencies of all taxiID's [2013000001, 2013013223]
-			for (int i = 2013000001; i <= 2013013223; i++) {
-				out.collect(cmSketch.getSynopsis().query(i));
+		synopsesStream.addSink(new SinkFunction() {
+			@Override
+			public void invoke(final Object value) throws Exception {
+				//Environment.out.println(value);
 			}
-		}
+		});
+
+		env.execute("Count-Min sketch - bucketing scalability test "+parallelism);
 	}
-
-
 }
