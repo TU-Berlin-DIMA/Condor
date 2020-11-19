@@ -1,7 +1,7 @@
 package de.tub.dima.condor.flinkScottyConnector.processor.divide;
 
-import de.tub.dima.condor.flinkScottyConnector.processor.BuildSynopsis;
 import de.tub.dima.condor.core.synopsis.Sampling.TimestampedElement;
+import de.tub.dima.condor.flinkScottyConnector.processor.utils.IntegerState;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
@@ -29,7 +29,7 @@ public class OrderAndIndex<T0> extends ProcessFunction<T0, Tuple2<Integer, T0>> 
         if (parKeys < 1) {
             throw new IllegalArgumentException("The parallelism for the synopsis construction needs to be set with the BuildSynopsis.setParallelismKeys() method. "+parKeys);
         }
-        state = new BuildSynopsis.IntegerState();
+        state = new IntegerState();
         if (miniBatchSize > 1) {
             dispatchList = new PriorityQueue<>();
         }

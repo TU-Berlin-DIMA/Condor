@@ -41,7 +41,7 @@ public class CountMinAccuracy {
 				.assignTimestampsAndWatermarks(new NYCTimestampsAndWatermarks());
 
 		// We want to build the count-min sketch based on the value of field 1 (taxiId)
-		SingleOutputStreamOperator<Long> inputStream = timestamped.map(new NYCExtractKeyField(1));
+		SingleOutputStreamOperator<Long> inputStream = timestamped.map(new NYCExtractKeyField(1)).returns(Long.class);
 
 		// Set up other configuration parameters
 		Class<CountMinSketch> synopsisClass = CountMinSketch.class;

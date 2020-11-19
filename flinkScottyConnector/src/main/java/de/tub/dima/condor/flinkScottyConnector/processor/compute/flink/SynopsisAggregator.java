@@ -5,6 +5,7 @@ import de.tub.dima.condor.core.synopsis.StratifiedSynopsis;
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.functions.RichAggregateFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.metrics.Counter;
 import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
 import org.slf4j.Logger;
