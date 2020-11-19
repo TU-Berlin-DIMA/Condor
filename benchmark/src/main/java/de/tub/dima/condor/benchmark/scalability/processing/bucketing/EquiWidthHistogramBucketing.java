@@ -6,6 +6,7 @@ import de.tub.dima.condor.benchmark.sources.utils.NYCExtractKeyField;
 import de.tub.dima.condor.benchmark.sources.utils.NYCTimestampsAndWatermarks;
 import de.tub.dima.condor.benchmark.sources.utils.SyntecticExtractKeyField;
 import de.tub.dima.condor.benchmark.sources.utils.SyntecticTimestampsAndWatermarks;
+import de.tub.dima.condor.benchmark.throughputUtils.ParallelThroughputLogger;
 import de.tub.dima.condor.core.synopsis.Histograms.EquiWidthHistogram;
 import de.tub.dima.condor.core.synopsis.WindowedSynopsis;
 import de.tub.dima.condor.flinkScottyConnector.processor.SynopsisBuilder;
@@ -29,8 +30,8 @@ import org.apache.flink.util.Collector;
  */
 public class EquiWidthHistogramBucketing {
     public static void run(int parallelism, long runtime) throws Exception {
-
-        System.out.println("Equi-width histogram - bucketing scalability test "+parallelism);
+        String jobName = "Equi-width histogram - bucketing scalability test "+parallelism;
+        System.out.println(jobName);
         // set up the streaming execution Environment
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
@@ -45,6 +46,9 @@ public class EquiWidthHistogramBucketing {
 
         // We want to build the synopsis based on the value of field 0
         SingleOutputStreamOperator<Integer> inputStream = timestamped.map(new SyntecticExtractKeyField(0)).returns(Integer.class);
+
+        // Measure and report the throughput
+        inputStream.flatMap(new ParallelThroughputLogger<Integer>(1000, jobName));
 
         // Set up other configuration parameters
         Class<EquiWidthHistogram> synopsisClass = EquiWidthHistogram.class;
@@ -63,6 +67,6 @@ public class EquiWidthHistogramBucketing {
             }
         });
 
-        env.execute("Equi-width histogram - bucketing scalability test "+parallelism);
+        env.execute(jobName);
     }
 }
