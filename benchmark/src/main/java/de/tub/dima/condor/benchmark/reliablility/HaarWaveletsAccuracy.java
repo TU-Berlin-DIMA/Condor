@@ -62,7 +62,7 @@ public class HaarWaveletsAccuracy {
 		// Build the synopses
 		SingleOutputStreamOperator<WindowedSynopsis<DistributedWaveletsManager>> synopsesStream = SynopsisBuilder.build(env, config);
 
-		//  Compute the range sum for every 10,000 entries
+		//  Compute the range sums of the passengers counts for every 10,000 entries
 		SingleOutputStreamOperator<Double> result = synopsesStream.flatMap(new rangeSumPassengerCount());
 
 		result.writeAsText("/share/hadoop/EDADS/accuracyResults/haar-wavelets_result_"+parallelism+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
@@ -74,7 +74,7 @@ public class HaarWaveletsAccuracy {
 
 		@Override
 		public void flatMap(WindowedSynopsis<DistributedWaveletsManager> waveletsManager, Collector<Double> out) throws Exception {
-			//estimate the range sums of the passengers counts
+			// Estimate the range sums of the passengers counts
 			int rangeSize = 10000;
 			for (int i = 0; i < 2999998; i+=rangeSize) {
 				try {

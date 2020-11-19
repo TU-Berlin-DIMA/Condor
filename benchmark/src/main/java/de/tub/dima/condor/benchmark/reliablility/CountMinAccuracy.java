@@ -73,7 +73,7 @@ public class CountMinAccuracy {
 
 		@Override
 		public void flatMap(WindowedSynopsis<CountMinSketch> cmSketch, Collector<Integer> out) throws Exception {
-			//estimate the frequencies of all taxiID's [2013000001, 2013013223]
+			// Estimate the frequencies of all taxiID's [2013000001, 2013013223]
 			for (int i = 2013000001; i <= 2013013223; i++) {
 				out.collect(cmSketch.getSynopsis().query(i));
 			}
