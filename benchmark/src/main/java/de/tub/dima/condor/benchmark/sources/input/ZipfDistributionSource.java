@@ -93,6 +93,14 @@ public class ZipfDistributionSource extends RichParallelSourceFunction<Tuple3<In
         this.runtime = runtime;
     }
 
+    public ZipfDistributionSource(long runtime, int throughput) {
+        this.dataFilePath = "/share/hadoop/EDADS/zipfTimestamped.gz";
+//        this.dataFilePath = "EDADS/Data/zipfTimestamped.gz";
+        this.throughput = throughput;
+        this.gaps = new ArrayList<>();
+        this.runtime = runtime;
+    }
+
     @Override
     public void run(SourceContext<Tuple3<Integer, Integer, Long>> sourceContext) throws Exception {
 

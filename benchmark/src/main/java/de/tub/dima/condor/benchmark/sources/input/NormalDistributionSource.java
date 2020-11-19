@@ -9,6 +9,7 @@ import org.apache.flink.util.XORShiftRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -42,6 +43,14 @@ public class NormalDistributionSource extends RichParallelSourceFunction<Tuple3<
 
         this.throughput = throughput;
         this.gaps = gaps;
+        this.random = new Random();
+        this.runtime = runtime;
+    }
+
+    public NormalDistributionSource(long runtime, int throughput) {
+
+        this.throughput = throughput;
+        this.gaps = new ArrayList<>();
         this.random = new Random();
         this.runtime = runtime;
     }

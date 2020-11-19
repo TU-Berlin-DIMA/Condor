@@ -37,7 +37,7 @@ public class ReservoirSamplingAccuracy {
 
 		// Initialize NYCTaxi DataSource
 		DataStreamSource<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> messageStream = env
-				.addSource(new NYCTaxiRideSource(-1, 200000,  new ArrayList<>())).setParallelism(1);
+				.addSource(new NYCTaxiRideSource(-1, 200000)).setParallelism(1);
 
 		final SingleOutputStreamOperator<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> timestamped = messageStream
 				.assignTimestampsAndWatermarks(new NYCTimestampsAndWatermarks());
