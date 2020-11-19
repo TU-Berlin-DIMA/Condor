@@ -1,38 +1,32 @@
-package de.tub.dima.condor.benchmark.scalability.processing.bucketing;
+package de.tub.dima.condor.benchmark.scalability.processing.streamSlicing;
 
-import de.tub.dima.condor.benchmark.sources.input.NYCTaxiRideSource;
 import de.tub.dima.condor.benchmark.sources.input.UniformDistributionSource;
-import de.tub.dima.condor.benchmark.sources.utils.NYCExtractKeyField;
-import de.tub.dima.condor.benchmark.sources.utils.NYCTimestampsAndWatermarks;
 import de.tub.dima.condor.benchmark.sources.utils.SyntecticExtractKeyField;
 import de.tub.dima.condor.benchmark.sources.utils.SyntecticTimestampsAndWatermarks;
 import de.tub.dima.condor.benchmark.throughputUtils.ParallelThroughputLogger;
 import de.tub.dima.condor.core.synopsis.Wavelets.DistributedWaveletsManager;
+import de.tub.dima.condor.core.synopsis.Wavelets.SliceWaveletsManager;
 import de.tub.dima.condor.core.synopsis.Wavelets.WaveletSynopsis;
 import de.tub.dima.condor.core.synopsis.WindowedSynopsis;
 import de.tub.dima.condor.flinkScottyConnector.processor.SynopsisBuilder;
 import de.tub.dima.condor.flinkScottyConnector.processor.configs.BuildConfiguration;
+import de.tub.dima.scotty.core.windowType.SlidingWindow;
 import de.tub.dima.scotty.core.windowType.TumblingWindow;
 import de.tub.dima.scotty.core.windowType.Window;
 import de.tub.dima.scotty.core.windowType.WindowMeasure;
-import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.java.tuple.Tuple11;
 import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
-import org.apache.flink.util.Collector;
 
 /**
  * Created by Rudi Poepsel Lemaitre.
  */
-public class HaarWaveletsBucketing {
+public class HaarWaveletsSlicing {
 	public static void run(int parallelism, long runtime) throws Exception {
-		String jobName = "Haar Wavelets - bucketing scalability test " + parallelism;
+		String jobName = "Haar Wavelets - general stream slicing scalability test " + parallelism;
 		System.out.println(jobName);
 
 		// set up the streaming execution Environment
@@ -55,12 +49,13 @@ public class HaarWaveletsBucketing {
 
 		// Set up other configuration parameters
 		Class<WaveletSynopsis> synopsisClass = WaveletSynopsis.class;
+		Class<SliceWaveletsManager> sliceManagerClass = SliceWaveletsManager.class;
 		Class<DistributedWaveletsManager> managerClass = DistributedWaveletsManager.class;
 		int miniBatchSize = parallelism * 10;
-		Window[] windows = {new TumblingWindow(WindowMeasure.Time, 5000)};
+		Window[] windows = {new SlidingWindow(WindowMeasure.Time, 5000,2500)};
 		Object[] synopsisParameters = new Object[]{1000};
 
-		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism, miniBatchSize, null, managerClass);
+		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism, miniBatchSize, sliceManagerClass, managerClass);
 
 		// Build the synopses
 		SingleOutputStreamOperator<WindowedSynopsis<DistributedWaveletsManager>> synopsesStream = SynopsisBuilder.build(env, config);

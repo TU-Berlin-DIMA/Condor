@@ -54,7 +54,7 @@ public class ReservoirSamplingBucketing {
 
 		// Set up other configuration parameters
 		Class<ReservoirSampler> synopsisClass = ReservoirSampler.class;
-		Window[] windows = {new TumblingWindow(WindowMeasure.Time, 10000)};
+		Window[] windows = {new TumblingWindow(WindowMeasure.Time, 5000)};
 		Object[] synopsisParameters = new Object[]{10000};
 
 		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);
