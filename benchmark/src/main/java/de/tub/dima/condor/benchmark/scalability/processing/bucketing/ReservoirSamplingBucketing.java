@@ -7,8 +7,7 @@ import de.tub.dima.condor.benchmark.sources.utils.NYCTimestampsAndWatermarks;
 import de.tub.dima.condor.benchmark.sources.utils.SyntecticExtractKeyField;
 import de.tub.dima.condor.benchmark.sources.utils.SyntecticTimestampsAndWatermarks;
 import de.tub.dima.condor.benchmark.throughputUtils.ParallelThroughputLogger;
-import de.tub.dima.condor.core.synopsis.Wavelets.DistributedWaveletsManager;
-import de.tub.dima.condor.core.synopsis.Wavelets.WaveletSynopsis;
+import de.tub.dima.condor.core.synopsis.Sampling.ReservoirSampler;
 import de.tub.dima.condor.core.synopsis.WindowedSynopsis;
 import de.tub.dima.condor.flinkScottyConnector.processor.SynopsisBuilder;
 import de.tub.dima.condor.flinkScottyConnector.processor.configs.BuildConfiguration;
@@ -30,9 +29,9 @@ import org.apache.flink.util.Collector;
 /**
  * Created by Rudi Poepsel Lemaitre.
  */
-public class HaarWaveletsBucketing {
+public class ReservoirSamplingBucketing {
 	public static void run(int parallelism, long runtime) throws Exception {
-		String jobName = "Haar Wavelets - bucketing scalability test " + parallelism;
+		String jobName = "Reservoir sampling - bucketing scalability test "+parallelism;
 		System.out.println(jobName);
 
 		// set up the streaming execution Environment
@@ -54,16 +53,14 @@ public class HaarWaveletsBucketing {
 		inputStream.flatMap(new ParallelThroughputLogger<Integer>(1000, jobName));
 
 		// Set up other configuration parameters
-		Class<WaveletSynopsis> synopsisClass = WaveletSynopsis.class;
-		Class<DistributedWaveletsManager> managerClass = DistributedWaveletsManager.class;
-		int miniBatchSize = parallelism * 10;
+		Class<ReservoirSampler> synopsisClass = ReservoirSampler.class;
 		Window[] windows = {new TumblingWindow(WindowMeasure.Time, 10000)};
-		Object[] synopsisParameters = new Object[]{1000};
+		Object[] synopsisParameters = new Object[]{10000};
 
-		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism, miniBatchSize, null, managerClass);
+		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);
 
 		// Build the synopses
-		SingleOutputStreamOperator<WindowedSynopsis<DistributedWaveletsManager>> synopsesStream = SynopsisBuilder.build(env, config);
+		SingleOutputStreamOperator<WindowedSynopsis<ReservoirSampler>> synopsesStream = SynopsisBuilder.build(env, config);
 
 		synopsesStream.addSink(new SinkFunction() {
 			@Override

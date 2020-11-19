@@ -32,10 +32,10 @@ public class EquiWidthHistogramBucketing {
     public static void run(int parallelism, long runtime) throws Exception {
         String jobName = "Equi-width histogram - bucketing scalability test "+parallelism;
         System.out.println(jobName);
+
         // set up the streaming execution Environment
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
-        env.getConfig().enableObjectReuse();
 
         // Initialize Uniform DataSource
         DataStream<Tuple3<Integer, Integer, Long>> messageStream = env
