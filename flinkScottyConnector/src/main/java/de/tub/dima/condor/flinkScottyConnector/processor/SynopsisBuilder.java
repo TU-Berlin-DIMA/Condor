@@ -253,7 +253,7 @@ public class SynopsisBuilder {
         if (!mergeable){
             // Non-Mergeable Case
 
-            keyedStream = config.inputStream.process(new OrderAndIndex(config.miniBatchSize, config.parallelism)).setMaxParallelism(1)
+            keyedStream = config.inputStream.process(new OrderAndIndex(config.miniBatchSize, config.parallelism)).setParallelism(1)
                     .keyBy(0);
 
             processingFunction = new KeyedScottyWindowOperator<>(new NonMergeableSynopsisFunction(config.synopsisClass, config.sliceManagerClass, config.synParams));

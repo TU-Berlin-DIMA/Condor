@@ -56,7 +56,7 @@ public class Runner {
             CountMinSlicing.run(parallelism, runtime);
         if (parameterTool.has("ewhs"))
             EquiWidthHistogramSlicing.run(parallelism, runtime);
-        if (parameterTool.has("hws"))
+        if (parameterTool.has("hws"))   // TODO: fix
             HaarWaveletsSlicing.run(parallelism, runtime);
         if (parameterTool.has("rss"))
             ReservoirSamplingSlicing.run(parallelism, runtime);
