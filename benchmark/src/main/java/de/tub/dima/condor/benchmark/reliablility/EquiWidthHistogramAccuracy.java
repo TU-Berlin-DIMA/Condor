@@ -65,7 +65,7 @@ public class EquiWidthHistogramAccuracy {
 
         @Override
         public void flatMap(WindowedSynopsis<EquiWidthHistogram> histogram, Collector<Integer> out) throws Exception {
-            //estimate the frequencies of all taxiID's [2013000001, 2013013223]
+            // Get the number of taxi rides with start longitude between [−73.991119, −73.965118]
             int[] counts = histogram.getSynopsis().getFrequency();
             for (int i = 0; i < counts.length; i++) {
                 out.collect(counts[i]);
