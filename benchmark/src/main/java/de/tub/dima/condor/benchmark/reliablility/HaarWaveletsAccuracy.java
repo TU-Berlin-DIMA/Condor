@@ -47,7 +47,7 @@ public class HaarWaveletsAccuracy {
 		final SingleOutputStreamOperator<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> timestamped = messageStream
 				.assignTimestampsAndWatermarks(new NYCTimestampsAndWatermarks());
 
-		// We want to build the Haar wavelets based on the value of field 6 (startLon)
+		// We want to build the Haar wavelets based on the value of field 10 (passengerCnt)
 		SingleOutputStreamOperator<Short> inputStream = timestamped.map(new NYCExtractKeyField(10));
 
 		// Set up other configuration parameters

@@ -1,9 +1,17 @@
 package de.tub.dima.condor.benchmark.reliablility;
 
 import de.tub.dima.condor.benchmark.sources.input.NYCTaxiRideSource;
+import de.tub.dima.condor.benchmark.sources.utils.NYCExtractKeyField;
 import de.tub.dima.condor.benchmark.sources.utils.NYCTimestampsAndWatermarks;
+import de.tub.dima.condor.core.synopsis.Sketches.CountMinSketch;
+import de.tub.dima.condor.core.synopsis.WindowedSynopsis;
 import de.tub.dima.condor.flinkScottyConnector.processor.BuildSynopsis;
 import de.tub.dima.condor.core.synopsis.Sampling.ReservoirSampler;
+import de.tub.dima.condor.flinkScottyConnector.processor.SynopsisBuilder;
+import de.tub.dima.condor.flinkScottyConnector.processor.configs.BuildConfiguration;
+import de.tub.dima.scotty.core.windowType.TumblingWindow;
+import de.tub.dima.scotty.core.windowType.Window;
+import de.tub.dima.scotty.core.windowType.WindowMeasure;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.java.tuple.Tuple11;
 import org.apache.flink.core.fs.FileSystem;
@@ -28,37 +36,43 @@ public class ReservoirSamplingAccuracy {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
-		env.setParallelism(Integer.parseInt(args[0]));
-		env.setMaxParallelism(Integer.parseInt(args[0]));
-//
-//		env.setParallelism(1);
-//		env.setMaxParallelism(1);
+		// Get the parallelism
+		int parallelism = Integer.parseInt(args[0]);
 
-		Class<ReservoirSampler> synopsisClass = ReservoirSampler.class;
-
+		// Initialize NYCTaxi DataSource
 		DataStreamSource<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> messageStream = env
 				.addSource(new NYCTaxiRideSource(-1, 200000,  new ArrayList<>())).setParallelism(1);
-
 
 		final SingleOutputStreamOperator<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> timestamped = messageStream
 				.assignTimestampsAndWatermarks(new NYCTimestampsAndWatermarks());
 
-		SingleOutputStreamOperator<ReservoirSampler> synopsesStream = BuildSynopsis.timeBased(timestamped, Time.milliseconds(10000),10, synopsisClass, new Object[]{10000});
+		// We want to build the reservoir sample based on the value of field 10 (passengerCnt)
+		SingleOutputStreamOperator<Short> inputStream = timestamped.map(new NYCExtractKeyField(10));
 
+		// Set up other configuration parameters
+		Class<ReservoirSampler> synopsisClass = ReservoirSampler.class;
+		Window[] windows = {new TumblingWindow(WindowMeasure.Time, 10000)};
+		Object[] synopsisParameters = new Object[]{10000};
+
+		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);
+
+		// Build the synopses
+		SingleOutputStreamOperator<WindowedSynopsis<ReservoirSampler>> synopsesStream = SynopsisBuilder.build(env, config);
+
+		// Compute the average passenger count
 		SingleOutputStreamOperator<Double> result = synopsesStream.flatMap(new queryAvgPassengerCount());
-//        result.writeAsText("EDADS/output/avgPassengerCount.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
 		result.writeAsText("/share/hadoop/EDADS/accuracyResults/res-sampler_result_"+Integer.parseInt(args[0])+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
 		env.execute("Reservoir sampling accuracy test");
 	}
 
-	private static class queryAvgPassengerCount implements FlatMapFunction<ReservoirSampler, Double> {
+	private static class queryAvgPassengerCount implements FlatMapFunction<WindowedSynopsis<ReservoirSampler>, Double> {
 
 		@Override
-		public void flatMap(ReservoirSampler resSample, Collector<Double> out) throws Exception {
+		public void flatMap(WindowedSynopsis<ReservoirSampler> resSample, Collector<Double> out) throws Exception {
 			//estimate the average passenger count
-			Object[] sample = resSample.getSample();
+			Object[] sample = resSample.getSynopsis().getSample();
 			double sum = 0.0;
 			for (int i = 0; i < sample.length; i++) {
 				sum += (Short) sample[i];
