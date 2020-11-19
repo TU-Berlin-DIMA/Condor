@@ -20,11 +20,15 @@ import de.tub.dima.condor.benchmark.throughputUtils.ThroughputStatistics;
 import org.apache.flink.api.java.tuple.Tuple11;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.functions.source.ParallelSourceFunction;
+import org.jetbrains.annotations.NotNull;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import java.io.*;
+import java.net.URI;
+import java.nio.file.*;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.zip.GZIPInputStream;
@@ -99,7 +103,7 @@ public class NYCTaxiRideSource implements ParallelSourceFunction<Tuple11<Long, L
      * in a serving speed which is proportional to the specified serving speed factor.
      */
     public NYCTaxiRideSource(long runtime, int throughput, final List<Tuple2<Long, Long>> gaps) {
-        this.dataFilePath = "/share/hadoop/EDADS/nycTaxiRides.gz";
+        this.dataFilePath = "/Users/joschavonhein/Workspace/Condor/data/nycTaxiRides.gz";
 //        this.dataFilePath = "EDADS/Data/nycTaxiRides.gz";
         this.throughput = throughput;
         this.gaps = gaps;

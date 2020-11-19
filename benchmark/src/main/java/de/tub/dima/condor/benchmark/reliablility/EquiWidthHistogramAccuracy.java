@@ -25,12 +25,13 @@ import java.util.ArrayList;
  * Created by Rudi Poepsel Lemaitre on 22/10/2020.
  */
 public class EquiWidthHistogramAccuracy {
-    public static void run(int parallelism) throws Exception {
+    public static void run(int parallelism, String outputDir) throws Exception {
 
         System.out.println("Equi-width histogram accuracy test");
         // set up the streaming execution Environment
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+        env.getConfig().enableObjectReuse();
 
 
         // Initialize NYCTaxi DataSource
@@ -41,7 +42,7 @@ public class EquiWidthHistogramAccuracy {
                 .assignTimestampsAndWatermarks(new NYCTimestampsAndWatermarks());
 
         // We want to build the equi-width histogram based on the value of field 6 (startLon)
-        SingleOutputStreamOperator<Double> inputStream = timestamped.map(new NYCExtractKeyField(6));
+        SingleOutputStreamOperator<Double> inputStream = timestamped.map(new NYCExtractKeyField(6)).returns(Double.class);
 
         // Set up other configuration parameters
         Class<EquiWidthHistogram> synopsisClass = EquiWidthHistogram.class;
@@ -56,7 +57,7 @@ public class EquiWidthHistogramAccuracy {
         //  Get the number of taxi rides with start longitude between [−73.991119, −73.965118]
 		SingleOutputStreamOperator<Integer> result = synopsesStream.flatMap(new queryBucketCounts());
 
-		result.writeAsText("/share/hadoop/EDADS/accuracyResults/ew-histogram_result_"+parallelism+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+		result.writeAsText(outputDir+"/ew-histogram_result_"+parallelism+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
         env.execute("Equi-width histogram accuracy test");
     }

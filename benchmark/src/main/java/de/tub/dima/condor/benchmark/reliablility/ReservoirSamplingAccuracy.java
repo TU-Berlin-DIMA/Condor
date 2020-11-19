@@ -25,15 +25,13 @@ import java.util.ArrayList;
  * Created by Rudi Poepsel Lemaitre on 22/10/2020.
  */
 public class ReservoirSamplingAccuracy {
-	public static void main(String[] args) throws Exception {
+	public static void run(int parallelism, String outputDir) throws Exception {
 
 		System.out.println("Reservoir sampling accuracy test");
 		// set up the streaming execution Environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
-
-		// Get the parallelism
-		int parallelism = Integer.parseInt(args[0]);
+		env.getConfig().enableObjectReuse();
 
 		// Initialize NYCTaxi DataSource
 		DataStreamSource<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> messageStream = env
@@ -43,7 +41,7 @@ public class ReservoirSamplingAccuracy {
 				.assignTimestampsAndWatermarks(new NYCTimestampsAndWatermarks());
 
 		// We want to build the reservoir sample based on the value of field 10 (passengerCnt)
-		SingleOutputStreamOperator<Short> inputStream = timestamped.map(new NYCExtractKeyField(10));
+		SingleOutputStreamOperator<Short> inputStream = timestamped.map(new NYCExtractKeyField(10)).returns(Short.class);
 
 		// Set up other configuration parameters
 		Class<ReservoirSampler> synopsisClass = ReservoirSampler.class;
@@ -58,7 +56,7 @@ public class ReservoirSamplingAccuracy {
 		// Compute the average passenger count
 		SingleOutputStreamOperator<Double> result = synopsesStream.flatMap(new queryAvgPassengerCount());
 
-		result.writeAsText("/share/hadoop/EDADS/accuracyResults/res-sampler_result_"+Integer.parseInt(args[0])+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+		result.writeAsText(outputDir+"/res-sampler_result_"+parallelism+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
 		env.execute("Reservoir sampling accuracy test");
 	}

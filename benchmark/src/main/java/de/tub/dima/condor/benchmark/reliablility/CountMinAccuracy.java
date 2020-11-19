@@ -25,13 +25,15 @@ import java.util.ArrayList;
  * Created by Rudi Poepsel Lemaitre on 22/10/2020.
  */
 public class CountMinAccuracy {
-	public static void run(int parallelism) throws Exception {
+	public static void run(int parallelism, String outputDir) throws Exception {
 
 		System.out.println("Count-Min sketch accuracy test");
 
 		// Set up the streaming execution Environment
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+		env.getConfig().enableObjectReuse();
+
 
 		// Initialize NYCTaxi DataSource
 		DataStreamSource<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> messageStream = env
@@ -56,7 +58,7 @@ public class CountMinAccuracy {
 		// Query the estimated number of entries in the dataset of each taxiID between [2013000001, 2013013223]
 		SingleOutputStreamOperator<Integer> result = synopsesStream.flatMap(new queryFrequency());
 
-		result.writeAsText("/share/hadoop/EDADS/accuracyResults/count-min_result_"+parallelism+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+		result.writeAsText(outputDir+ "/count-min_result_"+parallelism+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
 		env.execute("Count-Min sketch accuracy test");
 	}
