@@ -104,6 +104,14 @@ public class UniformFileDistributionSource implements ParallelSourceFunction<Tup
         this.runtime = runtime;
     }
 
+    public UniformFileDistributionSource(long runtime, int throughput) {
+        this.dataFilePath = "/share/hadoop/EDADS/uniformTimestamped.gz";
+//        this.dataFilePath = "EDADS/Data/uniformTimestamped.gz";
+        this.throughput = throughput;
+        this.gaps = new ArrayList<>();
+        this.runtime = runtime;
+    }
+
     @Override
     public void run(SourceContext<Tuple3<Integer, Integer, Long>> sourceContext) throws Exception {
 

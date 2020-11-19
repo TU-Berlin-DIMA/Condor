@@ -110,6 +110,14 @@ public class NYCTaxiRideSource implements ParallelSourceFunction<Tuple11<Long, L
         this.runtime = runtime;
     }
 
+    public NYCTaxiRideSource(long runtime, int throughput) {
+        this.dataFilePath = "/share/hadoop/EDADS/nycTaxiRides.gz";
+//        this.dataFilePath = "EDADS/Data/nycTaxiRides.gz";
+        this.throughput = throughput;
+        this.gaps = new ArrayList<>();
+        this.runtime = runtime;
+    }
+
     @Override
     public void run(SourceContext<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> sourceContext) throws Exception {
 
