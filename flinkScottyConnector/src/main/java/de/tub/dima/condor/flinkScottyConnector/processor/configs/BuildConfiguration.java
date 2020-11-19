@@ -9,20 +9,26 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 
 import java.io.Serializable;
 
+/**
+ *  Configuration Class needed for the SynopsisBuilder.
+ *  mandatory parameters have to be present in order for the whole process to function.
+ *
+ *  Depending on which optional parameters are given the SynopsisBuilder builds the Pipeline differently
+ */
 public class BuildConfiguration <S extends Synopsis, SM extends NonMergeableSynopsisManager, M extends NonMergeableSynopsisManager, T, Key extends Serializable, Value> implements Serializable {
 
     // mandatory parameters
-    public DataStream<T> inputStream;
-    public Class<S> synopsisClass;
-    public Window[] windows;
-    public Object[] synParams;
-    public int parallelism; // Operator Parallelism
+    public DataStream<T> inputStream;   // DataStream with the incoming elements
+    public Class<S> synopsisClass;      // synopsis Class
+    public Window[] windows;            // the Window Definition (Count vs. Time and metric)
+    public Object[] synParams;          // the synopsis Parameters (depending on actual synopsis the user wants to create)
+    public int parallelism;             // Operator Parallelism
 
-    // optional parameters
-    public RichMapFunction<T, Tuple2<Key, Value>> stratificationKeyExtractor = null;
-    public Integer miniBatchSize = 0;
-    public Class<SM> sliceManagerClass = null;
-    public Class<M> managerClass = null;
+    // optional parameters - change the pipeline behavior if they are set
+    public RichMapFunction<T, Tuple2<Key, Value>> stratificationKeyExtractor = null;    // needs to be set in order to build Stratified Synopsis. function which transforms the inputStream into the needed shape with the stratification key in field0.
+    public Integer miniBatchSize = 0;               // only needed in case of non-mergeable synopsis. if set, this amount of incoming elements are put in a queue and and ordered by their timestamp and then sent in their respective order.
+    public Class<SM> sliceManagerClass = null;      // needed for non-mergeable synopsis and sliding windows (-> scotty instead of Flink used)
+    public Class<M> managerClass = null;            // only needed for non-mergeable non-stratified synopsis
 
     public int getParallelism() {
         return parallelism;
@@ -32,17 +38,6 @@ public class BuildConfiguration <S extends Synopsis, SM extends NonMergeableSyno
         this.parallelism = parallelism;
     }
 
-    public BuildConfiguration(DataStream<T> inputStream, Class<S> synopsisClass, Window[] windows, Object[] synParams, int parallelism, RichMapFunction<T, Tuple2<Key, Value>> stratificationKeyExtractor, Integer miniBatchSize, Class<SM> sliceManagerClass, Class<M> managerClass) {
-        this.inputStream = inputStream;
-        this.synopsisClass = synopsisClass;
-        this.windows = windows;
-        this.synParams = synParams;
-        this.parallelism = parallelism;
-        this.stratificationKeyExtractor = stratificationKeyExtractor;
-        this.miniBatchSize = miniBatchSize;
-        this.sliceManagerClass = sliceManagerClass;
-        this.managerClass = managerClass;
-    }
 
     public BuildConfiguration(DataStream<T> inputStream, Class<S> synopsisClass, Window[] windows, Object[] synParams, int parallelism, RichMapFunction<T, Tuple2<Key, Value>> stratificationKeyExtractor, Class<SM> sliceManagerClass, Class<M> managerClass) {
         this.inputStream = inputStream;

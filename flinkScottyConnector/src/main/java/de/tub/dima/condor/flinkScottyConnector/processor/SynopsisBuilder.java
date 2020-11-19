@@ -31,8 +31,24 @@ import org.apache.flink.util.Collector;
 import java.io.Serializable;
 import java.util.function.Consumer;
 
+/**
+ * Class which facilitates the building of the Data -> Synopsis Pipeline.
+ * In order to do so, simply use the build() or buildStratified() methods.
+ *
+ * @author joschavonhein
+ */
 public class SynopsisBuilder {
 
+    /**
+     * Main function to create a normal (not stratified) synopsis stream. Depending on which of the optional parameters in the BuildConfiguration
+     * are set, the pipeline will be constructed differently. See the documentation of the BuildConfiguration for more details.
+     *
+     * @param env       Execution Environment
+     * @param config    Configuration
+     * @param <S>       The Synopsis Class
+     * @return          The synopsis stream wrapped in the WindowedSynopsis class (contains additional Window Information)
+     * @throws Exception
+     */
     public static <S extends Synopsis> SingleOutputStreamOperator<WindowedSynopsis<S>> build
             (StreamExecutionEnvironment env, BuildConfiguration config) throws Exception {
 
@@ -54,6 +70,16 @@ public class SynopsisBuilder {
         }
     }
 
+    /**
+     * Main function to create a stratified synopsis stream. Depending on which of the optional parameters in the BuildConfiguration
+     * are set, the pipeline will be constructed differently. See the documentation of the BuildConfiguration for more details.
+     *
+     * @param env       Execution Environment
+     * @param config    Configuration
+     * @param <S>       The Synopsis Class
+     * @return          The stratified synopsis stream wrapped in the StatifiedSynopsisWrapper
+     * @throws Exception
+     */
     public static <S extends Synopsis, Key extends Serializable> SingleOutputStreamOperator<StratifiedSynopsisWrapper<Key, WindowedSynopsis<S>>> buildStratified
             (StreamExecutionEnvironment env, BuildConfiguration config) throws Exception {
 
@@ -73,9 +99,7 @@ public class SynopsisBuilder {
         }
     }
 
-    /**
-     * @param <S>       The returned Synopsis Type, in the Non-Mergeable Case this will be a NonMergeableSynopsisManager
-     */
+
     private static <S extends Synopsis, Key extends Serializable> SingleOutputStreamOperator<StratifiedSynopsisWrapper<Key, WindowedSynopsis<S>>> buildFlinkStratified(BuildConfiguration config){
 
         KeyedStream keyBy;
