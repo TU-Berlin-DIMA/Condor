@@ -6,6 +6,7 @@ import de.tub.dima.condor.benchmark.sources.utils.NYCExtractKeyField;
 import de.tub.dima.condor.benchmark.sources.utils.NYCTimestampsAndWatermarks;
 import de.tub.dima.condor.benchmark.sources.utils.SyntecticExtractKeyField;
 import de.tub.dima.condor.benchmark.sources.utils.SyntecticTimestampsAndWatermarks;
+import de.tub.dima.condor.benchmark.throughputUtils.ParallelThroughputLogger;
 import de.tub.dima.condor.core.synopsis.Wavelets.DistributedWaveletsManager;
 import de.tub.dima.condor.core.synopsis.Wavelets.WaveletSynopsis;
 import de.tub.dima.condor.core.synopsis.WindowedSynopsis;
@@ -23,6 +24,7 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.util.Collector;
 
 /**
@@ -30,8 +32,8 @@ import org.apache.flink.util.Collector;
  */
 public class HaarWaveletsBucketing {
 	public static void run(int parallelism, long runtime) throws Exception {
-
-		System.out.println("Haar Wavelets - bucketing scalability test "+parallelism);
+		String jobName = "Haar Wavelets - bucketing scalability test " + parallelism;
+		System.out.println(jobName);
 		// set up the streaming execution Environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
@@ -47,6 +49,9 @@ public class HaarWaveletsBucketing {
 		// We want to build the synopsis based on the value of field 0
 		SingleOutputStreamOperator<Integer> inputStream = timestamped.map(new SyntecticExtractKeyField(0)).returns(Integer.class);
 
+		// Measure and report the throughput
+		inputStream.flatMap(new ParallelThroughputLogger<Integer>(1000, jobName));
+
 		// Set up other configuration parameters
 		Class<WaveletSynopsis> synopsisClass = WaveletSynopsis.class;
 		Class<DistributedWaveletsManager> managerClass = DistributedWaveletsManager.class;
@@ -59,29 +64,13 @@ public class HaarWaveletsBucketing {
 		// Build the synopses
 		SingleOutputStreamOperator<WindowedSynopsis<DistributedWaveletsManager>> synopsesStream = SynopsisBuilder.build(env, config);
 
-		//  Compute the range sums of the passengers counts for every 10,000 entries
-		SingleOutputStreamOperator<Double> result = synopsesStream.flatMap(new rangeSumPassengerCount());
-
-		result.writeAsText(outputDir+"/haar-wavelets_result_"+parallelism+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
-
-		env.execute("Haar Wavelets - bucketing scalability test "+parallelism);
-	}
-
-	private static class rangeSumPassengerCount implements FlatMapFunction<WindowedSynopsis<DistributedWaveletsManager>, Double> {
-
-		@Override
-		public void flatMap(WindowedSynopsis<DistributedWaveletsManager> waveletsManager, Collector<Double> out) throws Exception {
-			// Estimate the range sums of the passengers counts
-			int rangeSize = 10000;
-			for (int i = 0; i < 2999998; i+=rangeSize) {
-				try {
-					out.collect(waveletsManager.getSynopsis().rangeSumQuery(i,i+rangeSize-1));
-				} catch (IllegalArgumentException e){
-					System.out.println("[ "+i+", "+(i+rangeSize-1)+" ]");
-				}
+		synopsesStream.addSink(new SinkFunction() {
+			@Override
+			public void invoke(final Object value) throws Exception {
+				//Environment.out.println(value);
 			}
-		}
+		});
+		
+		env.execute(jobName);
 	}
-
-
 }
