@@ -3,10 +3,8 @@ package de.tub.dima.condor.benchmark.reliablility;
 import de.tub.dima.condor.benchmark.sources.input.NYCTaxiRideSource;
 import de.tub.dima.condor.benchmark.sources.utils.NYCExtractKeyField;
 import de.tub.dima.condor.benchmark.sources.utils.NYCTimestampsAndWatermarks;
-import de.tub.dima.condor.core.synopsis.Sketches.CountMinSketch;
-import de.tub.dima.condor.core.synopsis.WindowedSynopsis;
-import de.tub.dima.condor.flinkScottyConnector.processor.BuildSynopsis;
 import de.tub.dima.condor.core.synopsis.Histograms.EquiWidthHistogram;
+import de.tub.dima.condor.core.synopsis.WindowedSynopsis;
 import de.tub.dima.condor.flinkScottyConnector.processor.SynopsisBuilder;
 import de.tub.dima.condor.flinkScottyConnector.processor.configs.BuildConfiguration;
 import de.tub.dima.scotty.core.windowType.TumblingWindow;
@@ -19,15 +17,9 @@ import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.AssignerWithPeriodicWatermarks;
-import org.apache.flink.streaming.api.watermark.Watermark;
-import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
-
-import static org.apache.flink.streaming.api.windowing.time.Time.seconds;
 
 /**
  * Created by Rudi Poepsel Lemaitre on 22/10/2020.
