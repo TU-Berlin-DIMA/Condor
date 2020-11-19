@@ -10,15 +10,14 @@
         <version>0.1</version>
     </parent>
 
-    <artifactId>core</artifactId>
+    <artifactId>flinkScottyConnector</artifactId>
 
-    <name>Condor Core</name>
+    <name>Condor's Flink and Scotty Connector</name>
     <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.3.2</version>
                 <configuration>
                     <source>8</source>
                     <target>8</target>
@@ -37,7 +36,11 @@
         </dependency>
 
         <!-- Add connector dependencies here. They must be in the default scope (compile). -->
-
+        <dependency>
+            <groupId>de.tub.dima.condor</groupId>
+            <artifactId>core</artifactId>
+            <version>0.1</version>
+        </dependency>
         <dependency>
             <groupId>de.tub.dima.scotty</groupId>
             <artifactId>flink-connector</artifactId>
@@ -81,6 +84,5 @@
             <scope>compile</scope>
         </dependency>
     </dependencies>
-
 
 </project>

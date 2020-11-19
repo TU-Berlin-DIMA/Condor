@@ -50,12 +50,16 @@
 			<scope>provided</scope>
 		</dependency>
 
-		
 		<dependency>
-            <groupId>de.tub.dima.condor</groupId>
-            <artifactId>core</artifactId>
-            <version>0.1</version>
-        </dependency>
+			<groupId>de.tub.dima.condor</groupId>
+			<artifactId>core</artifactId>
+			<version>0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>de.tub.dima.condor</groupId>
+			<artifactId>flinkScottyConnector</artifactId>
+			<version>0.1</version>
+		</dependency>
 		<dependency>
 			<groupId>de.tub.dima.scotty</groupId>
 			<artifactId>flink-connector</artifactId>

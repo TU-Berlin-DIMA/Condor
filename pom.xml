@@ -46,6 +46,7 @@ under the License.
 
     <modules>
         <module>core</module>
+		<module>flinkScottyConnector</module>
         <module>benchmark</module>
 		<module>demo</module>
     </modules>
@@ -126,186 +127,113 @@ under the License.
 	</dependencies>
 
 	<profiles>
-        <profile>
-        	<!-- used for SNAPSHOT and regular releases -->
-            <id>docs-and-source</id>
-            <activation>
-                <property>
-                    <name>docs-and-source</name>
-                </property>
-            </activation>
-
+		<profile>
+			<!-- used for SNAPSHOT and regular releases -->
+			<id>docs-and-source</id>
+			<activation>
+				<property>
+					<name>docs-and-source</name>
+				</property>
+			</activation>
 			<build>
 				<plugins>
 					<plugin>
-	                        <groupId>org.apache.maven.plugins</groupId>
-	                        <artifactId>maven-javadoc-plugin</artifactId>
-	                        <version>3.1.1</version><!--$NO-MVN-MAN-VER$-->
-	                        <configuration>
-								<source>${java.version}</source>
-	                            <quiet>true</quiet>
-	                        </configuration>
-	                        <executions>
-	                            <execution>
-	                                <id>attach-javadocs</id>
-	                                <goals>
-	                                    <goal>jar</goal>
-	                                </goals>
-	                            </execution>
-	                        </executions>
-	                    </plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+						<version>3.0.1</version><!--$NO-MVN-MAN-VER$-->
+						<executions>
+							<execution>
+								<id>attach-sources</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+
 				</plugins>
-				<pluginManagement>
-					<plugins>
-
-						<!-- This improves the out-of-the-box experience in Eclipse by resolving some warnings. -->
-						<plugin>
-							<groupId>org.eclipse.m2e</groupId>
-							<artifactId>lifecycle-mapping</artifactId>
-							<version>1.0.0</version>
-							<configuration>
-								<lifecycleMappingMetadata>
-									<pluginExecutions>
-										<pluginExecution>
-											<pluginExecutionFilter>
-												<groupId>org.apache.maven.plugins</groupId>
-												<artifactId>maven-shade-plugin</artifactId>
-												<versionRange>[3.0.0,)</versionRange>
-												<goals>
-													<goal>shade</goal>
-												</goals>
-											</pluginExecutionFilter>
-											<action>
-												<ignore/>
-											</action>
-										</pluginExecution>
-										<pluginExecution>
-											<pluginExecutionFilter>
-												<groupId>org.apache.maven.plugins</groupId>
-												<artifactId>maven-compiler-plugin</artifactId>
-												<versionRange>[3.1,)</versionRange>
-												<goals>
-													<goal>testCompile</goal>
-													<goal>compile</goal>
-												</goals>
-											</pluginExecutionFilter>
-											<action>
-												<ignore/>
-											</action>
-										</pluginExecution>
-									</pluginExecutions>
-								</lifecycleMappingMetadata>
-							</configuration>
-						</plugin>
-					</plugins>
-				</pluginManagement>
 			</build>
-		<dependencies></dependencies>
-   		</profile>
-   		<profile>
-            <id>release</id>
-            <activation>
-                <property>
-                    <name>release</name>
-                </property>
-            </activation>
-            <properties>
-                <java.version>1.8</java.version>
-            </properties>
-            <build>
-                <plugins>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-enforcer-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>enforce-maven</id>
-                                <goals>
-                                    <goal>enforce</goal>
-                                </goals>
-                                <configuration>
-                                    <rules>
-                                        <requireMavenVersion>
-                                            <!-- maven version must be lower than 3.3. See FLINK-3158 -->
-                                            <version>(,3.3)</version>
-                                        </requireMavenVersion>
-                                        <requireJavaVersion>
-                                            <version>1.8.0</version>
-                                        </requireJavaVersion>
-                                    </rules>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>3.1.1</version><!--$NO-MVN-MAN-VER$-->
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-                <pluginManagement>
-
-                </pluginManagement>
-            </build>
-        </profile>
-
-	<!-- This profile helps to make things run out of the box in IntelliJ -->
-	<!-- Its adds Flink's core classes to the runtime class path. -->
-	<!-- Otherwise they are missing in IntelliJ, because the dependency is 'provided' -->
+			<dependencies>
+			</dependencies>
+		</profile>
 		<profile>
-			<id>add-dependencies-for-IDEA</id>
-
+			<id>release</id>
 			<activation>
 				<property>
-					<name>idea.version</name>
+					<name>release</name>
 				</property>
 			</activation>
+			<properties>
+				<java.version>1.8</java.version>
+			</properties>
+			<build>
+				<plugins>
 
-			<dependencies>
-				<dependency>
-				<groupId>org.apache.flink</groupId>
-				<artifactId>flink-java</artifactId>
-				<version>${flink.version}</version>
-				<scope>compile</scope>
-			</dependency>
-			<dependency>
-				<groupId>org.apache.flink</groupId>
-				<artifactId>flink-streaming-java_${scala.binary.version}</artifactId>
-				<version>${flink.version}</version>
-				<scope>compile</scope>
-			</dependency>
-			</dependencies>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-enforcer-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>enforce-maven</id>
+								<goals>
+									<goal>enforce</goal>
+								</goals>
+								<configuration>
+									<rules>
+										<requireMavenVersion>
+											<!-- maven version must be lower than 3.3. See FLINK-3158 -->
+											<version>(,3.3)</version>
+										</requireMavenVersion>
+										<requireJavaVersion>
+											<version>1.8.0</version>
+										</requireJavaVersion>
+									</rules>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<version>3.0.1</version><!--$NO-MVN-MAN-VER$-->
+						<executions>
+							<execution>
+								<id>attach-javadocs</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+				<pluginManagement>
+
+				</pluginManagement>
+			</build>
 		</profile>
 	</profiles>
 	<build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <configuration>
-                    <failOnError>false</failOnError>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>aggregate</goal>
-                        </goals>
-                        <phase>site</phase>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.0.1</version><!--$NO-MVN-MAN-VER$-->
+				<configuration>
+					<doclint>none</doclint>
+					<failOnError>false</failOnError>
+				</configuration>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>aggregate</goal>
+						</goals>
+						<phase>site</phase>
 
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 
 </project>
