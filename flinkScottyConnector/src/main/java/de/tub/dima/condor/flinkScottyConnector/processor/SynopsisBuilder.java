@@ -37,7 +37,7 @@ public class SynopsisBuilder {
             (StreamExecutionEnvironment env, BuildConfiguration config) throws Exception {
 
         env.setParallelism(config.parallelism);
-        env.setMaxParallelism(config.parallelism);
+        // env.setMaxParallelism(config.parallelism);
 
         if(config.stratificationKeyExtractor == null){ // Stratified
             if(config.windows[0] instanceof TumblingWindow && config.windows.length == 1) {
@@ -163,11 +163,11 @@ public class SynopsisBuilder {
 
     }
 
-    private static <S extends Synopsis> SingleOutputStreamOperator<WindowedSynopsis<S>> buildFlink(BuildConfiguration config){
+    private static <T, S extends Synopsis> SingleOutputStreamOperator<WindowedSynopsis<S>> buildFlink(BuildConfiguration config){
 
         boolean mergeable = MergeableSynopsis.class.isAssignableFrom(config.synopsisClass);
 
-        DataStream rescaled = config.inputStream.rescale();
+        DataStream<T> rescaled = config.inputStream.rescale();
         KeyedStream keyBy;
         if(!mergeable){
 
@@ -191,9 +191,10 @@ public class SynopsisBuilder {
                 : keyBy.timeWindow(Time.milliseconds(window.getSize()));
 
 
-        RichAggregateFunction synopsisFunction = mergeable
+        AggregateFunction synopsisFunction = mergeable
                 ? new SynopsisAggregator(config.synopsisClass, config.synParams)
                 : new NonMergeableSynopsisAggregator(config.miniBatchSize, config.synopsisClass, config.synParams); // TODO: potential error source (multiple possible constructors)
+
 
         SingleOutputStreamOperator preAggregated = windowedStream.aggregate(synopsisFunction);
 

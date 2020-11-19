@@ -25,16 +25,13 @@ import java.util.ArrayList;
  * Created by Rudi Poepsel Lemaitre on 22/10/2020.
  */
 public class HLLSketchAccuracy {
-	public static void main(String[] args) throws Exception {
+	public static void run(int parallelism, String outputDir) throws Exception {
 
 		System.out.println("HyperLogLog sketch accuracy test");
 		// set up the streaming execution Environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
-
-
-		// Get the parallelism
-		int parallelism = Integer.parseInt(args[0]);
+		env.getConfig().enableObjectReuse();
 
 		// Initialize NYCTaxi DataSource
 		DataStreamSource<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> messageStream = env
@@ -44,7 +41,7 @@ public class HLLSketchAccuracy {
 				.assignTimestampsAndWatermarks(new NYCTimestampsAndWatermarks());
 
 		// We want to build the hyperloglog sketch based on the value of field 1 (taxiId)
-		SingleOutputStreamOperator<Long> inputStream = timestamped.map(new NYCExtractKeyField(1));
+		SingleOutputStreamOperator<Long> inputStream = timestamped.map(new NYCExtractKeyField(1)).returns(Long.class);
 
 		// Set up other configuration parameters
 		Class<HyperLogLogSketch> synopsisClass = HyperLogLogSketch.class;
@@ -59,7 +56,7 @@ public class HLLSketchAccuracy {
 		// Predict the number of distinct taxiID’s
 		SingleOutputStreamOperator<Long> result = synopsesStream.flatMap(new countDistinct());
 
-		result.writeAsText("/share/hadoop/EDADS/accuracyResults/hll_result_"+parallelism+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+		result.writeAsText(outputDir+"/hll_result_"+parallelism+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
 		env.execute("HyperLogLog sketch accuracy test");
 	}

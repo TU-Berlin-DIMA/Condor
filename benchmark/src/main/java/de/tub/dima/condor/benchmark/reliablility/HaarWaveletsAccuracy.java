@@ -26,15 +26,13 @@ import java.util.ArrayList;
  * Created by Rudi Poepsel Lemaitre on 22/10/2020.
  */
 public class HaarWaveletsAccuracy {
-	public static void main(String[] args) throws Exception {
+	public static void run(int parallelism, String outputDir) throws Exception {
 
 		System.out.println("Haar Wavelets accuracy test");
 		// set up the streaming execution Environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
-
-		// Get the parallelism
-		int parallelism = Integer.parseInt(args[0]);
+		env.getConfig().enableObjectReuse();
 
 		// Initialize NYCTaxi DataSource
 		DataStreamSource<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> messageStream = env
@@ -44,7 +42,7 @@ public class HaarWaveletsAccuracy {
 				.assignTimestampsAndWatermarks(new NYCTimestampsAndWatermarks());
 
 		// We want to build the Haar wavelets based on the value of field 10 (passengerCnt)
-		SingleOutputStreamOperator<Short> inputStream = timestamped.map(new NYCExtractKeyField(10));
+		SingleOutputStreamOperator<Short> inputStream = timestamped.map(new NYCExtractKeyField(10)).returns(Short.class);
 
 		// Set up other configuration parameters
 		Class<WaveletSynopsis> synopsisClass = WaveletSynopsis.class;
@@ -61,7 +59,7 @@ public class HaarWaveletsAccuracy {
 		//  Compute the range sums of the passengers counts for every 10,000 entries
 		SingleOutputStreamOperator<Double> result = synopsesStream.flatMap(new rangeSumPassengerCount());
 
-		result.writeAsText("/share/hadoop/EDADS/accuracyResults/haar-wavelets_result_"+parallelism+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+		result.writeAsText(outputDir+"/haar-wavelets_result_"+parallelism+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
 		env.execute("Haar Wavelets accuracy test");
 	}

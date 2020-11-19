@@ -24,9 +24,7 @@ import java.lang.reflect.InvocationTargetException;
  * @param <T1>
  * @author Rudi Poepsel Lemaitre
  */
-public class SynopsisAggregator<T1> extends RichAggregateFunction<T1, MergeableSynopsis, MergeableSynopsis> {
-
-    private transient Counter counter;
+public class SynopsisAggregator<T1> implements AggregateFunction<T1, MergeableSynopsis, MergeableSynopsis> {
 
     private static final Logger LOG = LoggerFactory.getLogger(LocalStreamEnvironment.class);
     private boolean stratified = false;
@@ -42,9 +40,6 @@ public class SynopsisAggregator<T1> extends RichAggregateFunction<T1, MergeableS
     public SynopsisAggregator(Class<? extends MergeableSynopsis> sketchClass, Object[] params) {
         this.sketchClass = sketchClass;
         this.constructorParam = params;
-        this.counter = getRuntimeContext()
-                .getMetricGroup()
-                .counter("synopsesCounter");
     }
 
     /**
@@ -77,7 +72,6 @@ public class SynopsisAggregator<T1> extends RichAggregateFunction<T1, MergeableS
             Constructor<? extends MergeableSynopsis> constructor = sketchClass.getConstructor(parameterClasses);
             MergeableSynopsis synopsis = constructor.newInstance(constructorParam);
 
-            counter.inc();
             return synopsis;
         } catch (NoSuchMethodException e) {
             throw new IllegalArgumentException("There is no constructor in class " + sketchClass + " that match with the given parameters.");

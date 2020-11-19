@@ -24,7 +24,7 @@ import java.util.PriorityQueue;
  * @param <T1>
  * @author Rudi Poepsel Lemaitre
  */
-public class NonMergeableSynopsisAggregator<T1> extends RichAggregateFunction<T1, Synopsis, Synopsis> {
+public class NonMergeableSynopsisAggregator<T1> implements AggregateFunction<T1, Synopsis, Synopsis> {
 
     private static final Logger LOG = LoggerFactory.getLogger(LocalStreamEnvironment.class);
     private boolean stratified = false;
