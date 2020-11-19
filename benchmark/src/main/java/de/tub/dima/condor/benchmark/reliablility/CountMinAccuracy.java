@@ -25,16 +25,13 @@ import java.util.ArrayList;
  * Created by Rudi Poepsel Lemaitre on 22/10/2020.
  */
 public class CountMinAccuracy {
-	public static void main(String[] args) throws Exception {
+	public static void run(int parallelism) throws Exception {
 
 		System.out.println("Count-Min sketch accuracy test");
 
 		// Set up the streaming execution Environment
-		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
-
-		// Get the parallelism
-		int parallelism = Integer.parseInt(args[0]);
 
 		// Initialize NYCTaxi DataSource
 		DataStreamSource<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> messageStream = env

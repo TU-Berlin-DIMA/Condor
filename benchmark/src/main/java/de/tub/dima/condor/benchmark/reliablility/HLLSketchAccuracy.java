@@ -2,13 +2,12 @@ package de.tub.dima.condor.benchmark.reliablility;
 
 import de.tub.dima.condor.benchmark.sources.input.NYCTaxiRideSource;
 import de.tub.dima.condor.benchmark.sources.utils.NYCTimestampsAndWatermarks;
-import de.tub.dima.condor.flinkScottyConnector.processor.BuildSynopsis;
 import de.tub.dima.condor.core.synopsis.Sketches.HyperLogLogSketch;
+import de.tub.dima.condor.flinkScottyConnector.processor.BuildSynopsisOld;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.java.tuple.Tuple11;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.TimeCharacteristic;
-import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -43,7 +42,7 @@ public class HLLSketchAccuracy {
 		final SingleOutputStreamOperator<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> timestamped = messageStream
 				.assignTimestampsAndWatermarks(new NYCTimestampsAndWatermarks());
 
-		SingleOutputStreamOperator<HyperLogLogSketch> synopsesStream = BuildSynopsis.timeBased(timestamped, Time.milliseconds(10000),1, synopsisClass, new Object[]{16, 7L});
+		SingleOutputStreamOperator<HyperLogLogSketch> synopsesStream = BuildSynopsisOld.timeBased(timestamped, Time.milliseconds(10000),1, synopsisClass, new Object[]{16, 7L});
 
 		SingleOutputStreamOperator<Long> result = synopsesStream.flatMap(new countDistinct());
 
