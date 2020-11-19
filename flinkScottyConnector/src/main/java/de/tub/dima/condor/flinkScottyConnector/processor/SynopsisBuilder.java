@@ -9,6 +9,7 @@ import de.tub.dima.condor.core.synopsis.Sampling.SamplerWithTimestamps;
 import de.tub.dima.condor.flinkScottyConnector.processor.divide.OrderAndIndex;
 import de.tub.dima.condor.flinkScottyConnector.processor.merge.MergePreAggregates;
 import de.tub.dima.condor.flinkScottyConnector.processor.merge.NonMergeableSynopsisUnifier;
+import de.tub.dima.condor.flinkScottyConnector.processor.merge.UnifyToManager;
 import de.tub.dima.condor.flinkScottyConnector.processor.utils.sampling.ConvertToSample;
 import de.tub.dima.scotty.core.AggregateWindow;
 import de.tub.dima.scotty.core.windowType.TumblingWindow;
@@ -265,7 +266,7 @@ public class SynopsisBuilder {
 
         RichFlatMapFunction<AggregateWindow<S>, AggregateWindow<S>> combineSynopsis = mergeable
                 ? new MergePreAggregates(config.parallelism)
-                : new BuildSynopsis.UnifyToManager(config.managerClass);
+                : new UnifyToManager(config.managerClass, config.parallelism);
 
         return keyedStream.process(processingFunction)
                 .flatMap(combineSynopsis)

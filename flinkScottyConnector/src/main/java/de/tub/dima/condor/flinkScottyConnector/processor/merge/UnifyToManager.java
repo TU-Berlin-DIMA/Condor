@@ -18,11 +18,8 @@ public class UnifyToManager<M extends NonMergeableSynopsisManager> extends RichF
     Class<M> managerClass;
     int parKeys;
 
-    public UnifyToManager(int parKeys) {
-        this.parKeys = parKeys;
-    }
 
-    public UnifyToManager(Class<M> managerClass) {
+    public UnifyToManager(Class<M> managerClass, int parKeys) {
         this.managerClass = managerClass;
     }
 
