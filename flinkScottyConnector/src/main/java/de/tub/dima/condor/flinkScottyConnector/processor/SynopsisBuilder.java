@@ -64,8 +64,7 @@ public class SynopsisBuilder {
                 if (MergeableSynopsis.class.isAssignableFrom(config.synopsisClass)){
                     return buildScottyMergeable(config);
                 }else {
-                    // return buildScottyNonMergeable(config);
-                    return null;
+                    return buildScottyNonMergeable(config);
                 }
             }
         } else {
@@ -288,28 +287,22 @@ public class SynopsisBuilder {
             .map(new AddWindowTimesScotty());
     }
 
-    public static<T, S extends Synopsis<T>, SM extends NonMergeableSynopsisManager, M extends NonMergeableSynopsisManager> SingleOutputStreamOperator<WindowedSynopsis<M>> buildScottyNonMergeable(BuildConfiguration config){
+
+    private static<T, M extends Synopsis> SingleOutputStreamOperator<WindowedSynopsis<M>> buildScottyNonMergeable(BuildConfiguration config){
 
         DataStream<T> inputStream = config.inputStream;
 
         final KeyedStream<Tuple2<Integer, T>, Tuple> keyedStream = inputStream.process(new OrderAndIndex(config.miniBatchSize, config.parallelism)).setParallelism(1)
                 .keyBy(0);
 
-
         KeyedScottyWindowOperator processingFunction = new KeyedScottyWindowOperator<>(new NonMergeableSynopsisFunction(config.synopsisClass, config.sliceManagerClass, config.synParams));
         for (int i = 0; i < config.windows.length; i++) {
             processingFunction.addWindow(config.windows[i]);
         }
 
-        final SingleOutputStreamOperator<AggregateWindow<NonMergeableSynopsisManager<T, S>>> process = keyedStream
-                .process(processingFunction);
-
-        final SingleOutputStreamOperator<AggregateWindow<M>> unified = process
-                .flatMap(new UnifyToManager<>(config.managerClass, config.parallelism)).setParallelism(1);
-
-        final SingleOutputStreamOperator<WindowedSynopsis<M>> map = unified.map(new AddWindowTimesScotty<>());
-
-        return map;
+        return keyedStream.process(processingFunction)
+                .flatMap(new UnifyToManager<>(config.managerClass, config.parallelism)).setParallelism(1)
+                .map(new AddWindowTimesScotty());
     }
 
 

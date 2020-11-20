@@ -6,6 +6,7 @@ import de.tub.dima.condor.benchmark.sources.utils.SyntecticTimestampsAndWatermar
 import de.tub.dima.condor.benchmark.throughputUtils.ParallelThroughputLogger;
 import de.tub.dima.condor.core.synopsis.NonMergeableSynopsisManager;
 import de.tub.dima.condor.core.synopsis.Synopsis;
+import de.tub.dima.condor.core.synopsis.Wavelets.DistributedSliceWaveletsManager;
 import de.tub.dima.condor.core.synopsis.Wavelets.DistributedWaveletsManager;
 import de.tub.dima.condor.core.synopsis.Wavelets.SliceWaveletsManager;
 import de.tub.dima.condor.core.synopsis.Wavelets.WaveletSynopsis;
@@ -38,7 +39,7 @@ public class HaarWaveletsSlicing {
 
 		// Initialize Uniform DataSource
 		DataStream<Tuple3<Integer, Integer, Long>> messageStream = env
-				.addSource(new UniformDistributionSource(runtime, 200000));
+				.addSource(new UniformDistributionSource(runtime, 1000));
 
 		final SingleOutputStreamOperator<Tuple3<Integer, Integer, Long>> timestamped = messageStream
 				.assignTimestampsAndWatermarks(new SyntecticTimestampsAndWatermarks());
@@ -52,7 +53,7 @@ public class HaarWaveletsSlicing {
 		// Set up other configuration parameters
 		Class<WaveletSynopsis> synopsisClass = WaveletSynopsis.class;
 		Class<SliceWaveletsManager> sliceManagerClass = SliceWaveletsManager.class;
-		Class<DistributedWaveletsManager> managerClass = DistributedWaveletsManager.class;
+		Class<DistributedSliceWaveletsManager> managerClass = DistributedSliceWaveletsManager.class;
 		int miniBatchSize = parallelism * 10;
 		Window[] windows = {new SlidingWindow(WindowMeasure.Time, 5000,2500)};
 		Object[] synopsisParameters = new Object[]{10000};
@@ -60,11 +61,9 @@ public class HaarWaveletsSlicing {
 		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism, miniBatchSize, sliceManagerClass, managerClass);
 
 		// Build the synopses
-		// SingleOutputStreamOperator<WindowedSynopsis<DistributedWaveletsManager>> synopsesStream = SynopsisBuilder.build(env, config);
-		env.setParallelism(parallelism);
-		final SingleOutputStreamOperator<WindowedSynopsis<NonMergeableSynopsisManager>> windowedSynopsisSingleOutputStreamOperator = SynopsisBuilder.buildScottyNonMergeable(config);
+		SingleOutputStreamOperator<WindowedSynopsis<DistributedWaveletsManager>> synopsesStream = SynopsisBuilder.build(env, config);
 
-		windowedSynopsisSingleOutputStreamOperator.addSink(new SinkFunction() {
+		synopsesStream.addSink(new SinkFunction() {
 			@Override
 			public void invoke(final Object value) throws Exception {
 				//Environment.out.println(value);
