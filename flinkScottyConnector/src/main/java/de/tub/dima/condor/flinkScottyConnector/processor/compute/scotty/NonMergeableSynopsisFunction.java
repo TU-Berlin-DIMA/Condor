@@ -14,29 +14,14 @@ import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
-public class NonMergeableSynopsisFunction<Input, S extends Synopsis, SM extends NonMergeableSynopsisManager> implements AggregateFunction<Input, NonMergeableSynopsisManager, NonMergeableSynopsisManager>, Serializable {
-    private int keyField;
+public class NonMergeableSynopsisFunction<T, S extends Synopsis, SM extends NonMergeableSynopsisManager> implements AggregateFunction<Tuple2<Integer, T>, NonMergeableSynopsisManager, NonMergeableSynopsisManager>, Serializable {
     private Class<S> synopsisClass;
     private Class<SM> sliceManagerClass;
     private Object[] constructorParam;
     private Class<?>[] parameterClasses;
 
-    public NonMergeableSynopsisFunction(int keyField, int partitionField, Class<S> synopsisClass, Class<SM> sliceManagerClass, Object[] constructorParam) {
-        this.keyField = keyField;
-        this.constructorParam = constructorParam;
-        this.parameterClasses = new Class[constructorParam.length];
-        for (int i = 0; i < constructorParam.length; i++) {
-            parameterClasses[i] = constructorParam[i].getClass();
-        }
-        this.synopsisClass = synopsisClass;
-        this.sliceManagerClass = sliceManagerClass;
-        if (partitionField >= 0 && !StratifiedSynopsis.class.isAssignableFrom(synopsisClass)) {
-            throw new IllegalArgumentException("Synopsis class needs to be a subclass of StratifiedSynopsis in order to build on personalized partitions.");
-        }
-    }
 
     public NonMergeableSynopsisFunction(Class<S> synopsisClass, Class<SM> sliceManagerClass, Object[] constructorParam) {
-        this.keyField = -1;
         this.constructorParam = constructorParam;
         this.parameterClasses = new Class[constructorParam.length];
         for (int i = 0; i < constructorParam.length; i++) {
@@ -68,18 +53,9 @@ public class NonMergeableSynopsisFunction<Input, S extends Synopsis, SM extends 
     }
 
     @Override
-    public NonMergeableSynopsisManager lift(Input input) {
-        if (!(input instanceof Tuple2)) {
-            throw new IllegalArgumentException("Input elements must be from type Tuple2 to build a synopsis.");
-        }
-        Tuple2 inputTuple = (Tuple2) input;
+    public NonMergeableSynopsisManager lift(Tuple2<Integer, T> input) {
         NonMergeableSynopsisManager partialAggregate = createAggregate();
-        if (inputTuple.f1 instanceof Tuple && keyField != -1) {
-            Object field = ((Tuple) inputTuple.f1).getField(this.keyField);
-            partialAggregate.update(field);
-            return partialAggregate;
-        }
-        partialAggregate.update(inputTuple.f1);
+        partialAggregate.update(input.f1);
         return partialAggregate;
 
 
@@ -92,20 +68,9 @@ public class NonMergeableSynopsisFunction<Input, S extends Synopsis, SM extends 
     }
 
     @Override
-    public NonMergeableSynopsisManager liftAndCombine(NonMergeableSynopsisManager partialAggregate, Input input) {
-
-        if (!(input instanceof Tuple2)) {
-            throw new IllegalArgumentException("Input elements must be from type Tuple2 to build a synopsis.");
-        }
-        Tuple2 inputTuple = (Tuple2) input;
-        if (inputTuple.f1 instanceof Tuple && keyField != -1) {
-            Object field = ((Tuple) inputTuple.f1).getField(this.keyField);
-            partialAggregate.update(field);
-            return partialAggregate;
-        }
-        partialAggregate.update(inputTuple.f1);
+    public NonMergeableSynopsisManager liftAndCombine(NonMergeableSynopsisManager partialAggregate, Tuple2<Integer, T> input) {
+        partialAggregate.update(input.f1);
         return partialAggregate;
-
     }
 
     @Override
@@ -114,7 +79,6 @@ public class NonMergeableSynopsisFunction<Input, S extends Synopsis, SM extends 
     }
 
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
-        out.writeInt(keyField);
         out.writeObject(synopsisClass);
         out.writeObject(sliceManagerClass);
         out.writeInt(constructorParam.length);
@@ -127,7 +91,6 @@ public class NonMergeableSynopsisFunction<Input, S extends Synopsis, SM extends 
     }
 
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        this.keyField = in.readInt();
         this.synopsisClass = (Class<S>) in.readObject();
         this.sliceManagerClass = (Class<SM>) in.readObject();
         int nParameters = in.readInt();

@@ -4,6 +4,8 @@ import de.tub.dima.condor.benchmark.sources.input.UniformDistributionSource;
 import de.tub.dima.condor.benchmark.sources.utils.SyntecticExtractKeyField;
 import de.tub.dima.condor.benchmark.sources.utils.SyntecticTimestampsAndWatermarks;
 import de.tub.dima.condor.benchmark.throughputUtils.ParallelThroughputLogger;
+import de.tub.dima.condor.core.synopsis.NonMergeableSynopsisManager;
+import de.tub.dima.condor.core.synopsis.Synopsis;
 import de.tub.dima.condor.core.synopsis.Wavelets.DistributedWaveletsManager;
 import de.tub.dima.condor.core.synopsis.Wavelets.SliceWaveletsManager;
 import de.tub.dima.condor.core.synopsis.Wavelets.WaveletSynopsis;
@@ -58,9 +60,11 @@ public class HaarWaveletsSlicing {
 		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism, miniBatchSize, sliceManagerClass, managerClass);
 
 		// Build the synopses
-		SingleOutputStreamOperator<WindowedSynopsis<DistributedWaveletsManager>> synopsesStream = SynopsisBuilder.build(env, config);
+		// SingleOutputStreamOperator<WindowedSynopsis<DistributedWaveletsManager>> synopsesStream = SynopsisBuilder.build(env, config);
+		env.setParallelism(parallelism);
+		final SingleOutputStreamOperator<WindowedSynopsis<NonMergeableSynopsisManager>> windowedSynopsisSingleOutputStreamOperator = SynopsisBuilder.buildScottyNonMergeable(config);
 
-		synopsesStream.addSink(new SinkFunction() {
+		windowedSynopsisSingleOutputStreamOperator.addSink(new SinkFunction() {
 			@Override
 			public void invoke(final Object value) throws Exception {
 				//Environment.out.println(value);
