@@ -23,7 +23,7 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
  * Created by Rudi Poepsel Lemaitre.
  */
 public class EquiWidthHistogramSlicing {
-    public static void run(int parallelism, long runtime) throws Exception {
+    public static void run(int parallelism, long runtime, int targetThroughput) throws Exception {
         String jobName = "Equi-width histogram - general stream slicing scalability test "+parallelism;
         System.out.println(jobName);
 
@@ -32,8 +32,14 @@ public class EquiWidthHistogramSlicing {
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
         // Initialize Uniform DataSource
+        if(targetThroughput == -1){
+            // This is a parameter indicates the throughput that the input stream will try to achieve.
+            // However, it varies depending on the Hardware used. For our experiments we
+            // didn't saw any performance improvement beyond this value.
+            targetThroughput = 200000;
+        }
         DataStream<Tuple3<Integer, Integer, Long>> messageStream = env
-                .addSource(new UniformDistributionSource(runtime, 200000));
+                .addSource(new UniformDistributionSource(runtime, targetThroughput));
 
         final SingleOutputStreamOperator<Tuple3<Integer, Integer, Long>> timestamped = messageStream
                 .assignTimestampsAndWatermarks(new SyntecticTimestampsAndWatermarks());

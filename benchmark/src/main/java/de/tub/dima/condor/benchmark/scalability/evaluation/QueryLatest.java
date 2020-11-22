@@ -1,63 +1,50 @@
-package de.tub.dima.condor.benchmark.scalability.processing.bucketing;
+package de.tub.dima.condor.benchmark.scalability.evaluation;
 
-import de.tub.dima.condor.benchmark.sources.input.NYCTaxiRideSource;
+import de.tub.dima.condor.benchmark.sources.input.IPaddressesSource;
 import de.tub.dima.condor.benchmark.sources.input.UniformDistributionSource;
-import de.tub.dima.condor.benchmark.sources.utils.NYCExtractKeyField;
-import de.tub.dima.condor.benchmark.sources.utils.NYCTimestampsAndWatermarks;
+import de.tub.dima.condor.benchmark.sources.queries.IPQuerySource;
+import de.tub.dima.condor.benchmark.sources.utils.QueryCountMinSketch;
 import de.tub.dima.condor.benchmark.sources.utils.SyntecticExtractKeyField;
 import de.tub.dima.condor.benchmark.sources.utils.SyntecticTimestampsAndWatermarks;
 import de.tub.dima.condor.benchmark.throughputUtils.ParallelThroughputLogger;
 import de.tub.dima.condor.core.synopsis.Sketches.CountMinSketch;
 import de.tub.dima.condor.core.synopsis.WindowedSynopsis;
+import de.tub.dima.condor.flinkScottyConnector.evaluator.ApproximateDataAnalytics;
 import de.tub.dima.condor.flinkScottyConnector.processor.SynopsisBuilder;
 import de.tub.dima.condor.flinkScottyConnector.processor.configs.BuildConfiguration;
 import de.tub.dima.scotty.core.windowType.TumblingWindow;
 import de.tub.dima.scotty.core.windowType.Window;
 import de.tub.dima.scotty.core.windowType.WindowMeasure;
-import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.java.tuple.Tuple11;
 import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
-import org.apache.flink.util.Collector;
-
-import java.util.ArrayList;
+import org.apache.flink.streaming.api.windowing.time.Time;
 
 /**
  * Created by Rudi Poepsel Lemaitre.
  */
-public class CountMinBucketing {
-	public static void run(int parallelism, long runtime, int targetThroughput) throws Exception {
-		String jobName = "Count-Min sketch - bucketing scalability test "+parallelism;
+public class QueryLatest {
+	public static void run(int parallelism, long runtime, int queryThroughput) throws Exception {
+		String jobName = "Query latest - scalability test "+parallelism;
 		System.out.println(jobName);
 
 		// Set up the streaming execution Environment
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
-		// Initialize Uniform DataSource
-		if(targetThroughput == -1){
-			// This is a parameter indicates the throughput that the input stream will try to achieve.
-			// However, it varies depending on the Hardware used. For our experiments we
-			// didn't saw any performance improvement beyond this value.
-			targetThroughput = 200000;
-		}
+		// Initialize IP Address DataSource
 		DataStream<Tuple3<Integer, Integer, Long>> messageStream = env
-				.addSource(new UniformDistributionSource(runtime, targetThroughput));
+				.addSource(new IPaddressesSource(runtime, 20000));
 
 		final SingleOutputStreamOperator<Tuple3<Integer, Integer, Long>> timestamped = messageStream
 				.assignTimestampsAndWatermarks(new SyntecticTimestampsAndWatermarks());
 
 		// We want to build the synopsis based on the value of field 0
 		SingleOutputStreamOperator<Integer> inputStream = timestamped.map(new SyntecticExtractKeyField(0)).returns(Integer.class);
-
-		// Measure and report the throughput
-		inputStream.flatMap(new ParallelThroughputLogger<Integer>(1000, jobName));
 
 		// Set up other configuration parameters
 		Class<CountMinSketch> synopsisClass = CountMinSketch.class;
@@ -68,6 +55,20 @@ public class CountMinBucketing {
 
 		// Build the synopses
 		SingleOutputStreamOperator<WindowedSynopsis<CountMinSketch>> synopsesStream = SynopsisBuilder.build(env, config);
+
+		// Initialize query stream
+		if (queryThroughput == -1){
+			// This is a parameter indicates the throughput that the query stream will try to achieve.
+			// However, it varies depending on the Hardware used. For our experiments we
+			// didn't saw any performance improvement beyond this value.
+			queryThroughput = 1000000;
+		}
+		DataStreamSource<Integer> queryStream = env.addSource(new IPQuerySource(Time.seconds(20), queryThroughput, Time.seconds(40)));
+
+		ApproximateDataAnalytics.queryLatest(synopsesStream, queryStream, new QueryCountMinSketch());
+		// Measure and report the throughput
+		queryStream.flatMap(new ParallelThroughputLogger<Integer>(1000, jobName));
+
 
 		synopsesStream.addSink(new SinkFunction() {
 			@Override

@@ -5,20 +5,20 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 
 import java.util.Random;
 
-public class SimpleQuerySource extends RichParallelSourceFunction<Double> {
+public class IPQuerySource extends RichParallelSourceFunction<Integer> {
 
     private final long runtime;
     private final int throughput;
     private final long wait;
 
-    public SimpleQuerySource(Time queryRuntime, int throughput, Time wait) {
+    public IPQuerySource(Time queryRuntime, int throughput, Time wait) {
         this.runtime = queryRuntime.toMilliseconds();
         this.throughput = throughput;
         this.wait = wait.toMilliseconds();
     }
 
     @Override
-    public void run(SourceContext<Double> ctx) throws Exception {
+    public void run(SourceContext<Integer> ctx) throws Exception {
         Random random = new Random();
 
         long startTs = System.currentTimeMillis();
@@ -33,7 +33,7 @@ public class SimpleQuerySource extends RichParallelSourceFunction<Double> {
             long time = System.currentTimeMillis();
 
             for (int i = 0; i < throughput; i++) {
-                ctx.collectWithTimestamp(random.nextDouble(), time);
+                ctx.collectWithTimestamp(random.nextInt(	2147483647), time);
             }
 
             while (System.currentTimeMillis() < time + 1000) {

@@ -37,7 +37,7 @@ import java.util.TreeSet;
 public final class ApproximateDataAnalytics {
 
     public static <Q extends Serializable, S extends Synopsis, O extends Serializable> SingleOutputStreamOperator<QueryResult<Q, O>> queryLatest
-            (DataStream<WindowedSynopsis<S>> synopsesStream, DataStream<Q> queryStream, QueryFunction<Q, S, O> queryFunction) {
+            (DataStream<WindowedSynopsis<S>> synopsesStream, DataStream<Q> queryStream, QueryFunction<Q, WindowedSynopsis<S>, O> queryFunction) {
 
         MapStateDescriptor<Boolean, WindowedSynopsis<S>> synopsisMapStateDescriptor = new MapStateDescriptor<Boolean, WindowedSynopsis<S>>(
                 "latestSynopsis",
@@ -47,7 +47,7 @@ public final class ApproximateDataAnalytics {
 
         BroadcastStream<WindowedSynopsis<S>> broadcast = synopsesStream.broadcast(synopsisMapStateDescriptor);
         return queryStream.connect(broadcast)
-                .process(new QueryLatestFunction<Q, S, O>(queryFunction));
+                .process(new QueryLatestFunction<Q, WindowedSynopsis<S>, O>(queryFunction));
     }
 
     /**
