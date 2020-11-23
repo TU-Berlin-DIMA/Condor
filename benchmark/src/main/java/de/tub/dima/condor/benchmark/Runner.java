@@ -64,13 +64,13 @@ public class Runner {
 
         //   evaluation
         if (parameterTool.has("ql"))
-            QueryLatest.run(parallelism, runtime, targetThroughput);
+            QueryLatest.run(parallelism, targetThroughput);
         if (parameterTool.has("qls"))
-            QueryLatestStratified.run(parallelism, runtime, targetThroughput);
+            QueryLatestStratified.run(parallelism, targetThroughput);
         if (parameterTool.has("qt"))
-            QueryTimestamped.run(parallelism, runtime, targetThroughput);
+            QueryTimestamped.run(parallelism, targetThroughput);
         if (parameterTool.has("qts"))
-            QueryTimestampedStratified.run(parallelism, runtime, targetThroughput);
+            QueryTimestampedStratified.run(parallelism, targetThroughput);
 
     }
 }

@@ -29,7 +29,7 @@ import org.apache.flink.streaming.api.windowing.time.Time;
  * Created by Rudi Poepsel Lemaitre.
  */
 public class QueryTimestamped {
-	public static void run(int parallelism, long runtime, int queryThroughput) throws Exception {
+	public static void run(int parallelism, int queryThroughput) throws Exception {
 		String jobName = "Query timestamped - scalability test "+parallelism;
 		System.out.println(jobName);
 
@@ -39,7 +39,7 @@ public class QueryTimestamped {
 
 		// Initialize IP Address DataSource
 		DataStream<Tuple3<Integer, Integer, Long>> messageStream = env
-				.addSource(new IPaddressesSource(runtime, 20000));
+				.addSource(new IPaddressesSource(20000, 20000));
 
 		final SingleOutputStreamOperator<Tuple3<Integer, Integer, Long>> timestamped = messageStream
 				.assignTimestampsAndWatermarks(new SyntheticTimestampsAndWatermarks());

@@ -27,7 +27,7 @@ import org.apache.flink.streaming.api.windowing.time.Time;
  * Created by Rudi Poepsel Lemaitre.
  */
 public class QueryLatest {
-	public static void run(int parallelism, long runtime, int queryThroughput) throws Exception {
+	public static void run(int parallelism, int queryThroughput) throws Exception {
 		String jobName = "Query latest - scalability test "+parallelism;
 		System.out.println(jobName);
 
@@ -35,9 +35,9 @@ public class QueryLatest {
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
-		// Initialize IP Address DataSource
+		// Initialize IP Address DataSource - 20 seconds runtime
 		DataStream<Tuple3<Integer, Integer, Long>> messageStream = env
-				.addSource(new IPaddressesSource(runtime, 20000));
+				.addSource(new IPaddressesSource(20000, 20000));
 
 		final SingleOutputStreamOperator<Tuple3<Integer, Integer, Long>> timestamped = messageStream
 				.assignTimestampsAndWatermarks(new SyntheticTimestampsAndWatermarks());
@@ -55,7 +55,7 @@ public class QueryLatest {
 		// Build the synopses
 		SingleOutputStreamOperator<WindowedSynopsis<CountMinSketch>> synopsesStream = SynopsisBuilder.build(env, config);
 
-		// Initialize query stream
+		// Initialize query stream - query stream runs from seconds 40 to 60 (20 seconds after the synopsis stream stopped)
 		if (queryThroughput == -1){
 			// This is a parameter indicates the throughput per core that the query stream will try to achieve.
 			// However, it varies depending on the Hardware used. For our experiments we
