@@ -1,4 +1,4 @@
-package de.tub.dima.condor.core.synopsis.Yahoo;
+package de.tub.dima.condor.benchmark.efficiency.yahoo;
 
 import de.tub.dima.condor.core.synopsis.CommutativeSynopsis;
 import de.tub.dima.condor.core.synopsis.MergeableSynopsis;
