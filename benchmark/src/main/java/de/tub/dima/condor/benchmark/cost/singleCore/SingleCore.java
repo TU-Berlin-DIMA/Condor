@@ -1,4 +1,4 @@
-package de.tub.dima.condor.benchmark.cost;
+package de.tub.dima.condor.benchmark.cost.singleCore;
 
 import de.tub.dima.condor.core.synopsis.Histograms.EquiWidthHistogram;
 import de.tub.dima.condor.core.synopsis.MergeableSynopsis;
