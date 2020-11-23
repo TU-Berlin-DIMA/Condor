@@ -1,9 +1,11 @@
 package de.tub.dima.condor.benchmark.scalability.evaluation;
 
 import de.tub.dima.condor.benchmark.sources.input.IPaddressesSource;
-import de.tub.dima.condor.benchmark.sources.queries.IPQuerySourceStratified;
 import de.tub.dima.condor.benchmark.sources.queries.IPQuerySourceTimestampedStratified;
-import de.tub.dima.condor.benchmark.sources.utils.*;
+import de.tub.dima.condor.benchmark.sources.utils.QueryCountMin;
+import de.tub.dima.condor.benchmark.sources.utils.SyntecticExtractKeyField;
+import de.tub.dima.condor.benchmark.sources.utils.SyntecticTimestampsAndWatermarks;
+import de.tub.dima.condor.benchmark.sources.utils.UniformStratifier;
 import de.tub.dima.condor.benchmark.throughputUtils.ParallelThroughputLogger;
 import de.tub.dima.condor.core.synopsis.Sketches.CountMinSketch;
 import de.tub.dima.condor.core.synopsis.StratifiedSynopsisWrapper;
@@ -20,7 +22,6 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
