@@ -76,7 +76,7 @@ public class QueryTimestamped {
 		int maxSynopsisCount = 120;
 
 		// Evaluate the synopsis stream based on the query stream
-		SingleOutputStreamOperator<QueryResult<TimestampedQuery<Integer>, Integer>> resultStream = ApproximateDataAnalytics.queryTimestamped(synopsesStream, queryStream, new QueryCountMinTimestamped(),maxSynopsisCount);
+		SingleOutputStreamOperator<QueryResult<TimestampedQuery<Integer>, Integer>> resultStream = ApproximateDataAnalytics.queryTimestamped(synopsesStream, queryStream, new QueryCountMin(),maxSynopsisCount);
 
 		resultStream.addSink(new SinkFunction() {
 			@Override

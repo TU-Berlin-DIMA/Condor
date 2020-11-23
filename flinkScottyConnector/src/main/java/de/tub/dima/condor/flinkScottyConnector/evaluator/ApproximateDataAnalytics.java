@@ -37,7 +37,7 @@ import java.util.TreeSet;
 public final class ApproximateDataAnalytics {
 
     public static <Q extends Serializable, S extends Synopsis, O extends Serializable> SingleOutputStreamOperator<QueryResult<Q, O>> queryLatest
-            (DataStream<WindowedSynopsis<S>> synopsesStream, DataStream<Q> queryStream, QueryFunction<Q, WindowedSynopsis<S>, O> queryFunction) {
+            (DataStream<WindowedSynopsis<S>> synopsesStream, DataStream<Q> queryStream, QueryFunction<Q, S, O> queryFunction) {
 
         MapStateDescriptor<Boolean, WindowedSynopsis<S>> synopsisMapStateDescriptor = new MapStateDescriptor<Boolean, WindowedSynopsis<S>>(
                 "latestSynopsis",
@@ -62,7 +62,7 @@ public final class ApproximateDataAnalytics {
      * @return
      */
     public static <Q extends Serializable, S extends Synopsis, O extends Serializable> SingleOutputStreamOperator<QueryResult<TimestampedQuery<Q>, O>> queryTimestamped
-        (DataStream<WindowedSynopsis<S>> synopsesStream, DataStream<TimestampedQuery<Q>> queryStream, QueryFunction<TimestampedQuery<Q>, WindowedSynopsis<S>, QueryResult<TimestampedQuery<Q>, O>> queryFunction, int maxSynopsisCount) {
+        (DataStream<WindowedSynopsis<S>> synopsesStream, DataStream<TimestampedQuery<Q>> queryStream, QueryFunction<Q, S, O> queryFunction, int maxSynopsisCount) {
 
         MapStateDescriptor<Boolean, TreeSet<WindowedSynopsis<S>>> synopsisMapStateDescriptor = new MapStateDescriptor<Boolean, TreeSet<WindowedSynopsis<S>>>(
                 "SynopsisArchive",
@@ -77,7 +77,7 @@ public final class ApproximateDataAnalytics {
 
 
     public static <P extends Serializable, Q extends Serializable, S extends Synopsis, O extends Serializable> SingleOutputStreamOperator<StratifiedQueryResult<Q, O, P>> queryLatestStratified
-            (DataStream<StratifiedSynopsisWrapper<P, WindowedSynopsis<S>>> synopsesStream, DataStream<Tuple2<P, Q>> queryStream, QueryFunction<Q, WindowedSynopsis<S>, O> queryFunction, Class<P> partitionClass) {
+            (DataStream<StratifiedSynopsisWrapper<P, WindowedSynopsis<S>>> synopsesStream, DataStream<Tuple2<P, Q>> queryStream, QueryFunction<Q, S, O> queryFunction, Class<P> partitionClass) {
 
         MapStateDescriptor<P, WindowedSynopsis<S>> synopsisMapStateDescriptor = new MapStateDescriptor<P, WindowedSynopsis<S>>(
                 "latestSynopsis",
@@ -96,7 +96,7 @@ public final class ApproximateDataAnalytics {
     public static <P extends Serializable, Q extends Serializable, S extends Synopsis, O extends Serializable> SingleOutputStreamOperator<StratifiedQueryResult<TimestampedQuery<Q>, O, P>> queryTimestampedStratified
             (DataStream<StratifiedSynopsisWrapper<P, WindowedSynopsis<S>>> synopsesStream,
              DataStream<Tuple2<P, TimestampedQuery<Q>>> queryStream,
-             QueryFunction<Tuple2<P, TimestampedQuery<Q>>, WindowedSynopsis<S>, StratifiedQueryResult<TimestampedQuery<Q>, O, P>> queryFunction,
+             QueryFunction<Q, S, O> queryFunction,
              Class<P> partitionClass, int maxSynopsisCount) {
 
         // MapStateDescriptor for the BroadcastState which contains the stored synopsis keyed by <P>
