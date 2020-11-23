@@ -9,10 +9,10 @@ import de.tub.dima.condor.benchmark.scalability.processing.bucketing.CountMinBuc
 import de.tub.dima.condor.benchmark.scalability.processing.bucketing.EquiWidthHistogramBucketing;
 import de.tub.dima.condor.benchmark.scalability.processing.bucketing.HaarWaveletsBucketing;
 import de.tub.dima.condor.benchmark.scalability.processing.bucketing.ReservoirSamplingBucketing;
-import de.tub.dima.condor.benchmark.scalability.processing.streamSlicing.CountMinSlicing;
-import de.tub.dima.condor.benchmark.scalability.processing.streamSlicing.EquiWidthHistogramSlicing;
-import de.tub.dima.condor.benchmark.scalability.processing.streamSlicing.HaarWaveletsSlicing;
-import de.tub.dima.condor.benchmark.scalability.processing.streamSlicing.ReservoirSamplingSlicing;
+import de.tub.dima.condor.benchmark.scalability.processing.generalSlicing.CountMinSlicing;
+import de.tub.dima.condor.benchmark.scalability.processing.generalSlicing.EquiWidthHistogramSlicing;
+import de.tub.dima.condor.benchmark.scalability.processing.generalSlicing.HaarWaveletsSlicing;
+import de.tub.dima.condor.benchmark.scalability.processing.generalSlicing.ReservoirSamplingSlicing;
 import org.apache.flink.api.java.utils.ParameterTool;
 
 public class Runner {

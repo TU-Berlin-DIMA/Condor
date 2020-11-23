@@ -1,4 +1,4 @@
-package de.tub.dima.condor.benchmark.scalability.processing.streamSlicing;
+package de.tub.dima.condor.benchmark.windowing;
 
 import de.tub.dima.condor.benchmark.sources.input.UniformDistributionSource;
 import de.tub.dima.condor.benchmark.sources.utils.SyntheticExtractKeyField;
@@ -21,9 +21,10 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 /**
  * Created by Rudi Poepsel Lemaitre.
  */
-public class CountMinSlicing {
-	public static void run(int parallelism, long runtime, int targetThroughput) throws Exception {
-		String jobName = "Count-Min sketch - general stream slicing scalability test "+parallelism;
+public class Bucketing {
+	public static void run(int parallelism, int targetThroughput, int nConcurrentWindows) throws Exception {
+		long runtime = 40000;
+		String jobName = "General stream slicing windowing test "+parallelism;
 		System.out.println(jobName);
 
 		// Set up the streaming execution Environment
@@ -36,6 +37,8 @@ public class CountMinSlicing {
 			// However, it varies depending on the Hardware used. For our experiments we
 			// didn't saw any performance improvement beyond this value.
 			targetThroughput = 200000;
+		} else if (nConcurrentWindows > 1){
+			throw new IllegalArgumentException("Please set up the targetThroughput to a smaller value or you may have to wait a long time.");
 		}
 		DataStream<Tuple3<Integer, Integer, Long>> messageStream = env
 				.addSource(new UniformDistributionSource(runtime, targetThroughput));
@@ -51,11 +54,13 @@ public class CountMinSlicing {
 
 		// Set up other configuration parameters
 		Class<CountMinSketch> synopsisClass = CountMinSketch.class;
-		Window[] windows = {new SlidingWindow(WindowMeasure.Time, 5000,2500)};
+		long windowSize = 20000;
+		long windowSlide = 20000/nConcurrentWindows;
+		Window[] windows = {new SlidingWindow(WindowMeasure.Time, windowSize,windowSlide)};
 		Object[] synopsisParameters = new Object[]{65536, 5, 7L};
 
 		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);
-
+		config.forceBucketing();
 		// Build the synopses
 		SingleOutputStreamOperator<WindowedSynopsis<CountMinSketch>> synopsesStream = SynopsisBuilder.build(env, config);
 

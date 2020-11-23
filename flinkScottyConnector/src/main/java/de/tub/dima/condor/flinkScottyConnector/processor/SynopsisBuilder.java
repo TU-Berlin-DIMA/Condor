@@ -12,6 +12,7 @@ import de.tub.dima.condor.flinkScottyConnector.processor.merge.NonMergeableSynop
 import de.tub.dima.condor.flinkScottyConnector.processor.merge.UnifyToManager;
 import de.tub.dima.condor.flinkScottyConnector.processor.utils.sampling.ConvertToSample;
 import de.tub.dima.scotty.core.AggregateWindow;
+import de.tub.dima.scotty.core.windowType.SlidingWindow;
 import de.tub.dima.scotty.core.windowType.TumblingWindow;
 import de.tub.dima.scotty.core.windowType.Window;
 import de.tub.dima.scotty.core.windowType.WindowMeasure;
@@ -56,10 +57,10 @@ public class SynopsisBuilder {
         // env.setMaxParallelism(config.parallelism);
 
         if(config.stratificationKeyExtractor == null){ // Stratified
-            if(config.windows[0] instanceof TumblingWindow && config.windows.length == 1) {
-
+            if (config.isForceBucketing() && config.windows.length == 1 && config.windows[0] instanceof SlidingWindow){
+                return buildSlidingFlink(config);
+            } else if(config.windows[0] instanceof TumblingWindow && config.windows.length == 1) {
                 return buildFlink(config);
-
             } else {
                 if (MergeableSynopsis.class.isAssignableFrom(config.synopsisClass)){
                     return buildScottyMergeable(config);
@@ -228,6 +229,59 @@ public class SynopsisBuilder {
         AllWindowedStream partialAggregate = window.getWindowMeasure() == WindowMeasure.Count
                 ? preAggregated.countWindowAll(config.parallelism)
                 : preAggregated.timeWindowAll(Time.milliseconds(window.getSize()));
+
+
+        if (mergeable) {
+            // TODO: check whether the Typing below (MergeableSynopsis vs S) actually works || for Count: use this reduce function whithin another count window or use flatmap as in the original?
+            return partialAggregate.reduce(new MergeSynopsis(), new AddWindowTimes())
+                    .returns(new TypeHint<WindowedSynopsis<S>>() {});
+        } else {
+            // TODO: check whether the NonMergeableSynopsisUnifier also works with the CountWindow!
+            return partialAggregate.aggregate(new NonMergeableSynopsisUnifier(config.managerClass), new AddWindowTimes())
+                    .returns(new TypeHint<WindowedSynopsis<NonMergeableSynopsisManager>>() {});
+        }
+
+    }
+
+    private static <T, S extends Synopsis> SingleOutputStreamOperator<WindowedSynopsis<S>> buildSlidingFlink(BuildConfiguration config){
+
+        boolean mergeable = MergeableSynopsis.class.isAssignableFrom(config.synopsisClass);
+
+        DataStream<T> rescaled = config.inputStream.rescale();
+        KeyedStream keyBy;
+        if(!mergeable){
+
+            // Non-Mergeable with miniBatchSize (!)
+            keyBy = config.inputStream.process(new OrderAndIndex(config.miniBatchSize, config.parallelism)).setParallelism(1)
+                    .keyBy(0);
+
+        } else if (SamplerWithTimestamps.class.isAssignableFrom(config.synopsisClass)) {
+            keyBy = rescaled.process(new ConvertToSample())
+                    // .assignTimestampsAndWatermarks(new SampleTimeStampExtractor()) // TODO: potentially needed
+                    .map(new AddParallelismIndex())
+                    .keyBy(0);
+        } else {
+            keyBy = rescaled.map(new AddParallelismIndex())
+                    .keyBy(0);
+        }
+
+        SlidingWindow window = (SlidingWindow) config.windows[0];
+        WindowedStream windowedStream = window.getWindowMeasure() == WindowMeasure.Count
+                ? keyBy.countWindow(window.getSize() / config.parallelism, window.getSlide() / config.parallelism)
+                : keyBy.timeWindow(Time.milliseconds(window.getSize()), Time.milliseconds(window.getSlide()));
+
+
+        AggregateFunction synopsisFunction = mergeable
+                ? new SynopsisAggregator(config.synopsisClass, config.synParams)
+                : new NonMergeableSynopsisAggregator(config.miniBatchSize, config.synopsisClass, config.synParams); // TODO: potential error source (multiple possible constructors)
+
+
+        SingleOutputStreamOperator preAggregated = windowedStream.aggregate(synopsisFunction);
+
+
+        AllWindowedStream partialAggregate = window.getWindowMeasure() == WindowMeasure.Count
+                ? preAggregated.countWindowAll(config.parallelism)
+                : preAggregated.timeWindowAll(Time.milliseconds(window.getSize()), Time.milliseconds(window.getSlide()));
 
 
         if (mergeable) {

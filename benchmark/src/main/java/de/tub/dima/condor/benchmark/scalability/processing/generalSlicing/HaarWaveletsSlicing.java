@@ -1,4 +1,4 @@
-package de.tub.dima.condor.benchmark.scalability.processing.streamSlicing;
+package de.tub.dima.condor.benchmark.scalability.processing.generalSlicing;
 
 import de.tub.dima.condor.benchmark.sources.input.UniformDistributionSource;
 import de.tub.dima.condor.benchmark.sources.utils.SyntheticExtractKeyField;

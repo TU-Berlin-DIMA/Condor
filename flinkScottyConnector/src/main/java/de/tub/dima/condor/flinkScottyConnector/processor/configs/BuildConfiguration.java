@@ -29,6 +29,7 @@ public class BuildConfiguration <S extends Synopsis, SM extends NonMergeableSyno
     public Integer miniBatchSize = 0;               // only needed in case of non-mergeable synopsis. if set, this amount of incoming elements are put in a queue and and ordered by their timestamp and then sent in their respective order.
     public Class<SM> sliceManagerClass = null;      // needed for non-mergeable synopsis and sliding windows (-> scotty instead of Flink used)
     public Class<M> managerClass = null;            // only needed for non-mergeable non-stratified synopsis
+    private boolean forceBucketing = false;         // only for benchmarking proposes turn to true or the performance can be compromised.
 
     public int getParallelism() {
         return parallelism;
@@ -153,4 +154,14 @@ public class BuildConfiguration <S extends Synopsis, SM extends NonMergeableSyno
         this.managerClass = managerClass;
     }
 
+    /**
+     * Call only for benchmarking proposes! Performance may be compromised.
+     * */
+    public void forceBucketing(){
+        this.forceBucketing = true;
+    }
+
+    public boolean isForceBucketing() {
+        return forceBucketing;
+    }
 }
