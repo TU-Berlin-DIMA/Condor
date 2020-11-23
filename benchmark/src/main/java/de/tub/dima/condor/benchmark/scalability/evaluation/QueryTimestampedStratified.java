@@ -1,9 +1,10 @@
 package de.tub.dima.condor.benchmark.scalability.evaluation;
 
 import de.tub.dima.condor.benchmark.sources.input.IPaddressesSource;
-import de.tub.dima.condor.benchmark.sources.queries.IPQuerySourceStratified;
 import de.tub.dima.condor.benchmark.sources.queries.IPQuerySourceTimestampedStratified;
 import de.tub.dima.condor.benchmark.sources.utils.*;
+import de.tub.dima.condor.benchmark.sources.utils.queries.QueryCountMinTimestampedStratified;
+import de.tub.dima.condor.benchmark.sources.utils.stratifiers.IPStratifier;
 import de.tub.dima.condor.benchmark.throughputUtils.ParallelThroughputLogger;
 import de.tub.dima.condor.core.synopsis.Sketches.CountMinSketch;
 import de.tub.dima.condor.core.synopsis.StratifiedSynopsisWrapper;
@@ -20,7 +21,6 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
@@ -45,14 +45,11 @@ public class QueryTimestampedStratified {
 		DataStream<Tuple3<Integer, Integer, Long>> messageStream = env
 				.addSource(new IPaddressesSource(runtime, 20000));
 
-		final SingleOutputStreamOperator<Tuple3<Integer, Integer, Long>> timestamped = messageStream
-				.assignTimestampsAndWatermarks(new SyntecticTimestampsAndWatermarks());
-
-		// We want to build the synopsis based on the value of field 0
-		SingleOutputStreamOperator<Integer> inputStream = timestamped.map(new SyntecticExtractKeyField(0)).returns(Integer.class);
+		final SingleOutputStreamOperator<Tuple3<Integer, Integer, Long>> inputStream = messageStream
+				.assignTimestampsAndWatermarks(new SyntheticTimestampsAndWatermarks());
 
 		// Set up other configuration parameters
-		UniformStratifier stratificationKeyExtractor = new UniformStratifier(stratification);
+		IPStratifier stratificationKeyExtractor = new IPStratifier(stratification);
 		Class<CountMinSketch> synopsisClass = CountMinSketch.class;
 		Window[] windows = {new TumblingWindow(WindowMeasure.Time, 5000)};
 		Object[] synopsisParameters = new Object[]{65536, 5, 7L};

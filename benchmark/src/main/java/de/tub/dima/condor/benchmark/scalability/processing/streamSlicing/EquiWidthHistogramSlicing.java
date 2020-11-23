@@ -1,15 +1,14 @@
 package de.tub.dima.condor.benchmark.scalability.processing.streamSlicing;
 
 import de.tub.dima.condor.benchmark.sources.input.UniformDistributionSource;
-import de.tub.dima.condor.benchmark.sources.utils.SyntecticExtractKeyField;
-import de.tub.dima.condor.benchmark.sources.utils.SyntecticTimestampsAndWatermarks;
+import de.tub.dima.condor.benchmark.sources.utils.SyntheticExtractKeyField;
+import de.tub.dima.condor.benchmark.sources.utils.SyntheticTimestampsAndWatermarks;
 import de.tub.dima.condor.benchmark.throughputUtils.ParallelThroughputLogger;
 import de.tub.dima.condor.core.synopsis.Histograms.EquiWidthHistogram;
 import de.tub.dima.condor.core.synopsis.WindowedSynopsis;
 import de.tub.dima.condor.flinkScottyConnector.processor.SynopsisBuilder;
 import de.tub.dima.condor.flinkScottyConnector.processor.configs.BuildConfiguration;
 import de.tub.dima.scotty.core.windowType.SlidingWindow;
-import de.tub.dima.scotty.core.windowType.TumblingWindow;
 import de.tub.dima.scotty.core.windowType.Window;
 import de.tub.dima.scotty.core.windowType.WindowMeasure;
 import org.apache.flink.api.java.tuple.Tuple3;
@@ -42,10 +41,10 @@ public class EquiWidthHistogramSlicing {
                 .addSource(new UniformDistributionSource(runtime, targetThroughput));
 
         final SingleOutputStreamOperator<Tuple3<Integer, Integer, Long>> timestamped = messageStream
-                .assignTimestampsAndWatermarks(new SyntecticTimestampsAndWatermarks());
+                .assignTimestampsAndWatermarks(new SyntheticTimestampsAndWatermarks());
 
         // We want to build the synopsis based on the value of field 0
-        SingleOutputStreamOperator<Integer> inputStream = timestamped.map(new SyntecticExtractKeyField(0)).returns(Integer.class);
+        SingleOutputStreamOperator<Integer> inputStream = timestamped.map(new SyntheticExtractKeyField(0)).returns(Integer.class);
 
         // Measure and report the throughput
         inputStream.flatMap(new ParallelThroughputLogger<Integer>(1000, jobName));

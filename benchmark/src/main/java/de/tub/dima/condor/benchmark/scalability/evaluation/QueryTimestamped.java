@@ -1,12 +1,10 @@
 package de.tub.dima.condor.benchmark.scalability.evaluation;
 
 import de.tub.dima.condor.benchmark.sources.input.IPaddressesSource;
-import de.tub.dima.condor.benchmark.sources.queries.IPQuerySource;
 import de.tub.dima.condor.benchmark.sources.queries.IPQuerySourceTimestamped;
-import de.tub.dima.condor.benchmark.sources.utils.QueryCountMin;
-import de.tub.dima.condor.benchmark.sources.utils.QueryCountMinTimestamped;
-import de.tub.dima.condor.benchmark.sources.utils.SyntecticExtractKeyField;
-import de.tub.dima.condor.benchmark.sources.utils.SyntecticTimestampsAndWatermarks;
+import de.tub.dima.condor.benchmark.sources.utils.queries.QueryCountMinTimestamped;
+import de.tub.dima.condor.benchmark.sources.utils.SyntheticExtractKeyField;
+import de.tub.dima.condor.benchmark.sources.utils.SyntheticTimestampsAndWatermarks;
 import de.tub.dima.condor.benchmark.throughputUtils.ParallelThroughputLogger;
 import de.tub.dima.condor.core.synopsis.Sketches.CountMinSketch;
 import de.tub.dima.condor.core.synopsis.WindowedSynopsis;
@@ -21,7 +19,6 @@ import de.tub.dima.scotty.core.windowType.WindowMeasure;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
@@ -44,10 +41,10 @@ public class QueryTimestamped {
 				.addSource(new IPaddressesSource(runtime, 20000));
 
 		final SingleOutputStreamOperator<Tuple3<Integer, Integer, Long>> timestamped = messageStream
-				.assignTimestampsAndWatermarks(new SyntecticTimestampsAndWatermarks());
+				.assignTimestampsAndWatermarks(new SyntheticTimestampsAndWatermarks());
 
 		// We want to build the synopsis based on the value of field 0
-		SingleOutputStreamOperator<Integer> inputStream = timestamped.map(new SyntecticExtractKeyField(0)).returns(Integer.class);
+		SingleOutputStreamOperator<Integer> inputStream = timestamped.map(new SyntheticExtractKeyField(0)).returns(Integer.class);
 
 		// Set up other configuration parameters
 		Class<CountMinSketch> synopsisClass = CountMinSketch.class;
