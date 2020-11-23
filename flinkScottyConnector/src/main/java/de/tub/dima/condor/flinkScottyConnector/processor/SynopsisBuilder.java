@@ -102,9 +102,9 @@ public class SynopsisBuilder {
     }
 
 
-    private static <S extends Synopsis, Key extends Serializable> SingleOutputStreamOperator<StratifiedSynopsisWrapper<Key, WindowedSynopsis<S>>> buildFlinkStratified(BuildConfiguration config){
+    private static <T, S extends Synopsis, Key extends Serializable> SingleOutputStreamOperator<StratifiedSynopsisWrapper<Key, WindowedSynopsis<S>>> buildFlinkStratified(BuildConfiguration config){
 
-        KeyedStream keyBy;
+        KeyedStream<Tuple2<Key, T>, Tuple> keyBy;
         if(SamplerWithTimestamps.class.isAssignableFrom(config.synopsisClass)){
             keyBy = config.inputStream.process(new ConvertToSample())
                     // .assignTimestampsAndWatermarks(new SampleTimeStampExtractor()) // TODO: potentially needed

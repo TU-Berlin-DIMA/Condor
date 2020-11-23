@@ -2,9 +2,12 @@ package de.tub.dima.condor.benchmark.scalability.evaluation;
 
 import de.tub.dima.condor.benchmark.sources.input.IPaddressesSource;
 import de.tub.dima.condor.benchmark.sources.queries.IPQuerySourceTimestampedStratified;
+
 import de.tub.dima.condor.benchmark.sources.utils.*;
+import de.tub.dima.condor.benchmark.sources.utils.queries.QueryCountMin;
 import de.tub.dima.condor.benchmark.sources.utils.queries.QueryCountMinTimestampedStratified;
 import de.tub.dima.condor.benchmark.sources.utils.stratifiers.IPStratifier;
+
 import de.tub.dima.condor.benchmark.throughputUtils.ParallelThroughputLogger;
 import de.tub.dima.condor.core.synopsis.Sketches.CountMinSketch;
 import de.tub.dima.condor.core.synopsis.StratifiedSynopsisWrapper;
@@ -76,7 +79,7 @@ public class QueryTimestampedStratified {
 		int maxSynopsisCount = 120;
 
 		// Evaluate the synopsis stream based on the query stream
-		SingleOutputStreamOperator<StratifiedQueryResult<TimestampedQuery<Integer>, Integer, Integer>> resultStream = ApproximateDataAnalytics.queryTimestampedStratified(synopsesStream, queryStream, new QueryCountMinTimestampedStratified(), Integer.class, maxSynopsisCount);
+		SingleOutputStreamOperator<StratifiedQueryResult<TimestampedQuery<Integer>, Integer, Integer>> resultStream = ApproximateDataAnalytics.queryTimestampedStratified(synopsesStream, queryStream, new QueryCountMin(), Integer.class, maxSynopsisCount);
 
 		resultStream.addSink(new SinkFunction() {
 			@Override

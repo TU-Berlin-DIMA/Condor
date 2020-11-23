@@ -13,6 +13,7 @@ import org.apache.flink.streaming.api.functions.co.BroadcastProcessFunction;
 import org.apache.flink.util.Collector;
 
 import java.io.Serializable;
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.TreeSet;
@@ -31,7 +32,7 @@ public class QueryTimestampedFunction<Q extends Serializable, S extends Synopsis
         BroadcastProcessFunction<TimestampedQuery<Q>, WindowedSynopsis<S>, QueryResult<TimestampedQuery<Q>, O>> {
 
     final int maxSynopsisCount;
-    final QueryFunction<TimestampedQuery<Q>, WindowedSynopsis<S>, QueryResult<TimestampedQuery<Q>, O>> queryFunction;
+    final QueryFunction<Q, S, O> queryFunction;
     final MapStateDescriptor<Boolean, TreeSet<WindowedSynopsis<S>>> synopsisMapStateDescriptor = new MapStateDescriptor<Boolean, TreeSet<WindowedSynopsis<S>>>(
             "SynopsisArchive",
             BasicTypeInfo.BOOLEAN_TYPE_INFO,
@@ -40,7 +41,7 @@ public class QueryTimestampedFunction<Q extends Serializable, S extends Synopsis
 
     ArrayList<TimestampedQuery<Q>> queryList = new ArrayList<TimestampedQuery<Q>>();
 
-    public QueryTimestampedFunction(QueryFunction<TimestampedQuery<Q>, WindowedSynopsis<S>, QueryResult<TimestampedQuery<Q>, O>> queryFunction, int maxSynopsisCount) {
+    public QueryTimestampedFunction(QueryFunction<Q, S, O> queryFunction, int maxSynopsisCount) {
         this.queryFunction = queryFunction;
         this.maxSynopsisCount = maxSynopsisCount;
     }
@@ -55,7 +56,9 @@ public class QueryTimestampedFunction<Q extends Serializable, S extends Synopsis
 
             if (querySynopsis != null && querySynopsis.getWindowEnd() >= value.getTimeStamp()){ // synopsis with correct window exists
 
-                out.collect(queryFunction.query(value, querySynopsis));
+                final O result = queryFunction.query(value.getQuery(), querySynopsis.getSynopsis());
+                QueryResult<TimestampedQuery<Q>, O> queryResult= new QueryResult<TimestampedQuery<Q>, O>(result, value, querySynopsis);
+                out.collect(queryResult);
             }
 
         } else {
@@ -86,7 +89,10 @@ public class QueryTimestampedFunction<Q extends Serializable, S extends Synopsis
             windowedSynopses.add(value);
             ctx.getBroadcastState(synopsisMapStateDescriptor).put(true, windowedSynopses);
             queryList.stream().filter(query -> query.getTimeStamp() >= value.getWindowStart() && query.getTimeStamp() <= value.getWindowEnd())
-                    .forEach(query -> out.collect(queryFunction.query(query, value)));
+                    .forEach(query -> {
+                        O result = queryFunction.query(query.getQuery(), value.getSynopsis());
+                        out.collect(new QueryResult<TimestampedQuery<Q>, O>(result, query, value));
+                    });
         }
     }
 }

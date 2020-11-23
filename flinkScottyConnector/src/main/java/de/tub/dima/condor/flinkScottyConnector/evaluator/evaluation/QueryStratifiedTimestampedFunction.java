@@ -26,12 +26,12 @@ import java.util.*;
 public class QueryStratifiedTimestampedFunction<P extends Serializable, Q extends Serializable, S extends Synopsis, O extends Serializable> extends KeyedBroadcastProcessFunction<P, Tuple2<P, TimestampedQuery<Q>>, StratifiedSynopsisWrapper<P, WindowedSynopsis<S>>, StratifiedQueryResult<TimestampedQuery<Q>, O, P>> {
 
     final int maxSynopsisCount; // maximum synopsis count per strata / key
-    final QueryFunction<Tuple2<P, TimestampedQuery<Q>>, WindowedSynopsis<S>, StratifiedQueryResult<TimestampedQuery<Q>, O, P>> queryFunction;
+    final QueryFunction<Q,S,O> queryFunction;
     final MapStateDescriptor<P, TreeSet<WindowedSynopsis<S>>> synopsisMapStateDescriptor;
     HashMap<P, LinkedList<Tuple2<P, TimestampedQuery<Q>>>> queryHashMap = new HashMap<P, LinkedList<Tuple2<P, TimestampedQuery<Q>>>>();
 
     public QueryStratifiedTimestampedFunction(int maxSynopsisCount,
-                                              QueryFunction<Tuple2<P, TimestampedQuery<Q>>, WindowedSynopsis<S>, StratifiedQueryResult<TimestampedQuery<Q>, O, P>> queryFunction,
+                                              QueryFunction<Q, S, O> queryFunction,
                                               MapStateDescriptor<P, TreeSet<WindowedSynopsis<S>>> synopsisMapStateDescriptor) {
         this.maxSynopsisCount = maxSynopsisCount;
         this.queryFunction = queryFunction;
@@ -48,7 +48,9 @@ public class QueryStratifiedTimestampedFunction<P extends Serializable, Q extend
 
             if (querySynopsis != null && querySynopsis.getWindowEnd() >= value.f1.getTimeStamp()){ // synopsis with correct window exists
 
-                out.collect(queryFunction.query(value, querySynopsis));
+                final O result = queryFunction.query(value.f1.getQuery(), querySynopsis.getSynopsis());
+                final StratifiedQueryResult<TimestampedQuery<Q>, O, P> queryResult = new StratifiedQueryResult<>(result, value, querySynopsis);
+                out.collect(queryResult);
             }
         }else {
             // store the query
@@ -83,7 +85,11 @@ public class QueryStratifiedTimestampedFunction<P extends Serializable, Q extend
             if (queryHashMap.containsKey(key)){
                 queryHashMap.get(key).stream()
                         .filter(query -> query.f1.getTimeStamp() >= synopsis.getWindowStart() && query.f1.getTimeStamp() <= synopsis.getWindowEnd())
-                        .forEach(query -> out.collect(queryFunction.query(query, synopsis)));
+                        .forEach(query -> {
+                            final O result = queryFunction.query(query.f1.getQuery(), value.getSynopsis().getSynopsis());
+                            final StratifiedQueryResult<TimestampedQuery<Q>, O, P> queryResult = new StratifiedQueryResult<>(result, query, value.getSynopsis());
+                            out.collect(queryResult);
+                        });
             }
         }
     }
