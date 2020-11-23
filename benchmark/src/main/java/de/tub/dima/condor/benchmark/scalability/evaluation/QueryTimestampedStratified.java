@@ -5,7 +5,6 @@ import de.tub.dima.condor.benchmark.sources.queries.IPQuerySourceTimestampedStra
 
 import de.tub.dima.condor.benchmark.sources.utils.*;
 import de.tub.dima.condor.benchmark.sources.utils.queries.QueryCountMin;
-import de.tub.dima.condor.benchmark.sources.utils.queries.QueryCountMinTimestampedStratified;
 import de.tub.dima.condor.benchmark.sources.utils.stratifiers.IPStratifier;
 
 import de.tub.dima.condor.benchmark.throughputUtils.ParallelThroughputLogger;
@@ -33,7 +32,7 @@ import org.apache.flink.streaming.api.windowing.time.Time;
  * Created by Rudi Poepsel Lemaitre.
  */
 public class QueryTimestampedStratified {
-	public static void run(int parallelism, long runtime, int queryThroughput) throws Exception {
+	public static void run(int parallelism, int queryThroughput) throws Exception {
 		// We set the stratification degree to be the same as the parallelism. However, feel free to change it!
 		int stratification = parallelism;
 
@@ -46,7 +45,7 @@ public class QueryTimestampedStratified {
 
 		// Initialize IP Address DataSource
 		DataStream<Tuple3<Integer, Integer, Long>> messageStream = env
-				.addSource(new IPaddressesSource(runtime, 20000));
+				.addSource(new IPaddressesSource(20000, 20000));
 
 		final SingleOutputStreamOperator<Tuple3<Integer, Integer, Long>> inputStream = messageStream
 				.assignTimestampsAndWatermarks(new SyntheticTimestampsAndWatermarks());
