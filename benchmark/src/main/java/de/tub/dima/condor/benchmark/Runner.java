@@ -15,6 +15,9 @@ import de.tub.dima.condor.benchmark.scalability.processing.streamSlicing.HaarWav
 import de.tub.dima.condor.benchmark.scalability.processing.streamSlicing.ReservoirSamplingSlicing;
 import org.apache.flink.api.java.utils.ParameterTool;
 
+/**
+ * @author Joscha von Hein
+ */
 public class Runner {
     public static void main(String[] args) throws Exception {
 
@@ -28,32 +31,24 @@ public class Runner {
         // reliability
         if (parameterTool.has("cma"))
             CountMinAccuracy.run(parallelism, outputDir);
-
         if (parameterTool.has("ewha"))
             EquiWidthHistogramAccuracy.run(parallelism, outputDir);
-
         if (parameterTool.has("hwa"))
             HaarWaveletsAccuracy.run(parallelism, outputDir);
-
         if (parameterTool.has("hlla"))
             HLLSketchAccuracy.run(parallelism, outputDir);
-
         if (parameterTool.has("rsa"))
             ReservoirSamplingAccuracy.run(parallelism, outputDir);
-
 
         // scalability
         //   processing
         //     bucketing
         if (parameterTool.has("cmb"))
             CountMinBucketing.run(parallelism, runtime,targetThroughput);
-
         if (parameterTool.has("ewhb"))
             EquiWidthHistogramBucketing.run(parallelism, runtime, targetThroughput);
-
         if (parameterTool.has("hwb"))
             HaarWaveletsBucketing.run(parallelism, runtime, targetThroughput);
-
         if (parameterTool.has("rsb"))
             ReservoirSamplingBucketing.run(parallelism, runtime, targetThroughput);
 
@@ -67,17 +62,15 @@ public class Runner {
         if (parameterTool.has("rss"))
             ReservoirSamplingSlicing.run(parallelism, runtime, targetThroughput);
 
-
         //   evaluation
-        int queryThroughput = parameterTool.getInt("queryThroughput", 10000);
         if (parameterTool.has("ql"))
-            QueryLatest.run(parallelism, runtime, queryThroughput);
+            QueryLatest.run(parallelism, runtime, targetThroughput);
         if (parameterTool.has("qls"))
-            QueryLatestStratified.run(parallelism, runtime, queryThroughput);
+            QueryLatestStratified.run(parallelism, runtime, targetThroughput);
         if (parameterTool.has("qt"))
-            QueryTimestamped.run(parallelism, runtime, queryThroughput);
+            QueryTimestamped.run(parallelism, runtime, targetThroughput);
         if (parameterTool.has("qts"))
-            QueryTimestampedStratified.run(parallelism, runtime, queryThroughput);
+            QueryTimestampedStratified.run(parallelism, runtime, targetThroughput);
 
     }
 }

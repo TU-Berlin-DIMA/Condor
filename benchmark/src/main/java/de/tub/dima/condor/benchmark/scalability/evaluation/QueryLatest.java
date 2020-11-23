@@ -59,7 +59,7 @@ public class QueryLatest {
 		if (queryThroughput == -1){
 			// This is a parameter indicates the throughput per core that the query stream will try to achieve.
 			// However, it varies depending on the Hardware used. For our experiments we
-			// didn't saw any performance improvement beyond this value.
+			// didn't see any performance improvement beyond this value.
 			queryThroughput = 1000000;
 		}
 		DataStream<Integer> queryStream = env.addSource(new IPQuerySource(Time.seconds(20), queryThroughput, Time.seconds(40)));
