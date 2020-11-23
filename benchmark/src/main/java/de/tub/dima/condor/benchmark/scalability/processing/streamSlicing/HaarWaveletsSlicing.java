@@ -4,6 +4,9 @@ import de.tub.dima.condor.benchmark.sources.input.UniformDistributionSource;
 import de.tub.dima.condor.benchmark.sources.utils.SyntecticExtractKeyField;
 import de.tub.dima.condor.benchmark.sources.utils.SyntecticTimestampsAndWatermarks;
 import de.tub.dima.condor.benchmark.throughputUtils.ParallelThroughputLogger;
+import de.tub.dima.condor.core.synopsis.NonMergeableSynopsisManager;
+import de.tub.dima.condor.core.synopsis.Synopsis;
+import de.tub.dima.condor.core.synopsis.Wavelets.DistributedSliceWaveletsManager;
 import de.tub.dima.condor.core.synopsis.Wavelets.DistributedWaveletsManager;
 import de.tub.dima.condor.core.synopsis.Wavelets.SliceWaveletsManager;
 import de.tub.dima.condor.core.synopsis.Wavelets.WaveletSynopsis;
@@ -36,7 +39,7 @@ public class HaarWaveletsSlicing {
 
 		// Initialize Uniform DataSource
 		if(targetThroughput == -1){
-			// This is a parameter indicates the throughput that the input stream will try to achieve.
+			// This is a parameter indicates the throughput per core that the input stream will try to achieve.
 			// However, it varies depending on the Hardware used. For our experiments we
 			// didn't saw any performance improvement beyond this value.
 			targetThroughput = 4000;
@@ -56,7 +59,7 @@ public class HaarWaveletsSlicing {
 		// Set up other configuration parameters
 		Class<WaveletSynopsis> synopsisClass = WaveletSynopsis.class;
 		Class<SliceWaveletsManager> sliceManagerClass = SliceWaveletsManager.class;
-		Class<DistributedWaveletsManager> managerClass = DistributedWaveletsManager.class;
+		Class<DistributedSliceWaveletsManager> managerClass = DistributedSliceWaveletsManager.class;
 		int miniBatchSize = parallelism * 10;
 		Window[] windows = {new SlidingWindow(WindowMeasure.Time, 5000,2500)};
 		Object[] synopsisParameters = new Object[]{10000};

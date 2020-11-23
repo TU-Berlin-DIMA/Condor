@@ -34,7 +34,7 @@ public class ReservoirSamplingSlicing {
 
 		// Initialize Uniform DataSource
 		if(targetThroughput == -1){
-			// This is a parameter indicates the throughput that the input stream will try to achieve.
+			// This is a parameter indicates the throughput per core that the input stream will try to achieve.
 			// However, it varies depending on the Hardware used. For our experiments we
 			// didn't saw any performance improvement beyond this value.
 			targetThroughput = 200000;

@@ -34,7 +34,7 @@ public class UnifyToManager<M extends NonMergeableSynopsisManager> extends RichF
         WindowID windowID = new WindowID(value.getStart(), value.getEnd());
         Tuple2<Integer, AggregateWindow<M>> synopsisAggregateWindow = openWindows.get(windowID);
         if (synopsisAggregateWindow == null) {
-            NonMergeableSynopsisWindowState<M> aggWindow = new NonMergeableSynopsisWindowState(value, managerClass);
+            NonMergeableSynopsisWindowState<NonMergeableSynopsisManager, M> aggWindow = new NonMergeableSynopsisWindowState(value, managerClass);
             openWindows.put(windowID, new Tuple2<>(1, aggWindow));
         } else if (synopsisAggregateWindow.f0 == parKeys - 1) {
             synopsisAggregateWindow.f1.getAggValues().get(0).addSynopsis(value.getAggValues().get(0));

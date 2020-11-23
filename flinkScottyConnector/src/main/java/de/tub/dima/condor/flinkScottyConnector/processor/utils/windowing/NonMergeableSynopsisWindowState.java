@@ -10,13 +10,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NonMergeableSynopsisWindowState<M extends NonMergeableSynopsisManager> implements AggregateWindow<M> {
+public class NonMergeableSynopsisWindowState<S extends Synopsis, M extends NonMergeableSynopsisManager> implements AggregateWindow<M> {
     private final long start;
     private final long endTs;
     private final WindowMeasure measure;
     private List<M> aggValues;
 
-    public NonMergeableSynopsisWindowState(AggregateWindow<Synopsis> aggWindow, Class<M> managerClass) {
+    public NonMergeableSynopsisWindowState(AggregateWindow<S> aggWindow, Class<M> managerClass) {
         this(aggWindow.getStart(), aggWindow.getEnd(), aggWindow.getMeasure());
         Constructor<M> constructor;
         try {

@@ -7,7 +7,7 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 
 import java.util.Random;
 
-public class StratifiedTimestampedQuerySource extends RichParallelSourceFunction<Tuple2<Integer, TimestampedQuery<Double>>> {
+public class IPQuerySourceTimestampedStratified extends RichParallelSourceFunction<Tuple2<Integer, TimestampedQuery<Integer>>> {
 
     private final int throughput;
     private final long wait;
@@ -16,7 +16,7 @@ public class StratifiedTimestampedQuerySource extends RichParallelSourceFunction
     private final int synopsisRuntime; // synopsis runtime in seconds
 
 
-    public StratifiedTimestampedQuerySource(int throughput, Time wait, Time queryRuntime, Time synopsisRuntime, int stratification) {
+    public IPQuerySourceTimestampedStratified(Time queryRuntime, int throughput, Time wait, Time synopsisRuntime, int stratification) {
         this.throughput = throughput;
         this.wait = wait.toMilliseconds();
         this.runtime = queryRuntime.toMilliseconds();
@@ -25,7 +25,7 @@ public class StratifiedTimestampedQuerySource extends RichParallelSourceFunction
     }
 
     @Override
-    public void run(SourceContext<Tuple2<Integer, TimestampedQuery<Double>>> ctx) throws Exception {
+    public void run(SourceContext<Tuple2<Integer, TimestampedQuery<Integer>>> ctx) throws Exception {
         Random random = new Random();
 
         long startTs = System.currentTimeMillis();
@@ -43,7 +43,7 @@ public class StratifiedTimestampedQuerySource extends RichParallelSourceFunction
             for (int i = 0; i < throughput; i++) {
                 int relativeTimestamp = random.nextInt(synopsisRuntime);
                 long query_timestamp = startTs + relativeTimestamp * 1000;
-                TimestampedQuery<Double> timestampedQuery = new TimestampedQuery<Double>(random.nextDouble(), query_timestamp);
+                TimestampedQuery<Integer> timestampedQuery = new TimestampedQuery<Integer>(random.nextInt(	2147483647), query_timestamp);
                 ctx.collectWithTimestamp(new Tuple2<>(random.nextInt(stratification), timestampedQuery), time);
             }
 

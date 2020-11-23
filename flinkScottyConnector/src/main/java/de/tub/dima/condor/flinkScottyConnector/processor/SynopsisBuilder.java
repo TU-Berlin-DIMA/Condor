@@ -61,9 +61,11 @@ public class SynopsisBuilder {
                 return buildFlink(config);
 
             } else {
-
-                return buildScotty(config);
-
+                if (MergeableSynopsis.class.isAssignableFrom(config.synopsisClass)){
+                    return buildScottyMergeable(config);
+                }else {
+                    return buildScottyNonMergeable(config);
+                }
             }
         } else {
             throw new IllegalArgumentException("for stratified Methods use buildStratified() Method");
@@ -240,9 +242,7 @@ public class SynopsisBuilder {
 
     }
 
-    private static<T, S extends Synopsis> SingleOutputStreamOperator<WindowedSynopsis<S>> buildScotty(BuildConfiguration config){
-
-        boolean mergeable = MergeableSynopsis.class.isAssignableFrom(config.synopsisClass);
+    private static<T, S extends Synopsis> SingleOutputStreamOperator<WindowedSynopsis<S>> buildScottyMergeable(BuildConfiguration config){
 
         DataStream<T> rescaled = config.inputStream.rescale();
 
@@ -250,15 +250,7 @@ public class SynopsisBuilder {
         KeyedScottyWindowOperator<Tuple, Tuple2<Integer, Object>, S> processingFunction;
 
 
-        if (!mergeable){
-            // Non-Mergeable Case
-
-            keyedStream = config.inputStream.process(new OrderAndIndex(config.miniBatchSize, config.parallelism)).setMaxParallelism(1)
-                    .keyBy(0);
-
-            processingFunction = new KeyedScottyWindowOperator<>(new NonMergeableSynopsisFunction(config.synopsisClass, config.sliceManagerClass, config.synParams));
-
-        } else if (SamplerWithTimestamps.class.isAssignableFrom(config.synopsisClass)) {
+        if (SamplerWithTimestamps.class.isAssignableFrom(config.synopsisClass)) {
 
             keyedStream = rescaled.process(new ConvertToSample<>())
                     .map(new AddParallelismIndex<>())
@@ -289,16 +281,30 @@ public class SynopsisBuilder {
             processingFunction.addWindow(config.windows[i]);
         }
 
-        RichFlatMapFunction<AggregateWindow<S>, AggregateWindow<S>> combineSynopsis = mergeable
-                ? new MergePreAggregates(config.parallelism)
-                : new UnifyToManager(config.managerClass, config.parallelism);
+        return keyedStream.process(processingFunction)
+            .flatMap(new MergePreAggregates(config.parallelism))
+            .setParallelism(1)
+            .map(new AddWindowTimesScotty());
+    }
+
+
+    private static<T, M extends Synopsis> SingleOutputStreamOperator<WindowedSynopsis<M>> buildScottyNonMergeable(BuildConfiguration config){
+
+        DataStream<T> inputStream = config.inputStream;
+
+        final KeyedStream<Tuple2<Integer, T>, Tuple> keyedStream = inputStream.process(new OrderAndIndex(config.miniBatchSize, config.parallelism)).setParallelism(1)
+                .keyBy(0);
+
+        KeyedScottyWindowOperator processingFunction = new KeyedScottyWindowOperator<>(new NonMergeableSynopsisFunction(config.synopsisClass, config.sliceManagerClass, config.synParams));
+        for (int i = 0; i < config.windows.length; i++) {
+            processingFunction.addWindow(config.windows[i]);
+        }
 
         return keyedStream.process(processingFunction)
-                .flatMap(combineSynopsis)
-                .setParallelism(1)
+                .flatMap(new UnifyToManager<>(config.managerClass, config.parallelism)).setParallelism(1)
                 .map(new AddWindowTimesScotty());
-
     }
+
 
     static class AddParallelismIndex<T> extends RichMapFunction<T, Tuple2<Integer, T>> {
         @Override

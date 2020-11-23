@@ -1,20 +1,23 @@
 package de.tub.dima.condor.benchmark.scalability.evaluation;
 
 import de.tub.dima.condor.benchmark.sources.input.IPaddressesSource;
-import de.tub.dima.condor.benchmark.sources.queries.IPQuerySource;
+import de.tub.dima.condor.benchmark.sources.queries.IPQuerySourceStratified;
 import de.tub.dima.condor.benchmark.sources.utils.QueryCountMin;
 import de.tub.dima.condor.benchmark.sources.utils.SyntecticExtractKeyField;
 import de.tub.dima.condor.benchmark.sources.utils.SyntecticTimestampsAndWatermarks;
+import de.tub.dima.condor.benchmark.sources.utils.UniformStratifier;
 import de.tub.dima.condor.benchmark.throughputUtils.ParallelThroughputLogger;
 import de.tub.dima.condor.core.synopsis.Sketches.CountMinSketch;
+import de.tub.dima.condor.core.synopsis.StratifiedSynopsisWrapper;
 import de.tub.dima.condor.core.synopsis.WindowedSynopsis;
 import de.tub.dima.condor.flinkScottyConnector.evaluator.ApproximateDataAnalytics;
-import de.tub.dima.condor.flinkScottyConnector.evaluator.utils.QueryResult;
+import de.tub.dima.condor.flinkScottyConnector.evaluator.utils.StratifiedQueryResult;
 import de.tub.dima.condor.flinkScottyConnector.processor.SynopsisBuilder;
 import de.tub.dima.condor.flinkScottyConnector.processor.configs.BuildConfiguration;
 import de.tub.dima.scotty.core.windowType.TumblingWindow;
 import de.tub.dima.scotty.core.windowType.Window;
 import de.tub.dima.scotty.core.windowType.WindowMeasure;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -26,9 +29,12 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 /**
  * Created by Rudi Poepsel Lemaitre.
  */
-public class QueryLatest {
+public class QueryLatestStratified {
 	public static void run(int parallelism, long runtime, int queryThroughput) throws Exception {
-		String jobName = "Query latest - scalability test "+parallelism;
+		// We set the stratification degree to be the same as the parallelism. However, feel free to change it!
+		int stratification = parallelism;
+
+		String jobName = "Query latest stratified - scalability test "+parallelism;
 		System.out.println(jobName);
 
 		// Set up the streaming execution Environment
@@ -46,29 +52,30 @@ public class QueryLatest {
 		SingleOutputStreamOperator<Integer> inputStream = timestamped.map(new SyntecticExtractKeyField(0)).returns(Integer.class);
 
 		// Set up other configuration parameters
+		UniformStratifier stratificationKeyExtractor = new UniformStratifier(stratification);
 		Class<CountMinSketch> synopsisClass = CountMinSketch.class;
 		Window[] windows = {new TumblingWindow(WindowMeasure.Time, 5000)};
 		Object[] synopsisParameters = new Object[]{65536, 5, 7L};
 
-		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);
+		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism, stratificationKeyExtractor);
 
-		// Build the synopses
-		SingleOutputStreamOperator<WindowedSynopsis<CountMinSketch>> synopsesStream = SynopsisBuilder.build(env, config);
+		// Build the stratified synopses
+		SingleOutputStreamOperator<StratifiedSynopsisWrapper<Integer, WindowedSynopsis<CountMinSketch>>> synopsesStream = SynopsisBuilder.buildStratified(env, config);
 
-		// Initialize query stream
+		// Initialize stratified query stream
 		if (queryThroughput == -1){
 			// This is a parameter indicates the throughput per core that the query stream will try to achieve.
 			// However, it varies depending on the Hardware used. For our experiments we
 			// didn't saw any performance improvement beyond this value.
 			queryThroughput = 1000000;
 		}
-		DataStream<Integer> queryStream = env.addSource(new IPQuerySource(Time.seconds(20), queryThroughput, Time.seconds(40)));
+		DataStream<Tuple2<Integer, Integer>> queryStream = env.addSource(new IPQuerySourceStratified(Time.seconds(20), queryThroughput, Time.seconds(40), stratification));
 
 		// Measure and report the throughput
-		queryStream.flatMap(new ParallelThroughputLogger<Integer>(1000, jobName));
+		queryStream.flatMap(new ParallelThroughputLogger<>(1000, jobName));
 
 		// Evaluate the synopsis stream based on the query stream
-		SingleOutputStreamOperator<QueryResult<Integer, Integer>> resultStream = ApproximateDataAnalytics.queryLatest(synopsesStream, queryStream, new QueryCountMin());
+		SingleOutputStreamOperator<StratifiedQueryResult<Integer, Integer, Integer>> resultStream = ApproximateDataAnalytics.queryLatestStratified(synopsesStream, queryStream, new QueryCountMin(), Integer.class);
 
 		resultStream.addSink(new SinkFunction() {
 			@Override

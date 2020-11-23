@@ -370,7 +370,7 @@ public final class BuildSynopsisOld {
                 .keyBy(0);
 
         KeyedScottyWindowOperator<Tuple, Tuple2<Integer, Object>, NonMergeableSynopsisManager> processingFunction =
-                new KeyedScottyWindowOperator<>(new NonMergeableSynopsisFunction(keyField, -1, synopsisClass, sliceManagerClass, parameters));
+                new KeyedScottyWindowOperator<>(new NonMergeableSynopsisFunction(synopsisClass, sliceManagerClass, parameters));
 
         for (int i = 0; i < windows.length; i++) {
             processingFunction.addWindow(windows[i]);
