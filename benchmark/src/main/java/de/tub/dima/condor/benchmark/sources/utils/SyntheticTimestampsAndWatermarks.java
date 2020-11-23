@@ -8,7 +8,7 @@ import javax.annotation.Nullable;
 
 import static org.apache.flink.streaming.api.windowing.time.Time.seconds;
 
-public class SyntecticTimestampsAndWatermarks implements AssignerWithPeriodicWatermarks<Tuple3<Integer, Integer, Long>> {
+public class SyntheticTimestampsAndWatermarks implements AssignerWithPeriodicWatermarks<Tuple3<Integer, Integer, Long>> {
     private final long maxOutOfOrderness = seconds(20).toMilliseconds(); // 5 seconds
     private long currentMaxTimestamp;
     private long startTime = System.currentTimeMillis();

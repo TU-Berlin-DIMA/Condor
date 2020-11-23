@@ -26,8 +26,8 @@ import java.util.ArrayList;
  */
 public class CountMinAccuracy {
 	public static void run(int parallelism, String outputDir) throws Exception {
-
-		System.out.println("Count-Min sketch accuracy test");
+		String jobName = "Count-Min sketch accuracy test "+parallelism;
+		System.out.println(jobName);
 
 		// Set up the streaming execution Environment
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -60,7 +60,7 @@ public class CountMinAccuracy {
 
 		result.writeAsText(outputDir+ "/count-min_result_"+parallelism+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
-		env.execute("Count-Min sketch accuracy test");
+		env.execute(jobName);
 	}
 
 	private static class queryFrequency implements FlatMapFunction<WindowedSynopsis<CountMinSketch>, Integer> {

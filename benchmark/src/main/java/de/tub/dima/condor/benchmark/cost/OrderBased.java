@@ -1,14 +1,15 @@
-package de.tub.dima.condor.benchmark.scalability.processing.streamSlicing;
+package de.tub.dima.condor.benchmark.cost;
 
 import de.tub.dima.condor.benchmark.sources.input.UniformDistributionSource;
 import de.tub.dima.condor.benchmark.sources.utils.SyntheticExtractKeyField;
 import de.tub.dima.condor.benchmark.sources.utils.SyntheticTimestampsAndWatermarks;
 import de.tub.dima.condor.benchmark.throughputUtils.ParallelThroughputLogger;
-import de.tub.dima.condor.core.synopsis.Sketches.CountMinSketch;
+import de.tub.dima.condor.core.synopsis.Wavelets.DistributedWaveletsManager;
+import de.tub.dima.condor.core.synopsis.Wavelets.WaveletSynopsis;
 import de.tub.dima.condor.core.synopsis.WindowedSynopsis;
 import de.tub.dima.condor.flinkScottyConnector.processor.SynopsisBuilder;
 import de.tub.dima.condor.flinkScottyConnector.processor.configs.BuildConfiguration;
-import de.tub.dima.scotty.core.windowType.SlidingWindow;
+import de.tub.dima.scotty.core.windowType.TumblingWindow;
 import de.tub.dima.scotty.core.windowType.Window;
 import de.tub.dima.scotty.core.windowType.WindowMeasure;
 import org.apache.flink.api.java.tuple.Tuple3;
@@ -21,24 +22,25 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 /**
  * Created by Rudi Poepsel Lemaitre.
  */
-public class CountMinSlicing {
-	public static void run(int parallelism, long runtime, int targetThroughput) throws Exception {
-		String jobName = "Count-Min sketch - general stream slicing scalability test "+parallelism;
+public class OrderBased {
+	public static void run(int parallelism, int targetThroughput) throws Exception {
+		String jobName = "Order Based Synopses COST test " + parallelism;
 		System.out.println(jobName);
 
-		// Set up the streaming execution Environment
-		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+		// set up the streaming execution Environment
+		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+		env.getConfig().enableObjectReuse();
 
 		// Initialize Uniform DataSource
 		if(targetThroughput == -1){
 			// This is a parameter indicates the throughput per core that the input stream will try to achieve.
 			// However, it varies depending on the Hardware used. For our experiments we
 			// didn't saw any performance improvement beyond this value.
-			targetThroughput = 200000;
+			targetThroughput = 4000;
 		}
 		DataStream<Tuple3<Integer, Integer, Long>> messageStream = env
-				.addSource(new UniformDistributionSource(runtime, targetThroughput));
+				.addSource(new UniformDistributionSource(-1, targetThroughput));
 
 		final SingleOutputStreamOperator<Tuple3<Integer, Integer, Long>> timestamped = messageStream
 				.assignTimestampsAndWatermarks(new SyntheticTimestampsAndWatermarks());
@@ -50,14 +52,16 @@ public class CountMinSlicing {
 		inputStream.flatMap(new ParallelThroughputLogger<Integer>(1000, jobName));
 
 		// Set up other configuration parameters
-		Class<CountMinSketch> synopsisClass = CountMinSketch.class;
-		Window[] windows = {new SlidingWindow(WindowMeasure.Time, 5000,2500)};
-		Object[] synopsisParameters = new Object[]{65536, 5, 7L};
+		Class<WaveletSynopsis> synopsisClass = WaveletSynopsis.class;
+		Class<DistributedWaveletsManager> managerClass = DistributedWaveletsManager.class;
+		int miniBatchSize = parallelism * 10;
+		Window[] windows = {new TumblingWindow(WindowMeasure.Time, 25000)};
+		Object[] synopsisParameters = new Object[]{10000};
 
-		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);
+		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism, miniBatchSize, null, managerClass);
 
 		// Build the synopses
-		SingleOutputStreamOperator<WindowedSynopsis<CountMinSketch>> synopsesStream = SynopsisBuilder.build(env, config);
+		SingleOutputStreamOperator<WindowedSynopsis<DistributedWaveletsManager>> synopsesStream = SynopsisBuilder.build(env, config);
 
 		synopsesStream.addSink(new SinkFunction() {
 			@Override

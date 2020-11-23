@@ -26,8 +26,9 @@ import java.util.ArrayList;
  */
 public class EquiWidthHistogramAccuracy {
     public static void run(int parallelism, String outputDir) throws Exception {
+        String jobName = "Equi-width histogram accuracy test "+parallelism;
+        System.out.println(jobName);
 
-        System.out.println("Equi-width histogram accuracy test");
         // set up the streaming execution Environment
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);

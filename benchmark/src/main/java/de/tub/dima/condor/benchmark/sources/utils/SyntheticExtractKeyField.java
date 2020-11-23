@@ -4,10 +4,10 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.tuple.Tuple11;
 import org.apache.flink.api.java.tuple.Tuple3;
 
-public class SyntecticExtractKeyField<T> implements MapFunction<Tuple3<Integer, Integer, Long>, T> {
+public class SyntheticExtractKeyField<T> implements MapFunction<Tuple3<Integer, Integer, Long>, T> {
     private int keyField;
 
-    public SyntecticExtractKeyField(int keyField) {
+    public SyntheticExtractKeyField(int keyField) {
         if (keyField < 0 || keyField > 2){
             throw new IllegalArgumentException("Not a valid key field for the selected Source.");
         }

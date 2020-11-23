@@ -1,4 +1,4 @@
-package de.tub.dima.condor.benchmark.scalability.processing.streamSlicing;
+package de.tub.dima.condor.benchmark.scalability.dataSources.global;
 
 import de.tub.dima.condor.benchmark.sources.input.UniformDistributionSource;
 import de.tub.dima.condor.benchmark.sources.utils.SyntheticExtractKeyField;
@@ -8,7 +8,7 @@ import de.tub.dima.condor.core.synopsis.Sketches.CountMinSketch;
 import de.tub.dima.condor.core.synopsis.WindowedSynopsis;
 import de.tub.dima.condor.flinkScottyConnector.processor.SynopsisBuilder;
 import de.tub.dima.condor.flinkScottyConnector.processor.configs.BuildConfiguration;
-import de.tub.dima.scotty.core.windowType.SlidingWindow;
+import de.tub.dima.scotty.core.windowType.TumblingWindow;
 import de.tub.dima.scotty.core.windowType.Window;
 import de.tub.dima.scotty.core.windowType.WindowMeasure;
 import org.apache.flink.api.java.tuple.Tuple3;
@@ -21,9 +21,9 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 /**
  * Created by Rudi Poepsel Lemaitre.
  */
-public class CountMinSlicing {
+public class UniformGlobal {
 	public static void run(int parallelism, long runtime, int targetThroughput) throws Exception {
-		String jobName = "Count-Min sketch - general stream slicing scalability test "+parallelism;
+		String jobName = "Uniform dataset - global synopses scalability test "+parallelism;
 		System.out.println(jobName);
 
 		// Set up the streaming execution Environment
@@ -51,7 +51,7 @@ public class CountMinSlicing {
 
 		// Set up other configuration parameters
 		Class<CountMinSketch> synopsisClass = CountMinSketch.class;
-		Window[] windows = {new SlidingWindow(WindowMeasure.Time, 5000,2500)};
+		Window[] windows = {new TumblingWindow(WindowMeasure.Time, 5000)};
 		Object[] synopsisParameters = new Object[]{65536, 5, 7L};
 
 		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);

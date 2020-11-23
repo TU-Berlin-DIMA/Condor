@@ -26,8 +26,9 @@ import java.util.ArrayList;
  */
 public class HLLSketchAccuracy {
 	public static void run(int parallelism, String outputDir) throws Exception {
+		String jobName = "HyperLogLog sketch accuracy test "+parallelism;
+		System.out.println(jobName);
 
-		System.out.println("HyperLogLog sketch accuracy test");
 		// set up the streaming execution Environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
@@ -58,7 +59,7 @@ public class HLLSketchAccuracy {
 
 		result.writeAsText(outputDir+"/hll_result_"+parallelism+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
-		env.execute("HyperLogLog sketch accuracy test");
+		env.execute(jobName);
 	}
 
 	private static class countDistinct implements FlatMapFunction<WindowedSynopsis<HyperLogLogSketch>, Long> {

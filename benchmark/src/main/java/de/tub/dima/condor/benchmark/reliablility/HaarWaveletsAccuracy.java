@@ -27,8 +27,9 @@ import java.util.ArrayList;
  */
 public class HaarWaveletsAccuracy {
 	public static void run(int parallelism, String outputDir) throws Exception {
+		String jobName = "Haar Wavelets accuracy test "+parallelism;
+		System.out.println(jobName);
 
-		System.out.println("Haar Wavelets accuracy test");
 		// set up the streaming execution Environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
@@ -61,7 +62,7 @@ public class HaarWaveletsAccuracy {
 
 		result.writeAsText(outputDir+"/haar-wavelets_result_"+parallelism+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
-		env.execute("Haar Wavelets accuracy test");
+		env.execute(jobName);
 	}
 
 	private static class rangeSumPassengerCount implements FlatMapFunction<WindowedSynopsis<DistributedWaveletsManager>, Double> {
