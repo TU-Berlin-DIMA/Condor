@@ -56,5 +56,21 @@ Then you can use the library in your maven project.
 </dependency>
 ```
 
+You can use the demo package to write and compile your first Condor Synopsis-based Streaming Job. 
+Just set up the SynopsisBasedStreamingJob main class and run it on your favorite IDE.
+
+Alternativelly is possible to create a jar with maven and submit the job to a Flink cluster:
+
+`
+cd demo/
+mvn clean package
+`
+
+After inializing a Flink cluster:
+
+`
+<FLINK-HOME>/bin/flink run <CONDOR-HOME>/demo/target/demo-0.1.jar
+`
+
 ### Runnning Benchmarking Examples
 TODO...
