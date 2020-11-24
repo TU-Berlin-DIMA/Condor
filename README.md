@@ -56,6 +56,7 @@ Then you can use the library in your maven project.
 </dependency>
 ```
 
+### Writing your first Condor Job:
 You can use the demo package to write and compile your first Condor Synopsis-based Streaming Job. 
 Just set up the SynopsisBasedStreamingJob main class and run it on your favorite IDE.
 
