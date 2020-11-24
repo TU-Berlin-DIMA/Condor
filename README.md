@@ -63,6 +63,9 @@ Alternativelly is possible to create a jar with maven and submit the job to a Fl
 
 `
 cd demo/
+`
+
+`
 mvn clean package
 `
 
