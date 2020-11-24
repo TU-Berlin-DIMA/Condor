@@ -86,7 +86,7 @@ public class ZipfDistributionSource extends RichParallelSourceFunction<Tuple3<In
      * in a serving speed which is proportional to the specified serving speed factor.
      */
     public ZipfDistributionSource(long runtime, int throughput, final List<Tuple2<Long, Long>> gaps) {
-        this.dataFilePath = "/share/hadoop/EDADS/zipfTimestamped.gz";
+        this.dataFilePath = "/Users/joschavonhein/Workspace/Condor/data/zipfTimestamped.gz";
 //        this.dataFilePath = "EDADS/Data/zipfTimestamped.gz";
         this.throughput = throughput;
         this.gaps = gaps;
@@ -94,7 +94,7 @@ public class ZipfDistributionSource extends RichParallelSourceFunction<Tuple3<In
     }
 
     public ZipfDistributionSource(long runtime, int throughput) {
-        this.dataFilePath = "/share/hadoop/EDADS/zipfTimestamped.gz";
+        this.dataFilePath = "/Users/joschavonhein/Workspace/Condor/data/zipfTimestamped.gz";
 //        this.dataFilePath = "EDADS/Data/zipfTimestamped.gz";
         this.throughput = throughput;
         this.gaps = new ArrayList<>();

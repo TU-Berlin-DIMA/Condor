@@ -52,9 +52,6 @@ public class Stratified {
 		final SingleOutputStreamOperator<Tuple3<Integer, Integer, Long>> timestamped = messageStream
 				.assignTimestampsAndWatermarks(new SyntheticTimestampsAndWatermarks());
 
-		// We want to build the synopsis based on the value of field 0
-		// SingleOutputStreamOperator<Integer> inputStream = timestamped.map(new SyntheticExtractKeyField(0)).returns(Integer.class);
-
 		// Measure and report the throughput
 		timestamped.flatMap(new ParallelThroughputLogger<Tuple3<Integer, Integer, Long>>(1000, jobName));
 

@@ -97,7 +97,7 @@ public class Runner {
         if (parameterTool.has("rsa"))
             ReservoirSamplingAccuracy.run(parallelism, outputDir);
 
-        // scalability´
+        // scalability
         // scalability dataSources
         // scalability dataSources global
         if (parameterTool.has("nycg"))

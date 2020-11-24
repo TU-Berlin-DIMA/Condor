@@ -37,7 +37,7 @@ public class Bucketing {
 			// However, it varies depending on the Hardware used. For our experiments we
 			// didn't saw any performance improvement beyond this value.
 			targetThroughput = 200000;
-		} else if (nConcurrentWindows > 1){
+		} else if (nConcurrentWindows > 1){ // TODO: this does not make sense
 			throw new IllegalArgumentException("Please set up the targetThroughput to a smaller value or you may have to wait a long time.");
 		}
 		DataStream<Tuple3<Integer, Integer, Long>> messageStream = env

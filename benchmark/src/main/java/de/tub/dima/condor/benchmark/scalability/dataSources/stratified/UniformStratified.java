@@ -6,6 +6,7 @@ import de.tub.dima.condor.benchmark.sources.utils.stratifiers.SyntheticStratifie
 import de.tub.dima.condor.benchmark.sources.utils.SyntheticTimestampsAndWatermarks;
 import de.tub.dima.condor.benchmark.throughputUtils.ParallelThroughputLogger;
 import de.tub.dima.condor.core.synopsis.Sketches.CountMinSketch;
+import de.tub.dima.condor.core.synopsis.StratifiedSynopsisWrapper;
 import de.tub.dima.condor.core.synopsis.WindowedSynopsis;
 import de.tub.dima.condor.flinkScottyConnector.processor.SynopsisBuilder;
 import de.tub.dima.condor.flinkScottyConnector.processor.configs.BuildConfiguration;
@@ -44,14 +45,11 @@ public class UniformStratified {
 		DataStream<Tuple3<Integer, Integer, Long>> messageStream = env
 				.addSource(new UniformDistributionSource(runtime, targetThroughput));
 
-		final SingleOutputStreamOperator<Tuple3<Integer, Integer, Long>> timestamped = messageStream
+		final SingleOutputStreamOperator<Tuple3<Integer, Integer, Long>> inputStream = messageStream
 				.assignTimestampsAndWatermarks(new SyntheticTimestampsAndWatermarks());
 
-		// We want to build the synopsis based on the value of field 0
-		SingleOutputStreamOperator<Integer> inputStream = timestamped.map(new SyntheticExtractKeyField(0)).returns(Integer.class);
-
 		// Measure and report the throughput
-		inputStream.flatMap(new ParallelThroughputLogger<Integer>(1000, jobName));
+		inputStream.flatMap(new ParallelThroughputLogger<>(1000, jobName));
 
 		// Set up other configuration parameters
 		SyntheticStratifier stratificationKeyExtractor = new SyntheticStratifier(stratification);
@@ -62,7 +60,7 @@ public class UniformStratified {
 		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism, stratificationKeyExtractor);
 
 		// Build the stratified synopses
-		SingleOutputStreamOperator<WindowedSynopsis<CountMinSketch>> synopsesStream = SynopsisBuilder.build(config);
+		SingleOutputStreamOperator<StratifiedSynopsisWrapper<Integer,WindowedSynopsis<CountMinSketch>>> synopsesStream = SynopsisBuilder.buildStratified(config);
 
 		synopsesStream.addSink(new SinkFunction() {
 			@Override

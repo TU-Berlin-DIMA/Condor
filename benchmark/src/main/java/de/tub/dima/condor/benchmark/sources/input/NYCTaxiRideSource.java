@@ -111,7 +111,7 @@ public class NYCTaxiRideSource implements ParallelSourceFunction<Tuple11<Long, L
     }
 
     public NYCTaxiRideSource(long runtime, int throughput) {
-        this.dataFilePath = "/share/hadoop/EDADS/nycTaxiRides.gz";
+        this.dataFilePath = "/Users/joschavonhein/Workspace/Condor/data/nycTaxiRides.gz";
 //        this.dataFilePath = "EDADS/Data/nycTaxiRides.gz";
         this.throughput = throughput;
         this.gaps = new ArrayList<>();

@@ -6,6 +6,8 @@ import de.tub.dima.condor.benchmark.sources.utils.stratifiers.NYCStratifier;
 import de.tub.dima.condor.benchmark.sources.utils.NYCTimestampsAndWatermarks;
 import de.tub.dima.condor.benchmark.throughputUtils.ParallelThroughputLogger;
 import de.tub.dima.condor.core.synopsis.Sketches.CountMinSketch;
+import de.tub.dima.condor.core.synopsis.StratifiedSynopsisWrapper;
+import de.tub.dima.condor.core.synopsis.Synopsis;
 import de.tub.dima.condor.core.synopsis.WindowedSynopsis;
 import de.tub.dima.condor.flinkScottyConnector.processor.SynopsisBuilder;
 import de.tub.dima.condor.flinkScottyConnector.processor.configs.BuildConfiguration;
@@ -18,6 +20,8 @@ import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
+
+import java.io.Serializable;
 
 /**
  * Created by Rudi Poepsel Lemaitre.
@@ -49,11 +53,8 @@ public class NYCTaxiStratified {
 		final SingleOutputStreamOperator<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> timestamped = messageStream
 				.assignTimestampsAndWatermarks(new NYCTimestampsAndWatermarks());
 
-		// We want to build the count-min sketch based on the value of field 1 (taxiId)
-		SingleOutputStreamOperator<Long> inputStream = timestamped.map(new NYCExtractKeyField(1)).returns(Long.class);
-
 		// Measure and report the throughput
-		inputStream.flatMap(new ParallelThroughputLogger<>(1000, jobName));
+		final SingleOutputStreamOperator<Tuple11<Long, Long, Long, Boolean, Long, Long, Double, Double, Double, Double, Short>> inputStream = timestamped.flatMap(new ParallelThroughputLogger<>(1000, jobName));
 
 		// Set up other configuration parameters
 		NYCStratifier stratificationKeyExtractor = new NYCStratifier(stratification);
@@ -64,7 +65,7 @@ public class NYCTaxiStratified {
 		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism, stratificationKeyExtractor);
 
 		// Build the stratified synopses
-		SingleOutputStreamOperator<WindowedSynopsis<CountMinSketch>> synopsesStream = SynopsisBuilder.build(config);
+		final SingleOutputStreamOperator<StratifiedSynopsisWrapper<Serializable, WindowedSynopsis<Synopsis>>> synopsesStream = SynopsisBuilder.buildStratified(config);
 
 		synopsesStream.addSink(new SinkFunction() {
 			@Override

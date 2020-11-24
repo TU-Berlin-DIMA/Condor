@@ -11,6 +11,7 @@ import de.tub.dima.condor.flinkScottyConnector.processor.merge.MergePreAggregate
 import de.tub.dima.condor.flinkScottyConnector.processor.merge.NonMergeableSynopsisUnifier;
 import de.tub.dima.condor.flinkScottyConnector.processor.merge.UnifyToManager;
 import de.tub.dima.condor.flinkScottyConnector.processor.utils.sampling.ConvertToSample;
+import de.tub.dima.condor.flinkScottyConnector.processor.utils.sampling.ConvertToStratifiedSample;
 import de.tub.dima.scotty.core.AggregateWindow;
 import de.tub.dima.scotty.core.windowType.SlidingWindow;
 import de.tub.dima.scotty.core.windowType.TumblingWindow;
@@ -51,8 +52,8 @@ public class SynopsisBuilder {
      * @return          The synopsis stream wrapped in the WindowedSynopsis class (contains additional Window Information)
      * @throws Exception
      */
-    public static <S extends Synopsis, SM extends NonMergeableSynopsisManager, M extends NonMergeableSynopsisManager, T, Key extends Serializable, Value> SingleOutputStreamOperator<WindowedSynopsis<S>> build
-            (BuildConfiguration<S , SM , M , T, Key , Value> config) throws Exception {
+    public static <S extends Synopsis> SingleOutputStreamOperator<WindowedSynopsis<S>> build
+            (BuildConfiguration config) throws Exception {
 
         if(config.stratificationKeyExtractor == null){ // Stratified
             if (config.isForceBucketing() && config.windows.length == 1 && config.windows[0] instanceof SlidingWindow){
@@ -80,8 +81,8 @@ public class SynopsisBuilder {
      * @return          The stratified synopsis stream wrapped in the StatifiedSynopsisWrapper
      * @throws Exception
      */
-    public static <S extends Synopsis, SM extends NonMergeableSynopsisManager, M extends NonMergeableSynopsisManager, T, Key extends Serializable, Value> SingleOutputStreamOperator<StratifiedSynopsisWrapper<Key, WindowedSynopsis<S>>> buildStratified
-            (BuildConfiguration<S , SM , M , T, Key , Value> config) throws Exception {
+    public static <S extends Synopsis, Key extends Serializable> SingleOutputStreamOperator<StratifiedSynopsisWrapper<Key, WindowedSynopsis<S>>> buildStratified
+    (BuildConfiguration config) throws Exception {
 
         if(config.stratificationKeyExtractor != null){ // Stratified
             if(config.windows[0] instanceof TumblingWindow && config.windows.length == 1) {
@@ -98,15 +99,14 @@ public class SynopsisBuilder {
     }
 
 
-    private static <S extends Synopsis, SM extends NonMergeableSynopsisManager, M extends NonMergeableSynopsisManager, T, Key extends Serializable, Value> SingleOutputStreamOperator<StratifiedSynopsisWrapper<Key, WindowedSynopsis<S>>>
-    buildFlinkStratified(BuildConfiguration<S, SM, M, T, Key, Value> config){
+    private static <S extends Synopsis, Key extends Serializable, Value> SingleOutputStreamOperator<StratifiedSynopsisWrapper<Key, WindowedSynopsis<S>>>
+    buildFlinkStratified(BuildConfiguration config){
 
         KeyedStream<Tuple2<Key, Value>, Tuple> keyBy;
         if(SamplerWithTimestamps.class.isAssignableFrom(config.synopsisClass)){
             keyBy = config.inputStream
-                    .process(new ConvertToSample()).setParallelism(config.parallelism)
-                    // .assignTimestampsAndWatermarks(new SampleTimeStampExtractor()) // TODO: potentially needed
-                    .map(new AddParallelismIndex()).setParallelism(config.parallelism)
+                    .map(config.stratificationKeyExtractor).setParallelism(config.parallelism)
+                    .process(new ConvertToStratifiedSample()).setParallelism(config.parallelism)
                     .keyBy(0);
         } else {
             keyBy = config.inputStream
@@ -149,8 +149,8 @@ public class SynopsisBuilder {
 
         if (SamplerWithTimestamps.class.isAssignableFrom(config.synopsisClass)){
             keyedStream = config.inputStream
-                    .process(new ConvertToSample()).setParallelism(config.parallelism)
-                    .map(new AddParallelismIndex()).setParallelism(config.parallelism)
+                    .map(config.stratificationKeyExtractor).setParallelism(config.parallelism)
+                    .process(new ConvertToStratifiedSample()).setParallelism(config.parallelism)
                     .keyBy(0);
 
             processingFunction = new KeyedScottyWindowOperator<>(new SynopsisFunction(true, config.synopsisClass, config.synParams));
