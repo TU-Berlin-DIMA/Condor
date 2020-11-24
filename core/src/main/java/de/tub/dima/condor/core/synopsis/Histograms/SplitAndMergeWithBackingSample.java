@@ -1,7 +1,7 @@
 package de.tub.dima.condor.core.synopsis.Histograms;
 
 import de.tub.dima.condor.core.synopsis.MergeableSynopsis;
-import de.tub.dima.condor.core.synopsis.Sampling.FlinkVersion.ReservoirSampler;
+import de.tub.dima.condor.core.synopsis.Sampling.ReservoirSampler;
 import com.esotericsoftware.minlog.Log;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.slf4j.Logger;

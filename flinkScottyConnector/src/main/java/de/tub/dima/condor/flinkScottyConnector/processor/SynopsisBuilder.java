@@ -53,9 +53,6 @@ public class SynopsisBuilder {
     public static <S extends Synopsis> SingleOutputStreamOperator<WindowedSynopsis<S>> build
             (StreamExecutionEnvironment env, BuildConfiguration config) throws Exception {
 
-        env.setParallelism(config.parallelism);
-        // env.setMaxParallelism(config.parallelism);
-
         if(config.stratificationKeyExtractor == null){ // Stratified
             if (config.isForceBucketing() && config.windows.length == 1 && config.windows[0] instanceof SlidingWindow){
                 return buildSlidingFlink(config);
@@ -86,8 +83,6 @@ public class SynopsisBuilder {
     public static <S extends Synopsis, Key extends Serializable> SingleOutputStreamOperator<StratifiedSynopsisWrapper<Key, WindowedSynopsis<S>>> buildStratified
             (StreamExecutionEnvironment env, BuildConfiguration config) throws Exception {
 
-        env.setParallelism(config.parallelism);
-
         if(config.stratificationKeyExtractor != null){ // Stratified
             if(config.windows[0] instanceof TumblingWindow && config.windows.length == 1) {
 
@@ -107,13 +102,14 @@ public class SynopsisBuilder {
 
         KeyedStream<Tuple2<Key, T>, Tuple> keyBy;
         if(SamplerWithTimestamps.class.isAssignableFrom(config.synopsisClass)){
-            keyBy = config.inputStream.process(new ConvertToSample())
+            keyBy = config.inputStream
+                    .process(new ConvertToSample()).setParallelism(config.parallelism)
                     // .assignTimestampsAndWatermarks(new SampleTimeStampExtractor()) // TODO: potentially needed
-                    .map(new AddParallelismIndex())
+                    .map(new AddParallelismIndex()).setParallelism(config.parallelism)
                     .keyBy(0);
         } else {
             keyBy = config.inputStream
-                    .map(config.stratificationKeyExtractor)
+                    .map(config.stratificationKeyExtractor).setParallelism(config.parallelism)
                     .keyBy(0);
         }
 
@@ -137,7 +133,7 @@ public class SynopsisBuilder {
                             }
                         });
                     }
-                }).returns(new TypeHint<StratifiedSynopsisWrapper<Key, WindowedSynopsis<S>>>() {});
+                }).setParallelism(config.parallelism).returns(new TypeHint<StratifiedSynopsisWrapper<Key, WindowedSynopsis<S>>>() {});
     }
 
     private static <S extends Synopsis, Key extends Serializable, Value> SingleOutputStreamOperator<StratifiedSynopsisWrapper<Key, WindowedSynopsis<S>>> buildScottyStratified
@@ -151,13 +147,15 @@ public class SynopsisBuilder {
         KeyedScottyWindowOperator<Tuple, Tuple2<Key, Value>, S> processingFunction;
 
         if (SamplerWithTimestamps.class.isAssignableFrom(config.synopsisClass)){
-            keyedStream = config.inputStream.process(new ConvertToSample())
-                    .map(new AddParallelismIndex())
+            keyedStream = config.inputStream
+                    .process(new ConvertToSample()).setParallelism(config.parallelism)
+                    .map(new AddParallelismIndex()).setParallelism(config.parallelism)
                     .keyBy(0);
 
             processingFunction = new KeyedScottyWindowOperator<>(new SynopsisFunction(true, config.synopsisClass, config.synParams));
         }else{
-            keyedStream = config.inputStream.map(config.stratificationKeyExtractor)
+            keyedStream = config.inputStream
+                    .map(config.stratificationKeyExtractor).setParallelism(config.parallelism)
                     .keyBy(0);
 
             if (!MergeableSynopsis.class.isAssignableFrom(config.synopsisClass)){ // Non-Mergeable Synopsis!
@@ -179,14 +177,15 @@ public class SynopsisBuilder {
             processingFunction.addWindow(window);
         }
 
-        return keyedStream.process(processingFunction)
+        return keyedStream
+                .process(processingFunction).setParallelism(config.parallelism)
                 .map(new MapFunction<AggregateWindow<S>, StratifiedSynopsisWrapper<Key, WindowedSynopsis<S>>>() {
                     @Override
                     public StratifiedSynopsisWrapper<Key, WindowedSynopsis<S>> map(AggregateWindow<S> value) throws Exception {
                         StratifiedSynopsis<Key> stratifiedSynopsis = (StratifiedSynopsis) value.getAggValues().get(0);
                         return new StratifiedSynopsisWrapper(stratifiedSynopsis.getPartitionValue(), new WindowedSynopsis(value.getAggValues().get(0), value.getStart(), value.getEnd()));
                     }
-                });
+                }).setParallelism(config.parallelism);
 
     }
 
@@ -199,16 +198,19 @@ public class SynopsisBuilder {
         if(!mergeable){
 
             // Non-Mergeable with miniBatchSize (!)
-            keyBy = config.inputStream.process(new OrderAndIndex(config.miniBatchSize, config.parallelism)).setParallelism(1)
+            keyBy = config.inputStream
+                    .process(new OrderAndIndex(config.miniBatchSize, config.parallelism)).setParallelism(1)
                     .keyBy(0);
 
         } else if (SamplerWithTimestamps.class.isAssignableFrom(config.synopsisClass)) {
-            keyBy = rescaled.process(new ConvertToSample())
+            keyBy = rescaled
+                    .process(new ConvertToSample()).setParallelism(config.parallelism)
                     // .assignTimestampsAndWatermarks(new SampleTimeStampExtractor()) // TODO: potentially needed
-                    .map(new AddParallelismIndex())
+                    .map(new AddParallelismIndex()).setParallelism(config.parallelism)
                     .keyBy(0);
         } else {
-            keyBy = rescaled.map(new AddParallelismIndex())
+            keyBy = rescaled
+                    .map(new AddParallelismIndex()).setParallelism(config.parallelism)
                     .keyBy(0);
         }
 
@@ -220,10 +222,10 @@ public class SynopsisBuilder {
 
         AggregateFunction synopsisFunction = mergeable
                 ? new SynopsisAggregator(config.synopsisClass, config.synParams)
-                : new NonMergeableSynopsisAggregator(config.miniBatchSize, config.synopsisClass, config.synParams); // TODO: potential error source (multiple possible constructors)
+                : new NonMergeableSynopsisAggregator(config.miniBatchSize, config.synopsisClass, config.synParams);
 
 
-        SingleOutputStreamOperator preAggregated = windowedStream.aggregate(synopsisFunction);
+        SingleOutputStreamOperator preAggregated = windowedStream.aggregate(synopsisFunction).setParallelism(config.parallelism);
 
 
         AllWindowedStream partialAggregate = window.getWindowMeasure() == WindowMeasure.Count
@@ -232,11 +234,9 @@ public class SynopsisBuilder {
 
 
         if (mergeable) {
-            // TODO: check whether the Typing below (MergeableSynopsis vs S) actually works || for Count: use this reduce function whithin another count window or use flatmap as in the original?
             return partialAggregate.reduce(new MergeSynopsis(), new AddWindowTimes())
                     .returns(new TypeHint<WindowedSynopsis<S>>() {});
         } else {
-            // TODO: check whether the NonMergeableSynopsisUnifier also works with the CountWindow!
             return partialAggregate.aggregate(new NonMergeableSynopsisUnifier(config.managerClass), new AddWindowTimes())
                     .returns(new TypeHint<WindowedSynopsis<NonMergeableSynopsisManager>>() {});
         }
@@ -250,18 +250,17 @@ public class SynopsisBuilder {
         DataStream<T> rescaled = config.inputStream.rescale();
         KeyedStream keyBy;
         if(!mergeable){
-
             // Non-Mergeable with miniBatchSize (!)
             keyBy = config.inputStream.process(new OrderAndIndex(config.miniBatchSize, config.parallelism)).setParallelism(1)
                     .keyBy(0);
 
         } else if (SamplerWithTimestamps.class.isAssignableFrom(config.synopsisClass)) {
-            keyBy = rescaled.process(new ConvertToSample())
+            keyBy = rescaled.process(new ConvertToSample()).setParallelism(config.parallelism)
                     // .assignTimestampsAndWatermarks(new SampleTimeStampExtractor()) // TODO: potentially needed
-                    .map(new AddParallelismIndex())
+                    .map(new AddParallelismIndex()).setParallelism(config.parallelism)
                     .keyBy(0);
         } else {
-            keyBy = rescaled.map(new AddParallelismIndex())
+            keyBy = rescaled.map(new AddParallelismIndex()).setParallelism(config.parallelism)
                     .keyBy(0);
         }
 
@@ -273,24 +272,23 @@ public class SynopsisBuilder {
 
         AggregateFunction synopsisFunction = mergeable
                 ? new SynopsisAggregator(config.synopsisClass, config.synParams)
-                : new NonMergeableSynopsisAggregator(config.miniBatchSize, config.synopsisClass, config.synParams); // TODO: potential error source (multiple possible constructors)
+                : new NonMergeableSynopsisAggregator(config.miniBatchSize, config.synopsisClass, config.synParams);
 
 
-        SingleOutputStreamOperator preAggregated = windowedStream.aggregate(synopsisFunction);
+        SingleOutputStreamOperator preAggregated = windowedStream.aggregate(synopsisFunction).setParallelism(config.parallelism);
 
 
         AllWindowedStream partialAggregate = window.getWindowMeasure() == WindowMeasure.Count
                 ? preAggregated.countWindowAll(config.parallelism)
                 : preAggregated.timeWindowAll(Time.milliseconds(window.getSize()), Time.milliseconds(window.getSlide()));
 
-
         if (mergeable) {
-            // TODO: check whether the Typing below (MergeableSynopsis vs S) actually works || for Count: use this reduce function whithin another count window or use flatmap as in the original?
-            return partialAggregate.reduce(new MergeSynopsis(), new AddWindowTimes())
+            return partialAggregate
+                    .reduce(new MergeSynopsis(), new AddWindowTimes()).setParallelism(1)
                     .returns(new TypeHint<WindowedSynopsis<S>>() {});
         } else {
-            // TODO: check whether the NonMergeableSynopsisUnifier also works with the CountWindow!
-            return partialAggregate.aggregate(new NonMergeableSynopsisUnifier(config.managerClass), new AddWindowTimes())
+            return partialAggregate
+                    .aggregate(new NonMergeableSynopsisUnifier(config.managerClass), new AddWindowTimes()).setParallelism(1)
                     .returns(new TypeHint<WindowedSynopsis<NonMergeableSynopsisManager>>() {});
         }
 
@@ -306,15 +304,17 @@ public class SynopsisBuilder {
 
         if (SamplerWithTimestamps.class.isAssignableFrom(config.synopsisClass)) {
 
-            keyedStream = rescaled.process(new ConvertToSample<>())
-                    .map(new AddParallelismIndex<>())
+            keyedStream = rescaled
+                    .process(new ConvertToSample<>()).setParallelism(config.parallelism)
+                    .map(new AddParallelismIndex<>()).setParallelism(config.parallelism)
                     .keyBy(0);
 
             processingFunction = new KeyedScottyWindowOperator<>(new SynopsisFunction(config.synopsisClass, config.synParams));
 
         } else {
 
-            keyedStream = rescaled.map(new AddParallelismIndex())
+            keyedStream = rescaled
+                    .map(new AddParallelismIndex()).setParallelism(config.parallelism)
                     .keyBy(0);
 
             if (InvertibleSynopsis.class.isAssignableFrom(config.synopsisClass)) {
@@ -335,10 +335,9 @@ public class SynopsisBuilder {
             processingFunction.addWindow(config.windows[i]);
         }
 
-        return keyedStream.process(processingFunction)
-            .flatMap(new MergePreAggregates(config.parallelism))
-            .setParallelism(1)
-            .map(new AddWindowTimesScotty());
+        return keyedStream.process(processingFunction).setParallelism(config.parallelism)
+            .flatMap(new MergePreAggregates(config.parallelism)).setParallelism(1)
+            .map(new AddWindowTimesScotty()).setParallelism(1);
     }
 
 
@@ -346,7 +345,8 @@ public class SynopsisBuilder {
 
         DataStream<T> inputStream = config.inputStream;
 
-        final KeyedStream<Tuple2<Integer, T>, Tuple> keyedStream = inputStream.process(new OrderAndIndex(config.miniBatchSize, config.parallelism)).setParallelism(1)
+        final KeyedStream<Tuple2<Integer, T>, Tuple> keyedStream = inputStream
+                .process(new OrderAndIndex(config.miniBatchSize, config.parallelism)).setParallelism(1)
                 .keyBy(0);
 
         KeyedScottyWindowOperator processingFunction = new KeyedScottyWindowOperator<>(new NonMergeableSynopsisFunction(config.synopsisClass, config.sliceManagerClass, config.synParams));
@@ -354,9 +354,10 @@ public class SynopsisBuilder {
             processingFunction.addWindow(config.windows[i]);
         }
 
-        return keyedStream.process(processingFunction)
+        return keyedStream
+                .process(processingFunction).setParallelism(config.parallelism)
                 .flatMap(new UnifyToManager<>(config.managerClass, config.parallelism)).setParallelism(1)
-                .map(new AddWindowTimesScotty());
+                .map(new AddWindowTimesScotty()).setParallelism(1);
     }
 
 
