@@ -19,6 +19,7 @@ import de.tub.dima.scotty.core.windowType.WindowMeasure;
 import de.tub.dima.scotty.flinkconnector.KeyedScottyWindowOperator;
 import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.common.typeinfo.TypeHint;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
@@ -97,7 +98,7 @@ public class SynopsisBuilder {
     }
 
 
-    public static <S extends Synopsis, SM extends NonMergeableSynopsisManager, M extends NonMergeableSynopsisManager, T, Key extends Serializable, Value> SingleOutputStreamOperator<StratifiedSynopsisWrapper<Key, WindowedSynopsis<S>>>
+    private static <S extends Synopsis, SM extends NonMergeableSynopsisManager, M extends NonMergeableSynopsisManager, T, Key extends Serializable, Value> SingleOutputStreamOperator<StratifiedSynopsisWrapper<Key, WindowedSynopsis<S>>>
     buildFlinkStratified(BuildConfiguration<S, SM, M, T, Key, Value> config){
 
         KeyedStream<Tuple2<Key, Value>, Tuple> keyBy;
@@ -109,7 +110,7 @@ public class SynopsisBuilder {
                     .keyBy(0);
         } else {
             keyBy = config.inputStream
-                    .map(config.stratificationKeyExtractor).setParallelism(config.parallelism).returns(new TypeHint<Tuple2<Key, Value>>() {})
+                    .map(config.stratificationKeyExtractor).setParallelism(config.parallelism)
                     .keyBy(0);
         }
 

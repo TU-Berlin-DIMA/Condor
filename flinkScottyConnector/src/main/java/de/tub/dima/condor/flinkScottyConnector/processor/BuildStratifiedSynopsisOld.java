@@ -3,6 +3,7 @@ package de.tub.dima.condor.flinkScottyConnector.processor;
 import de.tub.dima.condor.core.synopsis.*;
 import de.tub.dima.condor.core.synopsis.Sampling.SamplerWithTimestamps;
 import de.tub.dima.condor.core.synopsis.Sampling.TimestampedElement;
+import de.tub.dima.condor.core.synopsis.Sketches.CountMinSketch;
 import de.tub.dima.condor.flinkScottyConnector.processor.compute.flink.NonMergeableSynopsisAggregator;
 import de.tub.dima.condor.flinkScottyConnector.processor.compute.flink.SynopsisAggregator;
 import de.tub.dima.condor.flinkScottyConnector.processor.compute.scotty.CommutativeSynopsisFunction;
@@ -506,8 +507,6 @@ public final class BuildStratifiedSynopsisOld {
     public static <T extends Tuple, S extends MergeableSynopsis> SingleOutputStreamOperator<AggregateWindow<S>> scottyWindows(DataStream<T> inputStream, Window[] windows, int partitionField, Class<S> synopsisClass, Object... parameters) {
         return scottyWindows(inputStream, windows, partitionField, -1, synopsisClass, parameters);
     }
-
-
 
 
     public static class ConvertToSample<T extends Tuple> extends ProcessFunction<T, Tuple2<String, TimestampedElement>> {
