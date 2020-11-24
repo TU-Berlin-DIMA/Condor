@@ -57,10 +57,10 @@ Then you can use the library in your maven project.
 ```
 
 ### Writing your first Condor Job:
-You can use the demo package to write and compile your first Condor Synopsis-based Streaming Job. 
+You can use the `de.tub.dima.condor.demo` package to write and compile your first Condor Synopsis-based Streaming Job. 
 Just set up the SynopsisBasedStreamingJob main class and run it on your favorite IDE.
 
-Alternatively is possible to create a jar file with maven and submit it as a streaming job to a Flink cluster:
+Alternatively is possible to compile the job to a jar file with maven and submit it as a streaming job to a Flink cluster:
 
 `
 cd demo/
@@ -76,5 +76,28 @@ After initializing a Flink cluster:
 <FLINK-HOME>/bin/flink run <CONDOR-HOME>/demo/target/demo-0.1.jar
 `
 
-### Running Benchmarking Examples
-TODO...
+### Running Benchmarking Examples:
+Condor provides multiple examples that we used to benchmark Condor's efficiency and performance. It is possible to run all the experiments locally on your favorite IDE.
+However, to run any of the benchmarking jobs in a cluster, set up the `dataFilePath` from all the data sources (`de.tub.dima.condor.benchmark.sources`) to a directory that is reachable for all nodes in the cluster. Then you need to compile the job to a jar file with maven and submit it as a streaming job to a Flink cluster:
+
+`
+cd benchmark/
+`
+
+`
+mvn clean package
+`
+
+After initializing a Flink cluster:
+
+`
+<FLINK-HOME>/bin/flink run <CONDOR-HOME>/benchmark/target/benchmark-0.1.jar <RUN-PARAMETERS>
+`
+
+Please check the javadoc on `de.tub.dima.condor.benchmark.Runner` to see a description of all run-parameters.
+
+Quick example, run `de.tub.dima.condor.benchmark.reliablility.CountMinAccuracy` test:
+
+`
+<FLINK-HOME>/bin/flink run <CONDOR-HOME>/benchmark/target/benchmark-0.1.jar cma -p <DESIRED-PARALLELISM> -o <OUTPUT-DIRECTORY>
+`
