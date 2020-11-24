@@ -52,7 +52,7 @@ public class ReservoirSamplingAccuracy {
 		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);
 
 		// Build the synopses
-		SingleOutputStreamOperator<WindowedSynopsis<ReservoirSampler>> synopsesStream = SynopsisBuilder.build(env, config);
+		SingleOutputStreamOperator<WindowedSynopsis<ReservoirSampler>> synopsesStream = SynopsisBuilder.build(config);
 
 		// Compute the average passenger count
 		SingleOutputStreamOperator<Double> result = synopsesStream.flatMap(new queryAvgPassengerCount());

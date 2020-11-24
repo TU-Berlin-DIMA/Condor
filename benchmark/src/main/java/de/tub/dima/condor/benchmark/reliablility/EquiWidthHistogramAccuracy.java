@@ -53,7 +53,7 @@ public class EquiWidthHistogramAccuracy {
         BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);
 
         // Build the synopses
-        SingleOutputStreamOperator<WindowedSynopsis<EquiWidthHistogram>> synopsesStream = SynopsisBuilder.build(env, config);
+        SingleOutputStreamOperator<WindowedSynopsis<EquiWidthHistogram>> synopsesStream = SynopsisBuilder.build(config);
 
         //  Get the number of taxi rides with start longitude between [−73.991119, −73.965118]
 		SingleOutputStreamOperator<Integer> result = synopsesStream.flatMap(new queryBucketCounts());

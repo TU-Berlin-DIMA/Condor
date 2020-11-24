@@ -55,7 +55,7 @@ public class HaarWaveletsAccuracy {
 		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism, miniBatchSize, null, managerClass);
 
 		// Build the synopses
-		SingleOutputStreamOperator<WindowedSynopsis<DistributedWaveletsManager>> synopsesStream = SynopsisBuilder.build(env, config);
+		SingleOutputStreamOperator<WindowedSynopsis<DistributedWaveletsManager>> synopsesStream = SynopsisBuilder.build(config);
 
 		//  Compute the range sums of the passengers counts for every 10,000 entries
 		SingleOutputStreamOperator<Double> result = synopsesStream.flatMap(new rangeSumPassengerCount());

@@ -57,7 +57,7 @@ public class EquiWidthHistogramSlicing {
         BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);
 
         // Build the synopses
-        SingleOutputStreamOperator<WindowedSynopsis<EquiWidthHistogram>> synopsesStream = SynopsisBuilder.build(env, config);
+        SingleOutputStreamOperator<WindowedSynopsis<EquiWidthHistogram>> synopsesStream = SynopsisBuilder.build(config);
 
         synopsesStream.addSink(new SinkFunction() {
             @Override

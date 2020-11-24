@@ -21,6 +21,7 @@ import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.datastream.*;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.windowing.AllWindowFunction;
@@ -44,14 +45,13 @@ public class SynopsisBuilder {
      * Main function to create a normal (not stratified) synopsis stream. Depending on which of the optional parameters in the BuildConfiguration
      * are set, the pipeline will be constructed differently. See the documentation of the BuildConfiguration for more details.
      *
-     * @param env       Execution Environment
      * @param config    Configuration
      * @param <S>       The Synopsis Class
      * @return          The synopsis stream wrapped in the WindowedSynopsis class (contains additional Window Information)
      * @throws Exception
      */
-    public static <S extends Synopsis> SingleOutputStreamOperator<WindowedSynopsis<S>> build
-            (StreamExecutionEnvironment env, BuildConfiguration config) throws Exception {
+    public static <S extends Synopsis, SM extends NonMergeableSynopsisManager, M extends NonMergeableSynopsisManager, T, Key extends Serializable, Value> SingleOutputStreamOperator<WindowedSynopsis<S>> build
+            (BuildConfiguration<S , SM , M , T, Key , Value> config) throws Exception {
 
         if(config.stratificationKeyExtractor == null){ // Stratified
             if (config.isForceBucketing() && config.windows.length == 1 && config.windows[0] instanceof SlidingWindow){
@@ -74,14 +74,13 @@ public class SynopsisBuilder {
      * Main function to create a stratified synopsis stream. Depending on which of the optional parameters in the BuildConfiguration
      * are set, the pipeline will be constructed differently. See the documentation of the BuildConfiguration for more details.
      *
-     * @param env       Execution Environment
      * @param config    Configuration
      * @param <S>       The Synopsis Class
      * @return          The stratified synopsis stream wrapped in the StatifiedSynopsisWrapper
      * @throws Exception
      */
-    public static <S extends Synopsis, Key extends Serializable> SingleOutputStreamOperator<StratifiedSynopsisWrapper<Key, WindowedSynopsis<S>>> buildStratified
-            (StreamExecutionEnvironment env, BuildConfiguration config) throws Exception {
+    public static <S extends Synopsis, SM extends NonMergeableSynopsisManager, M extends NonMergeableSynopsisManager, T, Key extends Serializable, Value> SingleOutputStreamOperator<StratifiedSynopsisWrapper<Key, WindowedSynopsis<S>>> buildStratified
+            (BuildConfiguration<S , SM , M , T, Key , Value> config) throws Exception {
 
         if(config.stratificationKeyExtractor != null){ // Stratified
             if(config.windows[0] instanceof TumblingWindow && config.windows.length == 1) {
@@ -98,9 +97,10 @@ public class SynopsisBuilder {
     }
 
 
-    private static <T, S extends Synopsis, Key extends Serializable> SingleOutputStreamOperator<StratifiedSynopsisWrapper<Key, WindowedSynopsis<S>>> buildFlinkStratified(BuildConfiguration config){
+    public static <S extends Synopsis, SM extends NonMergeableSynopsisManager, M extends NonMergeableSynopsisManager, T, Key extends Serializable, Value> SingleOutputStreamOperator<StratifiedSynopsisWrapper<Key, WindowedSynopsis<S>>>
+    buildFlinkStratified(BuildConfiguration<S, SM, M, T, Key, Value> config){
 
-        KeyedStream<Tuple2<Key, T>, Tuple> keyBy;
+        KeyedStream<Tuple2<Key, Value>, Tuple> keyBy;
         if(SamplerWithTimestamps.class.isAssignableFrom(config.synopsisClass)){
             keyBy = config.inputStream
                     .process(new ConvertToSample()).setParallelism(config.parallelism)
@@ -109,7 +109,7 @@ public class SynopsisBuilder {
                     .keyBy(0);
         } else {
             keyBy = config.inputStream
-                    .map(config.stratificationKeyExtractor).setParallelism(config.parallelism)
+                    .map(config.stratificationKeyExtractor).setParallelism(config.parallelism).returns(new TypeHint<Tuple2<Key, Value>>() {})
                     .keyBy(0);
         }
 

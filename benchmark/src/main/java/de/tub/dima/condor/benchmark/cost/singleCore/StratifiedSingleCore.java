@@ -1,12 +1,7 @@
 package de.tub.dima.condor.benchmark.cost.singleCore;
 
-import de.tub.dima.condor.core.synopsis.Histograms.EquiWidthHistogram;
-import de.tub.dima.condor.core.synopsis.MergeableSynopsis;
-import de.tub.dima.condor.core.synopsis.Sampling.ReservoirSampler;
 import de.tub.dima.condor.core.synopsis.Sketches.CountMinSketch;
-import de.tub.dima.condor.core.synopsis.StratifiedSynopsis;
 import de.tub.dima.condor.core.synopsis.Synopsis;
-import de.tub.dima.condor.core.synopsis.Wavelets.WaveletSynopsis;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.util.XORShiftRandom;
 
@@ -14,10 +9,8 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.zip.GZIPInputStream;
 
-/*java -jar target/benchmark-0.1.jar ...parameters*/
-
 public class StratifiedSingleCore {
-    public static void run(String synopsisType, String outputDir, boolean stratified) throws Exception {
+    public static void run(String outputDir) throws Exception {
         // Please set up the correct path to the uniformTimestamped.gz
         String dataFilePath = "<PATH-TO>/uniformTimestamped.gz";
 
@@ -64,7 +57,7 @@ public class StratifiedSingleCore {
 
             System.out.println(result);
             System.out.println("Number of records: " + numRecords);
-            out.append("\nSource: Uniform, Synopsis: " + synopsisType);
+            out.append("\nSource: Uniform, Synopsis: CountMinSketch");
             out.append("\n" + result);
             out.append("\nNumber of records: " + numRecords);
             out.append("\n--------------------------------------------------------------------");

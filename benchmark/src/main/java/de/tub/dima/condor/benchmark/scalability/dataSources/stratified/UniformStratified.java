@@ -62,7 +62,7 @@ public class UniformStratified {
 		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism, stratificationKeyExtractor);
 
 		// Build the stratified synopses
-		SingleOutputStreamOperator<WindowedSynopsis<CountMinSketch>> synopsesStream = SynopsisBuilder.build(env, config);
+		SingleOutputStreamOperator<WindowedSynopsis<CountMinSketch>> synopsesStream = SynopsisBuilder.build(config);
 
 		synopsesStream.addSink(new SinkFunction() {
 			@Override

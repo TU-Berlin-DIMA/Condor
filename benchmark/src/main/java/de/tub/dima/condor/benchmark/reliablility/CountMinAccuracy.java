@@ -53,7 +53,7 @@ public class CountMinAccuracy {
 		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);
 
 		// Build the synopses
-		SingleOutputStreamOperator<WindowedSynopsis<CountMinSketch>> synopsesStream = SynopsisBuilder.build(env, config);
+		SingleOutputStreamOperator<WindowedSynopsis<CountMinSketch>> synopsesStream = SynopsisBuilder.build(config);
 
 		// Query the estimated number of entries in the dataset of each taxiID between [2013000001, 2013013223]
 		SingleOutputStreamOperator<Integer> result = synopsesStream.flatMap(new queryFrequency());

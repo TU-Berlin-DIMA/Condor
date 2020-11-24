@@ -59,7 +59,7 @@ public class QueryTimestampedStratified {
 		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism, stratificationKeyExtractor);
 
 		// Build the stratified synopses
-		SingleOutputStreamOperator<StratifiedSynopsisWrapper<Integer, WindowedSynopsis<CountMinSketch>>> synopsesStream = SynopsisBuilder.buildStratified(env, config);
+		SingleOutputStreamOperator<StratifiedSynopsisWrapper<Integer, WindowedSynopsis<CountMinSketch>>> synopsesStream = SynopsisBuilder.buildStratified(config);
 
 		// Initialize timestamped and stratified query stream
 		if (queryThroughput == -1){

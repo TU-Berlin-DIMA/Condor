@@ -55,7 +55,7 @@ public class QueryTimestamped {
 		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);
 
 		// Build the synopses
-		SingleOutputStreamOperator<WindowedSynopsis<CountMinSketch>> synopsesStream = SynopsisBuilder.build(env, config);
+		SingleOutputStreamOperator<WindowedSynopsis<CountMinSketch>> synopsesStream = SynopsisBuilder.build(config);
 
 		// Initialize timestamped query stream
 		if (queryThroughput == -1){

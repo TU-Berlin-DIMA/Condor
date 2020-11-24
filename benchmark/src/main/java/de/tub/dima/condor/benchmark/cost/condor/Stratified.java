@@ -6,6 +6,7 @@ import de.tub.dima.condor.benchmark.sources.utils.SyntheticTimestampsAndWatermar
 import de.tub.dima.condor.benchmark.sources.utils.stratifiers.SyntheticStratifier;
 import de.tub.dima.condor.benchmark.throughputUtils.ParallelThroughputLogger;
 import de.tub.dima.condor.core.synopsis.Sketches.CountMinSketch;
+import de.tub.dima.condor.core.synopsis.StratifiedSynopsisWrapper;
 import de.tub.dima.condor.core.synopsis.WindowedSynopsis;
 import de.tub.dima.condor.flinkScottyConnector.processor.SynopsisBuilder;
 import de.tub.dima.condor.flinkScottyConnector.processor.configs.BuildConfiguration;
@@ -62,7 +63,7 @@ public class Stratified {
 		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism, stratificationKeyExtractor);
 
 		// Build the stratified synopses
-		SingleOutputStreamOperator<WindowedSynopsis<CountMinSketch>> synopsesStream = SynopsisBuilder.build(env, config);
+		SingleOutputStreamOperator<StratifiedSynopsisWrapper<Integer, WindowedSynopsis<CountMinSketch>>> synopsesStream= SynopsisBuilder.buildStratified(config);
 
 		synopsesStream.addSink(new SinkFunction() {
 			@Override

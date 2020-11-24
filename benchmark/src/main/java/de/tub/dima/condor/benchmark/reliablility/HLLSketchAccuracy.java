@@ -52,7 +52,7 @@ public class HLLSketchAccuracy {
 		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);
 
 		// Build the synopses
-		SingleOutputStreamOperator<WindowedSynopsis<HyperLogLogSketch>> synopsesStream = SynopsisBuilder.build(env, config);
+		SingleOutputStreamOperator<WindowedSynopsis<HyperLogLogSketch>> synopsesStream = SynopsisBuilder.build(config);
 
 		// Predict the number of distinct taxiID’s
 		SingleOutputStreamOperator<Long> result = synopsesStream.flatMap(new countDistinct());

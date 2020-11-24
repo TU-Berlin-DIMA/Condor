@@ -64,7 +64,7 @@ public class HaarWaveletsSlicing {
 		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism, miniBatchSize, sliceManagerClass, managerClass);
 
 		// Build the synopses
-		SingleOutputStreamOperator<WindowedSynopsis<DistributedWaveletsManager>> synopsesStream = SynopsisBuilder.build(env, config);
+		SingleOutputStreamOperator<WindowedSynopsis<DistributedWaveletsManager>> synopsesStream = SynopsisBuilder.build(config);
 
 		synopsesStream.addSink(new SinkFunction() {
 			@Override
