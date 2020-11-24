@@ -57,7 +57,7 @@ Then you can use the library in your maven project.
 ```
 
 ### Writing your first Condor Job:
-You can use the ```java de.tub.dima.condor.demo``` package to write and compile your first Condor Synopsis-based Streaming Job. 
+You can use the `de.tub.dima.condor.demo` package to write and compile your first Condor Synopsis-based Streaming Job. 
 Just set up the SynopsisBasedStreamingJob main class and run it on your favorite IDE.
 
 Alternatively is possible to compile the job to a jar file with maven and submit it as a streaming job to a Flink cluster:
