@@ -4,13 +4,13 @@ This repository provides Condor, a framework that allows for the specification o
 
 ### Features:
 - Synopsis generalization as aggregate window operators.
-- High performance synopsis maintanence and evaluation. 
-- Linear scalelability to the number of available cores in the system.
+- High performance synopsis maintenance and evaluation. 
+- Linear scalability to the number of available cores in the system.
 - Allows parallel computation for Samples, Histograms, Wavelets, and Sketches.
 - Provide a collection of 12 synopsis representatives. 
-- Simple API to implement own user-defined synopses.
+- Simple API to implement user-defined synopses.
 - Support for Bucketing and general stream slicing as window processing strategies.
-- Stable performance in scenarios with high number of concurrent windows.
+- Stable performance in scenarios with a high number of concurrent windows.
 - Connector for [Apache Flink](https://flink.apache.org/).
 - Connector for [Scotty Window Processor](https://github.com/TU-Berlin-DIMA/scotty-window-processor/).
 
@@ -32,10 +32,10 @@ SingleOutputStreamOperator<QueryResult<Integer, Integer>> resultStream = Approxi
 ```
 
 ### Setup:
-Condor has dependencies to Scotty Window Processor, which is not publically available in the maven repository. Please make sure to intall it first by building it from source.
-Scotty's install guide can be found [here](https://github.com/TU-Berlin-DIMA/scotty-window-processor/). 
+Condor has dependencies to Scotty Window Processor, which is not publically available in the maven repository. Please make sure to install it first by building it from source.
+You can find Scotty's install guide [here](https://github.com/TU-Berlin-DIMA/scotty-window-processor/). 
 
-Condor's maven package is currently not publically available.
+Condor's maven package is currently not publicly available.
 Therefore we have to build it from source:
 
 `
@@ -60,7 +60,7 @@ Then you can use the library in your maven project.
 You can use the demo package to write and compile your first Condor Synopsis-based Streaming Job. 
 Just set up the SynopsisBasedStreamingJob main class and run it on your favorite IDE.
 
-Alternativelly is possible to create a jar file with maven and submit it as a streaming job to a Flink cluster:
+Alternatively is possible to create a jar file with maven and submit it as a streaming job to a Flink cluster:
 
 `
 cd demo/
@@ -70,11 +70,11 @@ cd demo/
 mvn clean package
 `
 
-After inializing a Flink cluster:
+After initializing a Flink cluster:
 
 `
 <FLINK-HOME>/bin/flink run <CONDOR-HOME>/demo/target/demo-0.1.jar
 `
 
-### Runnning Benchmarking Examples
+### Running Benchmarking Examples
 TODO...
