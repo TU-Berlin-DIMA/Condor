@@ -27,12 +27,12 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 /**
  * Created by Rudi Poepsel Lemaitre.
  */
-public class Stratified {
+public class StratifiedCountMin {
 	public static void run(int parallelism, int targetThroughput) throws Exception {
 		// We set the stratification degree to be the same as the parallelism. However, feel free to change it!
 		int stratification = parallelism;
 
-		String jobName = "Stratified Synopses COST test  "+parallelism;
+		String jobName = "StratifiedCountMin Synopses COST test  "+parallelism;
 		System.out.println(jobName);
 
 		// Set up the streaming execution Environment

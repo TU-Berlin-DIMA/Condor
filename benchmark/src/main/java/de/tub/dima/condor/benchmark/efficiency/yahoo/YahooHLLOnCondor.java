@@ -24,7 +24,7 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
  */
 public class YahooHLLOnCondor {
 	public static void run(int parallelism, long runtime, int targetThroughput) throws Exception {
-		String jobName = "Yahoo's HyperLogLog sketch on Condor efficiency test "+parallelism;
+		String jobName = "Yahoo's SketchHyperLogLog sketch on Condor efficiency test "+parallelism;
 		System.out.println(jobName);
 
 		// Set up the streaming execution Environment

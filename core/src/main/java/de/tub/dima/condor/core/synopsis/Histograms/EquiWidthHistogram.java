@@ -30,7 +30,6 @@ public class EquiWidthHistogram<T extends Number> extends StratifiedSynopsis imp
      * @param numBuckets number of Buckets
      * @throws IllegalArgumentException
      */
-
     public EquiWidthHistogram(Double lowerBound, Double upperBound, Integer numBuckets) throws IllegalArgumentException {
         if (lowerBound == null || upperBound == null || upperBound - lowerBound <= 0 || numBuckets <= 0){
             throw new IllegalArgumentException("lower bound has to be smaller than upper bound!");

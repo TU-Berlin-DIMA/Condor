@@ -28,7 +28,7 @@ public class YahooHLLOnCondorStratified {
 	public static void run(int parallelism, long runtime, int targetThroughput) throws Exception {
 		int stratification = parallelism;
 
-		String jobName = "Yahoo's HyperLogLog sketch on Condor - Stratified efficiency test "+parallelism;
+		String jobName = "Yahoo's SketchHyperLogLog sketch on Condor - StratifiedCountMin efficiency test "+parallelism;
 		System.out.println(jobName);
 
 		// Set up the streaming execution Environment

@@ -4,7 +4,8 @@ import de.tub.dima.condor.benchmark.sources.input.UniformDistributionSource;
 import de.tub.dima.condor.benchmark.sources.utils.SyntheticExtractKeyField;
 import de.tub.dima.condor.benchmark.sources.utils.SyntheticTimestampsAndWatermarks;
 import de.tub.dima.condor.benchmark.throughputUtils.ParallelThroughputLogger;
-import de.tub.dima.condor.core.synopsis.Sketches.CountMinSketch;
+import de.tub.dima.condor.core.synopsis.Wavelets.DistributedWaveletsManager;
+import de.tub.dima.condor.core.synopsis.Wavelets.WaveletSynopsis;
 import de.tub.dima.condor.core.synopsis.WindowedSynopsis;
 import de.tub.dima.condor.flinkScottyConnector.processor.SynopsisBuilder;
 import de.tub.dima.condor.flinkScottyConnector.processor.configs.BuildConfiguration;
@@ -21,21 +22,22 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 /**
  * Created by Rudi Poepsel Lemaitre.
  */
-public class Mergeable {
+public class Wavelet {
 	public static void run(int parallelism, int targetThroughput) throws Exception {
-		String jobName = "Mergeable Synopses COST test "+parallelism;
+		String jobName = "Order Based Synopses COST test " + parallelism;
 		System.out.println(jobName);
 
-		// Set up the streaming execution Environment
-		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+		// set up the streaming execution Environment
+		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+		env.getConfig().enableObjectReuse();
 
 		// Initialize Uniform DataSource
 		if(targetThroughput == -1){
 			// This is a parameter indicates the throughput per core that the input stream will try to achieve.
 			// However, it varies depending on the Hardware used. For our experiments we
 			// didn't saw any performance improvement beyond this value.
-			targetThroughput = 200000;
+			targetThroughput = 4000;
 		}
 		DataStream<Tuple3<Integer, Integer, Long>> messageStream = env
 				.addSource(new UniformDistributionSource(-1, targetThroughput));
@@ -50,14 +52,16 @@ public class Mergeable {
 		inputStream.flatMap(new ParallelThroughputLogger<Integer>(1000, jobName));
 
 		// Set up other configuration parameters
-		Class<CountMinSketch> synopsisClass = CountMinSketch.class;
-		Window[] windows = {new TumblingWindow(WindowMeasure.Time, 15000)};
-		Object[] synopsisParameters = new Object[]{65536, 5, 7L};
+		Class<WaveletSynopsis> synopsisClass = WaveletSynopsis.class;
+		Class<DistributedWaveletsManager> managerClass = DistributedWaveletsManager.class;
+		int miniBatchSize = parallelism * 10;
+		Window[] windows = {new TumblingWindow(WindowMeasure.Time, 25000)};
+		Object[] synopsisParameters = new Object[]{10000};
 
-		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);
+		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism, miniBatchSize, null, managerClass);
 
 		// Build the synopses
-		SingleOutputStreamOperator<WindowedSynopsis<CountMinSketch>> synopsesStream = SynopsisBuilder.build(config);
+		SingleOutputStreamOperator<WindowedSynopsis<DistributedWaveletsManager>> synopsesStream = SynopsisBuilder.build(config);
 
 		synopsesStream.addSink(new SinkFunction() {
 			@Override

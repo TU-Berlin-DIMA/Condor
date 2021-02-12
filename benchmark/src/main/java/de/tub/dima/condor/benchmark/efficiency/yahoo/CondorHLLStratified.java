@@ -28,7 +28,7 @@ public class CondorHLLStratified {
 	public static void run(int parallelism, long runtime, int targetThroughput) throws Exception {
 		int stratification = parallelism;
 
-		String jobName = "Condor Stratified HyperLogLog sketch efficiency test "+parallelism;
+		String jobName = "Condor StratifiedCountMin SketchHyperLogLog sketch efficiency test "+parallelism;
 		System.out.println(jobName);
 
 		// Set up the streaming execution Environment

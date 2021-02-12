@@ -14,7 +14,7 @@ import java.util.ArrayList;
 /**
  * Implementation of classical Cuckoo Filter sketch to estimate the the elements that were contained in a
  * datastream.
- * Tis implementation uses a family of pairwise independent hash functions to update the hash map of the
+ * This implementation uses a family of pairwise independent hash functions to update the hash map of the
  * sketch and has the limitation that are not suitable for applications that insert the same
  * item more than 2b times (b is the bucket size) because the error guarantees get lost.
  *

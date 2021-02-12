@@ -1,11 +1,7 @@
 package de.tub.dima.condor.benchmark;
 
-import de.tub.dima.condor.benchmark.cost.condor.Mergeable;
-import de.tub.dima.condor.benchmark.cost.condor.OrderBased;
-import de.tub.dima.condor.benchmark.cost.condor.Stratified;
-import de.tub.dima.condor.benchmark.cost.singleCore.MergeableSingleCore;
-import de.tub.dima.condor.benchmark.cost.singleCore.OrderBasedSingleCore;
-import de.tub.dima.condor.benchmark.cost.singleCore.StratifiedSingleCore;
+import de.tub.dima.condor.benchmark.cost.condor.*;
+import de.tub.dima.condor.benchmark.cost.singleCore.*;
 import de.tub.dima.condor.benchmark.efficiency.streamApprox.Parallelism;
 import de.tub.dima.condor.benchmark.efficiency.streamApprox.SampleSize;
 import de.tub.dima.condor.benchmark.efficiency.streamApprox.StratifiedSampling;
@@ -49,22 +45,69 @@ public class Runner {
         int stratification = parameterTool.getInt("stratification", parallelism);
         int nConcurrentWindows = parameterTool.getInt("windows", 100);
 
+        // Data-Paths - need to be correct in order for some tests to run
+        String uniformTimestampedDataPath = "/Users/joschavonhein/Data/EDADS/data/uniformTimestamped.gz";
+
         // cost
-        // cost condor
-        if (parameterTool.has("ccm"))
-            Mergeable.run(parallelism, targetThroughput);
-        if (parameterTool.has("cco"))
-            OrderBased.run(parallelism, targetThroughput);
-        if (parameterTool.has("ccs"))
-            Stratified.run(parallelism, targetThroughput);
+        // cost condor - arg-prefix 'cc'
+        if (parameterTool.has("cchbs"))
+            HistBarSplitting.run(parallelism, targetThroughput);
+        if (parameterTool.has("cchew"))
+            HistEquiWidth.run(parallelism, targetThroughput);
+        if (parameterTool.has("cchdd"))
+            HistWithDDSketch.run(parallelism, targetThroughput);
+        if (parameterTool.has("ccsbr"))
+            SamplerBiasedReservoir.run(parallelism, targetThroughput);
+        if (parameterTool.has("ccsfifo"))
+            SamplerFiFo.run(parallelism, targetThroughput);
+        if (parameterTool.has("ccsr"))
+            SamplerReservoir.run(parallelism, targetThroughput);
+        if (parameterTool.has("ccsbf"))
+            SketchBloomFilter.run(parallelism, targetThroughput);
+        if (parameterTool.has("ccscm"))
+            SketchCountMin.run(parallelism, targetThroughput);
+        if (parameterTool.has("ccscf"))
+            SketchCuckooFilter.run(parallelism, targetThroughput);
+        if (parameterTool.has("ccsdd"))
+            SketchDD.run(parallelism, targetThroughput);
+        if (parameterTool.has("ccsagm"))
+            SketchFastAGM.run(parallelism, targetThroughput);
+        if (parameterTool.has("ccshll"))
+            SketchHyperLogLog.run(parallelism, targetThroughput);
+        if (parameterTool.has("ccstratified"))
+            StratifiedCountMin.run(parallelism, targetThroughput);
+        if (parameterTool.has("ccwavelet"))
+            Wavelet.run(parallelism, targetThroughput);
 
         // Cost singleCore
-        if (parameterTool.has("cscm"))
-            MergeableSingleCore.run(outputDir);
-        if (parameterTool.has("csco"))
-            OrderBasedSingleCore.run(outputDir);
-        if (parameterTool.has("cscs"))
-            StratifiedSingleCore.run(outputDir);
+        if (parameterTool.has("cshbs"))
+            HistBarSplitSC.run(outputDir, uniformTimestampedDataPath);
+        if (parameterTool.has("cshew"))
+            HistEquiWidthSC.run(outputDir, uniformTimestampedDataPath);
+        if (parameterTool.has("cshdd"))
+            HistWithDDSC.run(outputDir, uniformTimestampedDataPath);
+        if (parameterTool.has("cssbr"))
+            SamplerBiasedReservoirSC.run(outputDir, uniformTimestampedDataPath);
+        if (parameterTool.has("cssfifo"))
+            SamplerFiFoSC.run(outputDir, uniformTimestampedDataPath);
+        if (parameterTool.has("cssr"))
+            SamplerReservoirSC.run(outputDir, uniformTimestampedDataPath);
+        if (parameterTool.has("cssbf"))
+            SketchBloomFilterSC.run(outputDir, uniformTimestampedDataPath);
+        if (parameterTool.has("csscm"))
+            SketchCountMinSC.run(outputDir, uniformTimestampedDataPath);
+        if (parameterTool.has("csscf"))
+            SketchCuckooFilterSC.run(outputDir, uniformTimestampedDataPath);
+        if (parameterTool.has("cssdd"))
+            SketchDDSC.run(outputDir, uniformTimestampedDataPath);
+        if (parameterTool.has("cssagm"))
+            SketchFastAGMSC.run(outputDir, uniformTimestampedDataPath);
+        if (parameterTool.has("csshll"))
+            SketchHLLSC.run(outputDir, uniformTimestampedDataPath);
+        if (parameterTool.has("csstratified"))
+            StratifiedCountMinSingleCore.run(outputDir, uniformTimestampedDataPath);
+        if (parameterTool.has("cswavelet"))
+            WaveletSingleCore.run(outputDir, uniformTimestampedDataPath);
 
         // efficiency
         // efficiency streamApprox
@@ -152,4 +195,6 @@ public class Runner {
         if (parameterTool.has("wgss"))
             GeneralStreamSlicing.run(parallelism, targetThroughput, nConcurrentWindows);
     }
+
+
 }

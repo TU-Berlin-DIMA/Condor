@@ -24,7 +24,7 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
  */
 public class CondorHLL {
 	public static void run(int parallelism, long runtime, int targetThroughput) throws Exception {
-		String jobName = "Condor HyperLogLog sketch efficiency test "+parallelism;
+		String jobName = "Condor SketchHyperLogLog sketch efficiency test "+parallelism;
 		System.out.println(jobName);
 
 		// Set up the streaming execution Environment

@@ -26,7 +26,7 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
  */
 public class StratifiedSampling {
 	public static void run(int parallelism, long runtime, int targetThroughput, int stratification) throws Exception {
-		String jobName = "Condor - Stratified Sampling efficiency test "+parallelism;
+		String jobName = "Condor - StratifiedCountMin Sampling efficiency test "+parallelism;
 		System.out.println(jobName);
 
 		// Set up the streaming execution Environment

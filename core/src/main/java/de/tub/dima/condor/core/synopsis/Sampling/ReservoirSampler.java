@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 /**
@@ -22,7 +23,7 @@ import java.util.ArrayList;
  * @author Rudi Poepsel Lemaitre
  */
 public class ReservoirSampler<T> extends StratifiedSynopsis implements CommutativeSynopsis<T>, Serializable {
-    private T sample[];
+    private T[] sample;
     private int sampleSize;
     private XORShiftRandom rand;
     private int processedElements;
@@ -34,6 +35,13 @@ public class ReservoirSampler<T> extends StratifiedSynopsis implements Commutati
      */
     public ReservoirSampler(Integer sampleSize) {
         this.sample = (T[]) new Object[sampleSize];
+        this.sampleSize = sampleSize;
+        this.rand = new XORShiftRandom();
+        this.processedElements = 0;
+    }
+
+    public ReservoirSampler(Class<T> clazz, Integer sampleSize){
+        this.sample = (T[]) Array.newInstance(clazz, sampleSize);
         this.sampleSize = sampleSize;
         this.rand = new XORShiftRandom();
         this.processedElements = 0;

@@ -3,6 +3,7 @@ package de.tub.dima.condor.core.synopsis.Histograms;
 import de.tub.dima.condor.core.synopsis.MergeableSynopsis;
 import de.tub.dima.condor.core.synopsis.Sampling.ReservoirSampler;
 import com.esotericsoftware.minlog.Log;
+import org.apache.commons.collections.comparators.NullComparator;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +11,9 @@ import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.TreeMap;
+import org.apache.commons.collections.comparators.NullComparator;
 
 /**
  * Class which maintains an error-bound equi-depth histogram in a streaming Environment using a backing sample.
@@ -22,6 +25,7 @@ import java.util.TreeMap;
  *
  * @author joschavonhein
  */
+@Deprecated // SplitAndMergeWithDDSketch does the same thing better
 public class SplitAndMergeWithBackingSample implements MergeableSynopsis, Serializable {
 
 
@@ -29,7 +33,7 @@ public class SplitAndMergeWithBackingSample implements MergeableSynopsis, Serial
     private TreeMap<Integer, Float> buckets; //
     private int rightBoundary; // rightmost boundary - inclusive
     private double totalFrequencies; //
-    private ReservoirSampler sample;
+    private ReservoirSampler<Integer> sample;
     private double countError; // with probability of at least getErrorMinProbability() this is the maximum error the counts of this approximate histogram varies from the true equi depth histogram
     private int sampleSize;
     private double c;
@@ -50,7 +54,8 @@ public class SplitAndMergeWithBackingSample implements MergeableSynopsis, Serial
         totalFrequencies = 0;
         this.countError = countError;
         this.sampleSize = sampleSize;
-        this.threshold = 3; // initially set the threshold to 3 (value it should have if there is only a single valu)
+        this.threshold = 3; // initially set the threshold to 3 (value it should have if there is only a single value)
+        sample = new ReservoirSampler<Integer>(Integer.class, sampleSize);
     }
 
     public double getErrorMinProbability() {
@@ -77,9 +82,11 @@ public class SplitAndMergeWithBackingSample implements MergeableSynopsis, Serial
      * @param input f0: value, f1: corresponding frequency
      */
     public void update(Tuple2<Integer, Float> input){
+
         totalFrequencies += input.f1;
         float binFrequency;
         int next = input.f0;
+        sample.update(next);
         // 1st step: add frequency to existing bin
         if (buckets.isEmpty()){ // special case for first input
             buckets.put(next, input.f1);
@@ -141,7 +148,6 @@ public class SplitAndMergeWithBackingSample implements MergeableSynopsis, Serial
      * The leftmost and rightmost boundary are an exception to this and are kept as they represent 100% accurate values.
      */
     private void equiDepthSampleCompute(){
-
         Integer[] sampleArray = (Integer[]) sample.getSample();
         int sampleSize = sample.getSampleSize(); // actual amount of values currently in the backing sample
         int actualNumBuckets = maxNumBuckets;
@@ -168,11 +174,17 @@ public class SplitAndMergeWithBackingSample implements MergeableSynopsis, Serial
      */
     private int medianForBucket(int leftBoundary, int rightBoundary){
         Integer[] sampleArray = (Integer[]) sample.getSample();
-        Arrays.sort(sampleArray);
-        int leftIndex = Arrays.binarySearch(sampleArray, leftBoundary);
-        int rightIndex = Arrays.binarySearch(sampleArray, rightBoundary);
+        Arrays.sort(sampleArray, new NullComparator());
+        int leftIndex = Arrays.binarySearch(sampleArray, leftBoundary, new NullComparator());
+        int rightIndex = Arrays.binarySearch(sampleArray, rightBoundary, new NullComparator());
+        if (leftIndex < 0)
+            leftIndex = (leftIndex+1)*-1;
+        if (rightIndex < 0)
+            rightIndex = (rightIndex+1)*-1;
+
         int bucketCount = rightIndex - leftIndex;
-        return sampleArray[rightIndex-bucketCount/2];
+        int medianIndex = (rightIndex-bucketCount/2) >= sampleSize ? sampleSize -1 : (rightIndex-bucketCount/2);
+        return sampleArray[medianIndex];
     }
 
     @Override
@@ -215,8 +227,8 @@ public class SplitAndMergeWithBackingSample implements MergeableSynopsis, Serial
     @Override
     public SplitAndMergeWithBackingSample merge(MergeableSynopsis other) {
         if (other instanceof SplitAndMergeWithBackingSample){
-
-            sample = sample.merge(((SplitAndMergeWithBackingSample) other).getSample());
+            ReservoirSampler<Integer> otherSample = ((SplitAndMergeWithBackingSample) other).getSample();
+            sample = sample.merge(otherSample);
             this.rightBoundary = this.rightBoundary < ((SplitAndMergeWithBackingSample) other).getRightBoundary()
                     ? ((SplitAndMergeWithBackingSample) other).getRightBoundary() : this.rightBoundary;
             int leftmostBoundary = buckets.firstKey() < ((SplitAndMergeWithBackingSample) other).getBuckets().firstKey()

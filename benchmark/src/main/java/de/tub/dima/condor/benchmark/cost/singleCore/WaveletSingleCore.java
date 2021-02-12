@@ -16,14 +16,14 @@ import java.util.zip.GZIPInputStream;
 
 /*java -jar target/benchmark-0.1.jar ...parameters*/
 
-public class OrderBasedSingleCore {
-    public static void run(String outputDir) throws Exception {
+public class WaveletSingleCore {
+    public static void run(String outputDir, String uniformTimestampedPath) throws Exception {
         // Please set up the correct path to the uniformTimestamped.gz
-        String dataFilePath = "<PATH-TO>/uniformTimestamped.gz";
+        String dataFilePath = uniformTimestampedPath;
 
         try {
 
-            PrintWriter out = new PrintWriter(new FileOutputStream(new File(outputDir + "/single-core.txt"), true), true);
+            PrintWriter out = new PrintWriter(new FileOutputStream(new File(outputDir + "/wavelet-single-core.txt"), true), true);
             String line;
             String result = "Throughput=";
             String numRecords = "";

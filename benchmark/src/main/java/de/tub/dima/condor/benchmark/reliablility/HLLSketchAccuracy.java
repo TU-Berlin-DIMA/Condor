@@ -26,7 +26,7 @@ import java.util.ArrayList;
  */
 public class HLLSketchAccuracy {
 	public static void run(int parallelism, String outputDir) throws Exception {
-		String jobName = "HyperLogLog sketch accuracy test "+parallelism;
+		String jobName = "SketchHyperLogLog sketch accuracy test "+parallelism;
 		System.out.println(jobName);
 
 		// set up the streaming execution Environment
