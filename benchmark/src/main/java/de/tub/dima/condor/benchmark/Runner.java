@@ -48,152 +48,158 @@ public class Runner {
         // Data-Paths - need to be correct in order for some tests to run
         String uniformTimestampedDataPath = "/Users/joschavonhein/Data/EDADS/data/uniformTimestamped.gz";
 
-        // cost
-        // cost condor - arg-prefix 'cc'
-        if (parameterTool.has("cchbs"))
-            HistBarSplitting.run(parallelism, targetThroughput);
-        if (parameterTool.has("cchew"))
-            HistEquiWidth.run(parallelism, targetThroughput);
-        if (parameterTool.has("cchdd"))
-            HistWithDDSketch.run(parallelism, targetThroughput);
-        if (parameterTool.has("ccsbr"))
-            SamplerBiasedReservoir.run(parallelism, targetThroughput);
-        if (parameterTool.has("ccsfifo"))
-            SamplerFiFo.run(parallelism, targetThroughput);
-        if (parameterTool.has("ccsr"))
-            SamplerReservoir.run(parallelism, targetThroughput);
-        if (parameterTool.has("ccsbf"))
-            SketchBloomFilter.run(parallelism, targetThroughput);
-        if (parameterTool.has("ccscm"))
-            SketchCountMin.run(parallelism, targetThroughput);
-        if (parameterTool.has("ccscf"))
-            SketchCuckooFilter.run(parallelism, targetThroughput);
-        if (parameterTool.has("ccsdd"))
-            SketchDD.run(parallelism, targetThroughput);
-        if (parameterTool.has("ccsagm"))
-            SketchFastAGM.run(parallelism, targetThroughput);
-        if (parameterTool.has("ccshll"))
-            SketchHyperLogLog.run(parallelism, targetThroughput);
-        if (parameterTool.has("ccstratified"))
-            StratifiedCountMin.run(parallelism, targetThroughput);
-        if (parameterTool.has("ccwavelet"))
-            Wavelet.run(parallelism, targetThroughput);
+        for (int p = 2; p < 256; p*=2) {
+            parallelism = p;
+            for (int i = 0; i < 10; i++) {
+                // cost
+                // cost condor - arg-prefix 'cc'
+                if (parameterTool.has("cchbs"))
+                    HistBarSplitting.run(parallelism, targetThroughput, i);
+                if (parameterTool.has("cchew"))
+                    HistEquiWidth.run(parallelism, targetThroughput, i);
+                if (parameterTool.has("cchdd"))
+                    HistWithDDSketch.run(parallelism, targetThroughput, i);
+                if (parameterTool.has("ccsbr"))
+                    SamplerBiasedReservoir.run(parallelism, targetThroughput, i);
+                if (parameterTool.has("ccsfifo"))
+                    SamplerFiFo.run(parallelism, targetThroughput, i);
+                if (parameterTool.has("ccsr"))
+                    SamplerReservoir.run(parallelism, targetThroughput, i);
+                if (parameterTool.has("ccsbf"))
+                    SketchBloomFilter.run(parallelism, targetThroughput, i);
+                if (parameterTool.has("ccscm"))
+                    SketchCountMin.run(parallelism, targetThroughput, i);
+                if (parameterTool.has("ccscf"))
+                    SketchCuckooFilter.run(parallelism, targetThroughput, i);
+                if (parameterTool.has("ccsdd"))
+                    SketchDD.run(parallelism, targetThroughput, i);
+                if (parameterTool.has("ccsagm"))
+                    SketchFastAGM.run(parallelism, targetThroughput, i);
+                if (parameterTool.has("ccshll"))
+                    SketchHyperLogLog.run(parallelism, targetThroughput, i);
+                if (parameterTool.has("ccstratified"))
+                    StratifiedCountMin.run(parallelism, targetThroughput, i);
+                if (parameterTool.has("ccwavelet"))
+                    Wavelet.run(parallelism, targetThroughput, i);
 
-        // Cost singleCore
-        if (parameterTool.has("cshbs"))
-            HistBarSplitSC.run(outputDir, uniformTimestampedDataPath);
-        if (parameterTool.has("cshew"))
-            HistEquiWidthSC.run(outputDir, uniformTimestampedDataPath);
-        if (parameterTool.has("cshdd"))
-            HistWithDDSC.run(outputDir, uniformTimestampedDataPath);
-        if (parameterTool.has("cssbr"))
-            SamplerBiasedReservoirSC.run(outputDir, uniformTimestampedDataPath);
-        if (parameterTool.has("cssfifo"))
-            SamplerFiFoSC.run(outputDir, uniformTimestampedDataPath);
-        if (parameterTool.has("cssr"))
-            SamplerReservoirSC.run(outputDir, uniformTimestampedDataPath);
-        if (parameterTool.has("cssbf"))
-            SketchBloomFilterSC.run(outputDir, uniformTimestampedDataPath);
-        if (parameterTool.has("csscm"))
-            SketchCountMinSC.run(outputDir, uniformTimestampedDataPath);
-        if (parameterTool.has("csscf"))
-            SketchCuckooFilterSC.run(outputDir, uniformTimestampedDataPath);
-        if (parameterTool.has("cssdd"))
-            SketchDDSC.run(outputDir, uniformTimestampedDataPath);
-        if (parameterTool.has("cssagm"))
-            SketchFastAGMSC.run(outputDir, uniformTimestampedDataPath);
-        if (parameterTool.has("csshll"))
-            SketchHLLSC.run(outputDir, uniformTimestampedDataPath);
-        if (parameterTool.has("csstratified"))
-            StratifiedCountMinSingleCore.run(outputDir, uniformTimestampedDataPath);
-        if (parameterTool.has("cswavelet"))
-            WaveletSingleCore.run(outputDir, uniformTimestampedDataPath);
+                // Cost singleCore
+                if (parameterTool.has("cshbs"))
+                    HistBarSplitSC.run(outputDir, uniformTimestampedDataPath);
+                if (parameterTool.has("cshew"))
+                    HistEquiWidthSC.run(outputDir, uniformTimestampedDataPath);
+                if (parameterTool.has("cshdd"))
+                    HistWithDDSC.run(outputDir, uniformTimestampedDataPath);
+                if (parameterTool.has("cssbr"))
+                    SamplerBiasedReservoirSC.run(outputDir, uniformTimestampedDataPath);
+                if (parameterTool.has("cssfifo"))
+                    SamplerFiFoSC.run(outputDir, uniformTimestampedDataPath);
+                if (parameterTool.has("cssr"))
+                    SamplerReservoirSC.run(outputDir, uniformTimestampedDataPath);
+                if (parameterTool.has("cssbf"))
+                    SketchBloomFilterSC.run(outputDir, uniformTimestampedDataPath);
+                if (parameterTool.has("csscm"))
+                    SketchCountMinSC.run(outputDir, uniformTimestampedDataPath);
+                if (parameterTool.has("csscf"))
+                    SketchCuckooFilterSC.run(outputDir, uniformTimestampedDataPath);
+                if (parameterTool.has("cssdd"))
+                    SketchDDSC.run(outputDir, uniformTimestampedDataPath);
+                if (parameterTool.has("cssagm"))
+                    SketchFastAGMSC.run(outputDir, uniformTimestampedDataPath);
+                if (parameterTool.has("csshll"))
+                    SketchHLLSC.run(outputDir, uniformTimestampedDataPath);
+                if (parameterTool.has("csstratified"))
+                    StratifiedCountMinSingleCore.run(outputDir, uniformTimestampedDataPath);
+                if (parameterTool.has("cswavelet"))
+                    WaveletSingleCore.run(outputDir, uniformTimestampedDataPath);
 
-        // efficiency
-        // efficiency streamApprox
-        if (parameterTool.has("esap"))
-            Parallelism.run(parallelism, runtime, targetThroughput);
-        if (parameterTool.has("esas"))
-            SampleSize.run(parallelism, runtime, targetThroughput, sampleSize);
-        if (parameterTool.has("esass"))
-            StratifiedSampling.run(parallelism, runtime, targetThroughput, stratification);
+                // efficiency
+                // efficiency streamApprox
+                if (parameterTool.has("esap"))
+                    Parallelism.run(parallelism, runtime, targetThroughput);
+                if (parameterTool.has("esas"))
+                    SampleSize.run(parallelism, runtime, targetThroughput, sampleSize);
+                if (parameterTool.has("esass"))
+                    StratifiedSampling.run(parallelism, runtime, targetThroughput, stratification);
 
-        // efficiency yahoo
-        if (parameterTool.has("hllc"))
-            CondorHLL.run(parallelism, runtime, targetThroughput);
-        if (parameterTool.has("hllcs"))
-            CondorHLLStratified.run(parallelism, runtime, targetThroughput);
-        if (parameterTool.has("hlly"))
-            YahooHLLOnCondor.run(parallelism, runtime, targetThroughput);
-        if (parameterTool.has("hllys"))
-            YahooHLLOnCondorStratified.run(parallelism, runtime, targetThroughput);
+                // efficiency yahoo
+                if (parameterTool.has("hllc"))
+                    CondorHLL.run(parallelism, runtime, targetThroughput);
+                if (parameterTool.has("hllcs"))
+                    CondorHLLStratified.run(parallelism, runtime, targetThroughput);
+                if (parameterTool.has("hlly"))
+                    YahooHLLOnCondor.run(parallelism, runtime, targetThroughput);
+                if (parameterTool.has("hllys"))
+                    YahooHLLOnCondorStratified.run(parallelism, runtime, targetThroughput);
 
-        // reliability
-        if (parameterTool.has("cma"))
-            CountMinAccuracy.run(parallelism, outputDir);
-        if (parameterTool.has("ewha"))
-            EquiWidthHistogramAccuracy.run(parallelism, outputDir);
-        if (parameterTool.has("hwa"))
-            HaarWaveletsAccuracy.run(parallelism, outputDir);
-        if (parameterTool.has("hlla"))
-            HLLSketchAccuracy.run(parallelism, outputDir);
-        if (parameterTool.has("rsa"))
-            ReservoirSamplingAccuracy.run(parallelism, outputDir);
+                // reliability
+                if (parameterTool.has("cma"))
+                    CountMinAccuracy.run(parallelism, outputDir);
+                if (parameterTool.has("ewha"))
+                    EquiWidthHistogramAccuracy.run(parallelism, outputDir);
+                if (parameterTool.has("hwa"))
+                    HaarWaveletsAccuracy.run(parallelism, outputDir);
+                if (parameterTool.has("hlla"))
+                    HLLSketchAccuracy.run(parallelism, outputDir);
+                if (parameterTool.has("rsa"))
+                    ReservoirSamplingAccuracy.run(parallelism, outputDir);
 
-        // scalability
-        // scalability dataSources
-        // scalability dataSources global
-        if (parameterTool.has("nycg"))
-            NYCTaxiGlobal.run(parallelism, runtime, targetThroughput);
-        if (parameterTool.has("unig"))
-            UniformGlobal.run(parallelism, runtime, targetThroughput);
-        if (parameterTool.has("zipfg"))
-            ZipfGlobal.run(parallelism, runtime, targetThroughput);
+                // scalability
+                // scalability dataSources
+                // scalability dataSources global
+                if (parameterTool.has("nycg"))
+                    NYCTaxiGlobal.run(parallelism, runtime, targetThroughput);
+                if (parameterTool.has("unig"))
+                    UniformGlobal.run(parallelism, runtime, targetThroughput);
+                if (parameterTool.has("zipfg"))
+                    ZipfGlobal.run(parallelism, runtime, targetThroughput);
 
-        // scalability dataSources stratified
-        if (parameterTool.has("nycs"))
-            NYCTaxiStratified.run(parallelism, runtime, targetThroughput);
-        if (parameterTool.has("unis"))
-            UniformStratified.run(parallelism, runtime, targetThroughput);
-        if (parameterTool.has("zipfs"))
-            ZipfStratified.run(parallelism, runtime, targetThroughput);
+                // scalability dataSources stratified
+                if (parameterTool.has("nycs"))
+                    NYCTaxiStratified.run(parallelism, runtime, targetThroughput);
+                if (parameterTool.has("unis"))
+                    UniformStratified.run(parallelism, runtime, targetThroughput);
+                if (parameterTool.has("zipfs"))
+                    ZipfStratified.run(parallelism, runtime, targetThroughput);
 
-        // scalability evaluation
-        if (parameterTool.has("ql"))
-            QueryLatest.run(parallelism, targetThroughput);
-        if (parameterTool.has("qls"))
-            QueryLatestStratified.run(parallelism, targetThroughput);
-        if (parameterTool.has("qt"))
-            QueryTimestamped.run(parallelism, targetThroughput);
-        if (parameterTool.has("qts"))
-            QueryTimestampedStratified.run(parallelism, targetThroughput);
+                // scalability evaluation
+                if (parameterTool.has("ql"))
+                    QueryLatest.run(parallelism, targetThroughput);
+                if (parameterTool.has("qls"))
+                    QueryLatestStratified.run(parallelism, targetThroughput);
+                if (parameterTool.has("qt"))
+                    QueryTimestamped.run(parallelism, targetThroughput);
+                if (parameterTool.has("qts"))
+                    QueryTimestampedStratified.run(parallelism, targetThroughput);
 
-        // scalability processing
-        // scalability processing bucketing
-        if (parameterTool.has("cmb"))
-            CountMinBucketing.run(parallelism, runtime,targetThroughput);
-        if (parameterTool.has("ewhb"))
-            EquiWidthHistogramBucketing.run(parallelism, runtime, targetThroughput);
-        if (parameterTool.has("hwb"))
-            HaarWaveletsBucketing.run(parallelism, runtime, targetThroughput);
-        if (parameterTool.has("rsb"))
-            ReservoirSamplingBucketing.run(parallelism, runtime, targetThroughput);
+                // scalability processing
+                // scalability processing bucketing
+                if (parameterTool.has("cmb"))
+                    CountMinBucketing.run(parallelism, runtime,targetThroughput);
+                if (parameterTool.has("ewhb"))
+                    EquiWidthHistogramBucketing.run(parallelism, runtime, targetThroughput);
+                if (parameterTool.has("hwb"))
+                    HaarWaveletsBucketing.run(parallelism, runtime, targetThroughput);
+                if (parameterTool.has("rsb"))
+                    ReservoirSamplingBucketing.run(parallelism, runtime, targetThroughput);
 
-        //  scalability processing generalSlicing
-        if (parameterTool.has("cms"))
-            CountMinSlicing.run(parallelism, runtime, targetThroughput);
-        if (parameterTool.has("ewhs"))
-            EquiWidthHistogramSlicing.run(parallelism, runtime, targetThroughput);
-        if (parameterTool.has("hws"))
-            HaarWaveletsSlicing.run(parallelism, runtime, targetThroughput);
-        if (parameterTool.has("rss"))
-            ReservoirSamplingSlicing.run(parallelism, runtime, targetThroughput);
+                //  scalability processing generalSlicing
+                if (parameterTool.has("cms"))
+                    CountMinSlicing.run(parallelism, runtime, targetThroughput);
+                if (parameterTool.has("ewhs"))
+                    EquiWidthHistogramSlicing.run(parallelism, runtime, targetThroughput);
+                if (parameterTool.has("hws"))
+                    HaarWaveletsSlicing.run(parallelism, runtime, targetThroughput);
+                if (parameterTool.has("rss"))
+                    ReservoirSamplingSlicing.run(parallelism, runtime, targetThroughput);
 
-        // windowing
-        if (parameterTool.has("wb"))
-            Bucketing.run(parallelism, targetThroughput, nConcurrentWindows);
-        if (parameterTool.has("wgss"))
-            GeneralStreamSlicing.run(parallelism, targetThroughput, nConcurrentWindows);
+                // windowing
+                if (parameterTool.has("wb"))
+                    Bucketing.run(parallelism, targetThroughput, nConcurrentWindows);
+                if (parameterTool.has("wgss"))
+                    GeneralStreamSlicing.run(parallelism, targetThroughput, nConcurrentWindows);
+            }
+        }
+
     }
 
 

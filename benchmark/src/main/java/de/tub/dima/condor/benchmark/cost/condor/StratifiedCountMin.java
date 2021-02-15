@@ -28,11 +28,11 @@ import org.apache.flink.streaming.api.windowing.time.Time;
  * Created by Rudi Poepsel Lemaitre.
  */
 public class StratifiedCountMin {
-	public static void run(int parallelism, int targetThroughput) throws Exception {
+	public static void run(int parallelism, int targetThroughput, int iteration) throws Exception {
 		// We set the stratification degree to be the same as the parallelism. However, feel free to change it!
 		int stratification = parallelism;
 
-		String jobName = "StratifiedCountMin Synopses COST test  "+parallelism;
+		String jobName = "Synopses COST test Stratified CountMin Sketch | parallelism: "+parallelism + " | iteration: "+iteration;
 		System.out.println(jobName);
 
 		// Set up the streaming execution Environment
@@ -47,7 +47,7 @@ public class StratifiedCountMin {
 			targetThroughput = 200000;
 		}
 		DataStream<Tuple3<Integer, Integer, Long>> messageStream = env
-				.addSource(new UniformDistributionSource(-1, targetThroughput));
+				.addSource(new UniformDistributionSource(20000, targetThroughput));
 
 		final SingleOutputStreamOperator<Tuple3<Integer, Integer, Long>> timestamped = messageStream
 				.assignTimestampsAndWatermarks(new SyntheticTimestampsAndWatermarks());

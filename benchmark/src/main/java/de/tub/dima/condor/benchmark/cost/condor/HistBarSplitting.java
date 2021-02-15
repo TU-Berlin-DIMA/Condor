@@ -23,8 +23,8 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 
 public class HistBarSplitting {
-    public static void run(int parallelism, int targetThroughput) throws Exception {
-        String jobName = "BarSplittingHistogram Synopses COST test "+parallelism;
+    public static void run(int parallelism, int targetThroughput, int iteration) throws Exception {
+        String jobName = "Synopses COST test Barsplitting Histogram | parallelism: "+parallelism + " | iteration: "+iteration;
         System.out.println(jobName);
 
         // Set up the streaming execution Environment

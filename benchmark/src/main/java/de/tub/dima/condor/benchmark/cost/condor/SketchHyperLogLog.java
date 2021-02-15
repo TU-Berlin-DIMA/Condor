@@ -20,8 +20,8 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 
 public class SketchHyperLogLog {
-    public static void run(int parallelism, int targetThroughput) throws Exception {
-        String jobName = "HLL Sketch Synopses COST test " + parallelism;
+    public static void run(int parallelism, int targetThroughput, int iteration) throws Exception {
+        String jobName = "Synopses COST test HyperLogLog Sketch | parallelism: "+parallelism + " | iteration: "+iteration;
         System.out.println(jobName);
 
         // Set up the streaming execution Environment

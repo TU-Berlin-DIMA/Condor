@@ -20,8 +20,8 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 
 public class HistWithDDSketch {
-    public static void run(int parallelism, int targetThroughput) throws Exception {
-        String jobName = "Histogram with DDSketch COST test "+parallelism;
+    public static void run(int parallelism, int targetThroughput, int iteration) throws Exception {
+        String jobName = "Synopses COST test Histogram with DDSketch | parallelism: "+parallelism + " | iteration: "+iteration;
         System.out.println(jobName);
 
         // Set up the streaming execution Environment

@@ -23,8 +23,8 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
  * Created by Rudi Poepsel Lemaitre.
  */
 public class Wavelet {
-	public static void run(int parallelism, int targetThroughput) throws Exception {
-		String jobName = "Order Based Synopses COST test " + parallelism;
+	public static void run(int parallelism, int targetThroughput, int iteration) throws Exception {
+		String jobName = "Synopses COST test Wavelet | parallelism: "+parallelism + " | iteration: "+iteration;
 		System.out.println(jobName);
 
 		// set up the streaming execution Environment
@@ -40,7 +40,7 @@ public class Wavelet {
 			targetThroughput = 4000;
 		}
 		DataStream<Tuple3<Integer, Integer, Long>> messageStream = env
-				.addSource(new UniformDistributionSource(-1, targetThroughput));
+				.addSource(new UniformDistributionSource(20000, targetThroughput));
 
 		final SingleOutputStreamOperator<Tuple3<Integer, Integer, Long>> timestamped = messageStream
 				.assignTimestampsAndWatermarks(new SyntheticTimestampsAndWatermarks());
