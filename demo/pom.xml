@@ -162,7 +162,7 @@
 							</filters>
 							<transformers>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-									<mainClass><!-- Add main class here --></mainClass>
+									<mainClass>de.tub.dima.condor.demo.SynopsisBasedStreamingJob</mainClass>
 								</transformer>
 							</transformers>
 						</configuration>
