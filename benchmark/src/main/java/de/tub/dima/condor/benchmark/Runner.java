@@ -2,6 +2,13 @@ package de.tub.dima.condor.benchmark;
 
 import de.tub.dima.condor.benchmark.cost.condor.*;
 import de.tub.dima.condor.benchmark.cost.singleCore.*;
+import de.tub.dima.condor.benchmark.efficiency.oneOffImplementation.classification.*;
+import de.tub.dima.condor.benchmark.efficiency.oneOffImplementation.communication.Communication;
+import de.tub.dima.condor.benchmark.efficiency.oneOffImplementation.communication.CountMinFlink;
+import de.tub.dima.condor.benchmark.efficiency.oneOffImplementation.communication.CountMinFlinkKeyed;
+import de.tub.dima.condor.benchmark.efficiency.oneOffImplementation.windowing.CondorWindowing;
+import de.tub.dima.condor.benchmark.efficiency.oneOffImplementation.windowing.CountMinFlinkKeyedWindowing;
+import de.tub.dima.condor.benchmark.efficiency.oneOffImplementation.windowing.CountMinFlinkWindowing;
 import de.tub.dima.condor.benchmark.efficiency.streamApprox.Parallelism;
 import de.tub.dima.condor.benchmark.efficiency.streamApprox.SampleSize;
 import de.tub.dima.condor.benchmark.efficiency.streamApprox.StratifiedSampling;
@@ -197,6 +204,38 @@ public class Runner {
                     Bucketing.run(parallelism, targetThroughput, nConcurrentWindows);
                 if (parameterTool.has("wgss"))
                     GeneralStreamSlicing.run(parallelism, targetThroughput, nConcurrentWindows);
+
+                // Comparision with one-off count-min sketch implementation in Flink
+                // Classification - cl
+                if (parameterTool.has("cli"))
+                    Invertible.run(parallelism, runtime, targetThroughput, outputDir);
+                if (parameterTool.has("clc"))
+                    Commutative.run(parallelism, runtime, targetThroughput, outputDir);
+                if (parameterTool.has("clm"))
+                    Mergeable.run(parallelism, runtime, targetThroughput, outputDir);
+                if (parameterTool.has("clo"))
+                    OrderBased.run(parallelism, runtime, targetThroughput, outputDir);
+                if (parameterTool.has("clf"))
+                    CountMinFlinkClassification.run(parallelism, runtime, targetThroughput, outputDir);
+                if (parameterTool.has("clfk"))
+                    CountMinFlinkKeyedClassification.run(parallelism, runtime, targetThroughput, outputDir);
+
+                // Communication test - ct
+                // TODO: @JOSHA These test have a parallelism of 256 but we will increase the source parallelism gradually from 1 to 256 (base 2 steps)
+                if (parameterTool.has("ctc"))
+                    Communication.run(256, parallelism, runtime, targetThroughput);
+                if (parameterTool.has("ctf"))
+                    CountMinFlink.run(256, parallelism, runtime, targetThroughput);
+                if (parameterTool.has("ctfk"))
+                    CountMinFlinkKeyed.run(256, parallelism, runtime, targetThroughput);
+
+                // New Windowing - nw
+                if (parameterTool.has("nwc"))
+                    CondorWindowing.run(parallelism, targetThroughput, nConcurrentWindows);
+                if (parameterTool.has("nwf"))
+                    CountMinFlinkWindowing.run(parallelism, targetThroughput, nConcurrentWindows);
+                if (parameterTool.has("nwfk"))
+                    CountMinFlinkKeyedWindowing.run(parallelism, targetThroughput, nConcurrentWindows);
             }
         }
 
