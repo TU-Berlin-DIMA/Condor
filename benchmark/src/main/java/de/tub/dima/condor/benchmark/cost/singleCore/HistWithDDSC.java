@@ -1,7 +1,6 @@
 package de.tub.dima.condor.benchmark.cost.singleCore;
 
 import de.tub.dima.condor.core.synopsis.Histograms.EquiWidthHistogram;
-import de.tub.dima.condor.core.synopsis.Histograms.SplitAndMergeWithDDSketch;
 import de.tub.dima.condor.core.synopsis.Sketches.DDSketch;
 
 import java.io.*;
@@ -18,7 +17,7 @@ public class HistWithDDSC {
             String line;
             String result = "Throughput=";
             String numRecords = "";
-            SplitAndMergeWithDDSketch synopsis = new SplitAndMergeWithDDSketch(1000, 0.01d);
+            DDSketch synopsis = new DDSketch(0.05d, 64);
 
             for (int i = 0; i < 10; i++) {
                 GZIPInputStream gzipStream = new GZIPInputStream(new FileInputStream(dataFilePath));

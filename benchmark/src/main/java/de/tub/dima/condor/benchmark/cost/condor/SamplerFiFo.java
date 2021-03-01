@@ -21,13 +21,11 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 
 public class SamplerFiFo {
     public static void run(int parallelism, int targetThroughput, int iteration) throws Exception {
-        String jobName = "Synopses COST test FiFo Sampler | parallelism: "+parallelism + " | iteration: "+iteration+ " | targetThroughput: " + targetThroughput;
+        String jobName = "Synopses COST test FiFo Sampler | parallelism: "+parallelism + " | iteration: "+iteration;
         System.out.println(jobName);
 
         // Set up the streaming execution Environment
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.setParallelism(parallelism);
-        env.getConfig().enableObjectReuse();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
         // Initialize Uniform DataSource
@@ -62,7 +60,7 @@ public class SamplerFiFo {
         synopsesStream.addSink(new SinkFunction() {
             @Override
             public void invoke(final Object value) throws Exception {
-                //System.out.println(value);
+                System.out.println(value);
             }
         });
 

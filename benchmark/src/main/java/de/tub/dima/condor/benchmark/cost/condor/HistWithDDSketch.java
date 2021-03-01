@@ -21,13 +21,11 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 
 public class HistWithDDSketch {
     public static void run(int parallelism, int targetThroughput, int iteration) throws Exception {
-        String jobName = "Synopses COST test Histogram with DDSketch | parallelism: "+parallelism + " | iteration: "+iteration+ " | targetThroughput: " + targetThroughput;
+        String jobName = "Synopses COST test Histogram with DDSketch | parallelism: "+parallelism + " | iteration: "+iteration;
         System.out.println(jobName);
 
         // Set up the streaming execution Environment
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.setParallelism(parallelism);
-        env.getConfig().enableObjectReuse();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
         // Initialize Uniform DataSource
@@ -52,7 +50,7 @@ public class HistWithDDSketch {
         // Set up other configuration parameters
         Class<SplitAndMergeWithDDSketch> synopsisClass = SplitAndMergeWithDDSketch.class;
         Window[] windows = {new TumblingWindow(WindowMeasure.Time, 15000)};
-        Object[] synopsisParameters = new Object[]{1000, 0.01d}; // numBuckets, sketchAccuracy
+        Object[] synopsisParameters = new Object[]{100, 0.1d}; // numBuckets, sketchAccuracy
 
         BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);
 
@@ -62,7 +60,7 @@ public class HistWithDDSketch {
         synopsesStream.addSink(new SinkFunction<WindowedSynopsis<SplitAndMergeWithDDSketch>>() {
             @Override
             public void invoke(WindowedSynopsis<SplitAndMergeWithDDSketch> value, Context context) throws Exception {
-                //System.out.println(value.getSynopsis());
+                System.out.println(value.getSynopsis());
             }
         });
 

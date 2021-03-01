@@ -32,13 +32,11 @@ public class StratifiedCountMin {
 		// We set the stratification degree to be the same as the parallelism. However, feel free to change it!
 		int stratification = parallelism;
 
-		String jobName = "Synopses COST test Stratified CountMin Sketch | parallelism: "+parallelism + " | iteration: "+iteration+ " | targetThroughput: " + targetThroughput;
+		String jobName = "Synopses COST test Stratified CountMin Sketch | parallelism: "+parallelism + " | iteration: "+iteration;
 		System.out.println(jobName);
 
 		// Set up the streaming execution Environment
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-		env.setParallelism(parallelism);
-		env.getConfig().enableObjectReuse();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
 		// Initialize Uniform DataSource

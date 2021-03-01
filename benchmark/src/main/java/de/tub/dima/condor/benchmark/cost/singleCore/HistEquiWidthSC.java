@@ -17,7 +17,7 @@ public class HistEquiWidthSC {
             String line;
             String result = "Throughput=";
             String numRecords = "";
-            EquiWidthHistogram synopsis = new EquiWidthHistogram(0d, 1001d, 1000);
+            EquiWidthHistogram synopsis = new EquiWidthHistogram(0d, 1001d, 100);
 
             for (int i = 0; i < 10; i++) {
                 GZIPInputStream gzipStream = new GZIPInputStream(new FileInputStream(dataFilePath));

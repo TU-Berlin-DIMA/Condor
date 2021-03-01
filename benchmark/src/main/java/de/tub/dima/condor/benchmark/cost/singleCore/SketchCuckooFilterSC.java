@@ -17,7 +17,7 @@ public class SketchCuckooFilterSC {
             String line;
             String result = "Throughput=";
             String numRecords = "";
-            CuckooFilter synopsis = new CuckooFilter(1000000, 64, 42l);
+            CuckooFilter synopsis = new CuckooFilter(100000, 64, 42l);
 
             for (int i = 0; i < 10; i++) {
                 GZIPInputStream gzipStream = new GZIPInputStream(new FileInputStream(dataFilePath));

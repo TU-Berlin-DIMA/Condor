@@ -17,7 +17,7 @@ public class SketchDDSC {
             String line;
             String result = "Throughput=";
             String numRecords = "";
-            DDSketch synopsis = new DDSketch(0.01d, 64);
+            DDSketch synopsis = new DDSketch(0.05d, 64);
 
             for (int i = 0; i < 10; i++) {
                 GZIPInputStream gzipStream = new GZIPInputStream(new FileInputStream(dataFilePath));

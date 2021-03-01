@@ -24,12 +24,11 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
  */
 public class Wavelet {
 	public static void run(int parallelism, int targetThroughput, int iteration) throws Exception {
-		String jobName = "Synopses COST test Wavelet | parallelism: "+parallelism + " | iteration: "+iteration+ " | targetThroughput: " + targetThroughput;
+		String jobName = "Synopses COST test Wavelet | parallelism: "+parallelism + " | iteration: "+iteration;
 		System.out.println(jobName);
 
 		// set up the streaming execution Environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-		env.setParallelism(parallelism);
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 		env.getConfig().enableObjectReuse();
 
