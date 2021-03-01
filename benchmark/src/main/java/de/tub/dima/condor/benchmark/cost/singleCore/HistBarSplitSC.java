@@ -16,7 +16,7 @@ public class HistBarSplitSC {
             String line;
             String result = "Throughput=";
             String numRecords = "";
-            BarSplittingHistogram synopsis = new BarSplittingHistogram(100);
+            BarSplittingHistogram synopsis = new BarSplittingHistogram(1000); // numBuckets
 
             for (int i = 0; i < 10; i++) {
                 GZIPInputStream gzipStream = new GZIPInputStream(new FileInputStream(dataFilePath));

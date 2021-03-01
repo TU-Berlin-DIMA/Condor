@@ -23,11 +23,13 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
  */
 public class SketchCountMin {
 	public static void run(int parallelism, int targetThroughput, int iteration) throws Exception {
-		String jobName = "Synopses COST test CountMin Sketch | parallelism: "+parallelism + " | iteration: "+iteration;
+		String jobName = "Synopses COST test CountMin Sketch | parallelism: "+parallelism + " | iteration: "+iteration+ " | targetThroughput: " + targetThroughput;
 		System.out.println(jobName);
 
 		// Set up the streaming execution Environment
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+		env.setParallelism(parallelism);
+		env.getConfig().enableObjectReuse();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
 		// Initialize Uniform DataSource
@@ -52,7 +54,7 @@ public class SketchCountMin {
 		// Set up other configuration parameters
 		Class<CountMinSketch> synopsisClass = CountMinSketch.class;
 		Window[] windows = {new TumblingWindow(WindowMeasure.Time, 15000)};
-		Object[] synopsisParameters = new Object[]{65536, 5, 7L};
+		Object[] synopsisParameters = new Object[]{65536, 5, 7L};  // width, height, seed
 
 		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);
 

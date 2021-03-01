@@ -24,11 +24,13 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 
 public class HistBarSplitting {
     public static void run(int parallelism, int targetThroughput, int iteration) throws Exception {
-        String jobName = "Synopses COST test Barsplitting Histogram | parallelism: "+parallelism + " | iteration: "+iteration;
+        String jobName = "Synopses COST test Barsplitting Histogram | parallelism: "+parallelism + " | iteration: "+iteration + " | targetThroughput: " + targetThroughput;
         System.out.println(jobName);
 
         // Set up the streaming execution Environment
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.setParallelism(parallelism);
+        env.getConfig().enableObjectReuse();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
         // Initialize Uniform DataSource
@@ -53,7 +55,7 @@ public class HistBarSplitting {
         // Set up other configuration parameters
         Class<BarSplittingHistogram> synopsisClass = BarSplittingHistogram.class;
         Window[] windows = {new TumblingWindow(WindowMeasure.Time, 15000)};
-        Object[] synopsisParameters = new Object[]{100};
+        Object[] synopsisParameters = new Object[]{1000}; // numBuckets
 
         BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);
 
@@ -69,7 +71,7 @@ public class HistBarSplitting {
         equiDepthHist.addSink(new SinkFunction() {
             @Override
             public void invoke(final Object value) throws Exception {
-                System.out.println(value);
+                // System.out.println(value);
             }
         });
 

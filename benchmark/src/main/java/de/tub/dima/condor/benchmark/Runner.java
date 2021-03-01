@@ -46,7 +46,8 @@ public class Runner {
         int nConcurrentWindows = parameterTool.getInt("windows", 100);
 
         // Data-Paths - need to be correct in order for some tests to run
-        String uniformTimestampedDataPath = "/Users/joschavonhein/Data/EDADS/data/uniformTimestamped.gz";
+        // String uniformTimestampedDataPath = "/Users/joschavonhein/Data/EDADS/data/uniformTimestamped.gz";
+        String uniformTimestampedDataPath = "/share/hadoop/EDADS/uniformTimestamped.gz"; // path on dima cluster
 
         for (int p = 2; p < 256; p*=2) {
             parallelism = p;

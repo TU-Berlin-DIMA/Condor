@@ -20,11 +20,13 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 
 public class SketchDD {
     public static void run(int parallelism, int targetThroughput, int iteration) throws Exception {
-        String jobName = "Synopses COST test DDSketch | parallelism: "+parallelism + " | iteration: "+iteration;
+        String jobName = "Synopses COST test DDSketch | parallelism: "+parallelism + " | iteration: "+iteration+ " | targetThroughput: " + targetThroughput;
         System.out.println(jobName);
 
         // Set up the streaming execution Environment
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.setParallelism(parallelism);
+        env.getConfig().enableObjectReuse();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
         // Initialize Uniform DataSource
@@ -49,7 +51,7 @@ public class SketchDD {
         // Set up other configuration parameters
         Class<DDSketch> synopsisClass = DDSketch.class;
         Window[] windows = {new TumblingWindow(WindowMeasure.Time, 15000)};
-        Object[] synopsisParameters = new Object[]{0.05, 64}; // relative Accuracy, maxNumBins
+        Object[] synopsisParameters = new Object[]{0.01, 64}; // relative Accuracy, maxNumBins
 
         BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);
 
@@ -59,7 +61,7 @@ public class SketchDD {
         synopsesStream.addSink(new SinkFunction() {
             @Override
             public void invoke(final Object value) throws Exception {
-                System.out.println(value);
+                //System.out.println(value);
             }
         });
 
