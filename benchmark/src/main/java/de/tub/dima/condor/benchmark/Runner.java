@@ -45,18 +45,19 @@ public class Runner {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
 
         String outputDir = parameterTool.get("o");
-        int parallelism = parameterTool.getInt("p");
+        int start_parallelism = parameterTool.getInt("minp", 2);
+        int max_parallelism = parameterTool.getInt("maxp", 256);
         int targetThroughput = parameterTool.getInt("t", -1);
         int runtime = parameterTool.getInt("runtime", 60000); // runtime in ms - default 1 min
         int sampleSize = parameterTool.getInt("sampleSize", 1000);
-        int stratification = parameterTool.getInt("stratification", parallelism);
+        int stratification = parameterTool.getInt("stratification", max_parallelism);
         int nConcurrentWindows = parameterTool.getInt("windows", 100);
 
         // Data-Paths - need to be correct in order for some tests to run
         String uniformTimestampedDataPath = "/Users/joschavonhein/Data/EDADS/data/uniformTimestamped.gz";
 
-        for (int p = 2; p < 256; p*=2) {
-            parallelism = p;
+        for (int p = start_parallelism; p <= max_parallelism; p*=2) {
+            int parallelism = p;
             for (int i = 0; i < 10; i++) {
                 // cost
                 // cost condor - arg-prefix 'cc'

@@ -30,6 +30,7 @@ public class Wavelet {
 		// set up the streaming execution Environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+		env.setParallelism(parallelism);
 		env.getConfig().enableObjectReuse();
 
 		// Initialize Uniform DataSource

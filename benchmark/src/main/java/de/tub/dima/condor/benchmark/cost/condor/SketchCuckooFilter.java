@@ -30,6 +30,8 @@ public class SketchCuckooFilter {
         // Set up the streaming execution Environment
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+        env.setParallelism(parallelism);
+        env.getConfig().enableObjectReuse();
 
         // Initialize Uniform DataSource
         if(targetThroughput == -1){
@@ -53,7 +55,7 @@ public class SketchCuckooFilter {
         // Set up other configuration parameters
         Class<CuckooFilter> synopsisClass = CuckooFilter.class;
         Window[] windows = {new TumblingWindow(WindowMeasure.Time, 15000)};
-        Object[] synopsisParameters = new Object[]{100000, 64, 42l}; // bucketSize, numBuckets, seed
+        Object[] synopsisParameters = new Object[]{50000, 64, 42l}; // bucketSize, numBuckets, seed
 
         BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);
 

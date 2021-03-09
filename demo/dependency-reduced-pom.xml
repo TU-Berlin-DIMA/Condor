@@ -90,7 +90,7 @@
               </filters>
               <transformers>
                 <transformer>
-                  <mainClass />
+                  <mainClass>de.tub.dima.condor.demo.SynopsisBasedStreamingJob</mainClass>
                 </transformer>
               </transformers>
             </configuration>

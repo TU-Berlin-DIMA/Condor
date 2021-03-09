@@ -26,6 +26,8 @@ public class SketchDD {
         // Set up the streaming execution Environment
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+        env.setParallelism(parallelism);
+        env.getConfig().enableObjectReuse();
 
         // Initialize Uniform DataSource
         if (targetThroughput == -1) {

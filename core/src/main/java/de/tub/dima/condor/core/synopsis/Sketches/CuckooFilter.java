@@ -217,12 +217,12 @@ public class CuckooFilter<T> extends StratifiedSynopsis implements CommutativeSy
                     this.elementsProcessed += otherCF.getElementsProcessed();
                     return this;
                 } else {
-                    throw new IllegalArgumentException("Cuckoo Filter is considered full");
+                    // throw new IllegalArgumentException("Cuckoo Filter is considered full");
                 }
             }
         }
-        throw new IllegalArgumentException("MergeableSynopsis.Sketches to merge have to be the same size and hash Functions");
-
+        // throw new IllegalArgumentException("MergeableSynopsis.Sketches to merge have to be the same size and hash Functions");
+        return this;
     }
 
 
