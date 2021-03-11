@@ -230,13 +230,17 @@ public class Runner {
                 if (parameterTool.has("ctfk"))
                     CountMinFlinkKeyed.run(256, parallelism, runtime, targetThroughput);
 
-                // New Windowing - nw
-                if (parameterTool.has("nwc"))
-                    CondorWindowing.run(parallelism, targetThroughput, nConcurrentWindows);
-                if (parameterTool.has("nwf"))
-                    CountMinFlinkWindowing.run(parallelism, targetThroughput, nConcurrentWindows);
-                if (parameterTool.has("nwfk"))
-                    CountMinFlinkKeyedWindowing.run(parallelism, targetThroughput, nConcurrentWindows);
+                int[] numbers = {1,5, 10, 20, 40};
+                for (int n: numbers) {
+                    nConcurrentWindows = n;
+                    // New Windowing - nw
+                    if (parameterTool.has("nwc"))
+                        CondorWindowing.run(parallelism, targetThroughput / n, nConcurrentWindows);
+                    if (parameterTool.has("nwf"))
+                        CountMinFlinkWindowing.run(parallelism, targetThroughput / n, nConcurrentWindows);
+                    if (parameterTool.has("nwfk"))
+                        CountMinFlinkKeyedWindowing.run(parallelism, targetThroughput / n, nConcurrentWindows);
+                }
             }
         }
 

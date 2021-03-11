@@ -24,12 +24,14 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 public class CondorWindowing {
 	public static void run(int parallelism, int targetThroughput, int nConcurrentWindows) throws Exception {
 		long runtime = 40000;
-		String jobName = "Condor - windowing test "+parallelism;
+		String jobName = "Condor - windowing test | parallelism: "+parallelism + " | nConcurrentWindows: " + nConcurrentWindows;
 		System.out.println(jobName);
 
 		// Set up the streaming execution Environment
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+		env.setParallelism(parallelism);
+		env.getConfig().enableObjectReuse();
 
 		// Initialize Uniform DataSource
 		if(targetThroughput == -1){

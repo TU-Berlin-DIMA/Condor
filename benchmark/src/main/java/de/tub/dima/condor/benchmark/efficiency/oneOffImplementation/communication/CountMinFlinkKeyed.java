@@ -24,12 +24,13 @@ import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
  */
 public class CountMinFlinkKeyed {
 	public static void run(int parallelism, int sourceParallelism, long runtime, int targetThroughput) throws Exception {
-		String jobName = "One-Off Count Min sketch implementation in Flink - communication test "+parallelism;
+		String jobName = "One-Off Count Min sketch implementation in Flink - communication test "+sourceParallelism;
 		System.out.println(jobName);
 
 		// Set up the streaming execution Environment
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+		env.getConfig().enableObjectReuse();
 
 		// Initialize Uniform DataSource
 		if(targetThroughput == -1){
@@ -64,7 +65,7 @@ public class CountMinFlinkKeyed {
 			public void invoke(final Object value) throws Exception {
 				//Environment.out.println(value);
 			}
-		});
+		}).setParallelism(1);
 
 		env.execute(jobName);
 	}

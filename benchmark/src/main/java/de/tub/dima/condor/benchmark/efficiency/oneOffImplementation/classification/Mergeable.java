@@ -34,6 +34,8 @@ public class Mergeable {
 		// Set up the streaming execution Environment
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+		env.setParallelism(parallelism);
+		env.getConfig().enableObjectReuse();
 
 		// Initialize Uniform DataSource
 		if(targetThroughput == -1){
@@ -64,12 +66,17 @@ public class Mergeable {
 		// Build the synopses
 		SingleOutputStreamOperator<WindowedSynopsis<CountMinSketchMergeable>> synopsesStream = SynopsisBuilder.build(config);
 
-		synopsesStream.map(new MapFunction<WindowedSynopsis<CountMinSketchMergeable>, Integer>() {
+	/*	synopsesStream.map(new MapFunction<WindowedSynopsis<CountMinSketchMergeable>, Integer>() {
 			@Override
 			public Integer map(WindowedSynopsis<CountMinSketchMergeable> cms) throws Exception {
 				return cms.getSynopsis().getElementsProcessed();
 			}
 		}).writeAsText(outputDir+ "/mergeable_"+parallelism+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+*/
+		synopsesStream.addSink(new SinkFunction() {
+			@Override
+			public void invoke(final Object value) throws Exception { }
+		});
 
 		env.execute(jobName);
 	}

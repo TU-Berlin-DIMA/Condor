@@ -22,12 +22,14 @@ import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 public class CountMinFlinkWindowing {
 	public static void run(int parallelism, int targetThroughput, int nConcurrentWindows) throws Exception {
 		long runtime = 40000;
-		String jobName = "One-Off Count Min sketch implementation in Flink (Window All) - windowing test "+parallelism;
+		String jobName = "One-Off Count Min sketch implementation in Flink (Window All) - windowing test | parallelism: "+parallelism + " | nConcurrentWindows: " + nConcurrentWindows;
 		System.out.println(jobName);
 
 		// Set up the streaming execution Environment
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+		env.getConfig().enableObjectReuse();
+		env.setParallelism(parallelism);
 
 		// Initialize Uniform DataSource
 		if(targetThroughput == -1){

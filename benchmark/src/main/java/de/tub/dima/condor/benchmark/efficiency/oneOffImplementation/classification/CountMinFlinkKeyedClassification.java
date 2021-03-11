@@ -33,6 +33,8 @@ public class CountMinFlinkKeyedClassification {
 		// Set up the streaming execution Environment
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+		env.setParallelism(parallelism);
+		env.getConfig().enableObjectReuse();
 
 		// Initialize Uniform DataSource
 		if(targetThroughput == -1){
@@ -61,13 +63,18 @@ public class CountMinFlinkKeyedClassification {
 
 		AllWindowedStream<CountMinSketch, TimeWindow> preAggregated = windows.timeWindowAll(Time.milliseconds(5000));
 		SingleOutputStreamOperator<CountMinSketch> synopsesStream = preAggregated.reduce(new MergeSynopsis());
-
+/*
 		synopsesStream.map(new MapFunction<CountMinSketch, Integer>() {
 			@Override
 			public Integer map(CountMinSketch cms) throws Exception {
 				return cms.getElementsProcessed();
 			}
 		}).writeAsText(outputDir+ "/flinkKeyed_"+parallelism+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+*/
+		synopsesStream.addSink(new SinkFunction() {
+			@Override
+			public void invoke(final Object value) throws Exception { }
+		});
 
 		env.execute(jobName);
 	}

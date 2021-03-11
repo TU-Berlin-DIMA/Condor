@@ -23,12 +23,13 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
  */
 public class Communication {
 	public static void run(int parallelism, int sourceParallelism, long runtime, int targetThroughput) throws Exception {
-		String jobName = "Condor's Count Min Sketch - communication test "+parallelism;
+		String jobName = "Condor's Count Min Sketch - communication test "+sourceParallelism;
 		System.out.println(jobName);
 
 		// Set up the streaming execution Environment
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+		env.getConfig().enableObjectReuse();
 
 		// Initialize Uniform DataSource
 		if(targetThroughput == -1){
@@ -64,7 +65,7 @@ public class Communication {
 			public void invoke(final Object value) throws Exception {
 				//Environment.out.println(value);
 			}
-		});
+		}).setParallelism(1);
 
 		env.execute(jobName);
 	}
