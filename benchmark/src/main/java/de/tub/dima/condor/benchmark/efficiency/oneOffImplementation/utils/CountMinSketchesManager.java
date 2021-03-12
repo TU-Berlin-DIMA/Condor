@@ -6,11 +6,11 @@ import de.tub.dima.condor.core.synopsis.Wavelets.WaveletSynopsis;
 
 import java.util.ArrayList;
 
-public class CountMinSketchesManager<Input> extends NonMergeableSynopsisManager<Input, CountMinSketch<Input>> {
+public class CountMinSketchesManager<Input> extends NonMergeableSynopsisManager<Input, SliceCointMinSketchManager<Input>> {
 
     int parallelism;
 
-    public CountMinSketchesManager(int parallelism, ArrayList<CountMinSketch<Input>> unifiedSynopses) {
+    public CountMinSketchesManager(int parallelism, ArrayList<SliceCointMinSketchManager<Input>> unifiedSynopses) {
         this.parallelism = parallelism;
         this.unifiedSynopses = unifiedSynopses;
     }
@@ -31,7 +31,7 @@ public class CountMinSketchesManager<Input> extends NonMergeableSynopsisManager<
     }
 
     @Override
-    public void addSynopsis(CountMinSketch<Input> synopsis) {
+    public void addSynopsis(SliceCointMinSketchManager<Input> synopsis) {
         parallelism++;
         elementsProcessed += synopsis.getElementsProcessed();
         super.addSynopsis(synopsis);

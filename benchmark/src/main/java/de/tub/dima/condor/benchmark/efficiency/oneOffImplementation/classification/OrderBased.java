@@ -2,6 +2,8 @@ package de.tub.dima.condor.benchmark.efficiency.oneOffImplementation.classificat
 
 import de.tub.dima.condor.benchmark.efficiency.oneOffImplementation.utils.CountMinSketchMergeable;
 import de.tub.dima.condor.benchmark.efficiency.oneOffImplementation.utils.CountMinSketchOrderBased;
+import de.tub.dima.condor.benchmark.efficiency.oneOffImplementation.utils.CountMinSketchesManager;
+import de.tub.dima.condor.benchmark.efficiency.oneOffImplementation.utils.SliceCointMinSketchManager;
 import de.tub.dima.condor.benchmark.sources.input.UnorderedSource;
 import de.tub.dima.condor.benchmark.sources.utils.SyntheticExtractKeyField;
 import de.tub.dima.condor.benchmark.sources.utils.SyntheticTimestampsAndWatermarks;
@@ -57,11 +59,13 @@ public class OrderBased {
 
 		// Set up other configuration parameters
 		Class<CountMinSketchOrderBased> synopsisClass = CountMinSketchOrderBased.class;
+		Class<SliceCointMinSketchManager> sliceManager = SliceCointMinSketchManager.class;
+		Class<CountMinSketchesManager> manager = CountMinSketchesManager.class;
 		Window[] windows = {new SlidingWindow(WindowMeasure.Time, 5000, 5000)};
 		Object[] synopsisParameters = new Object[]{65536, 5, 7L};
+		int miniBatchSize = parallelism * 10;
 
-		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism);
-
+		BuildConfiguration config = new BuildConfiguration(inputStream, synopsisClass, windows, synopsisParameters, parallelism, miniBatchSize, sliceManager, manager);
 		// Build the synopses
 		SingleOutputStreamOperator<WindowedSynopsis<CountMinSketchOrderBased>> synopsesStream = SynopsisBuilder.build(config);
 /*
