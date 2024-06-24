@@ -9,10 +9,10 @@ import de.tub.dima.condor.flinkScottyConnector.processor.compute.scotty.Commutat
 import de.tub.dima.condor.flinkScottyConnector.processor.compute.scotty.InvertibleSynopsisFunction;
 import de.tub.dima.condor.flinkScottyConnector.processor.compute.scotty.NonMergeableSynopsisFunction;
 import de.tub.dima.condor.flinkScottyConnector.processor.compute.scotty.SynopsisFunction;
-import de.tub.dima.scotty.core.AggregateWindow;
-import de.tub.dima.scotty.core.windowType.Window;
-import de.tub.dima.scotty.core.windowType.WindowMeasure;
-import de.tub.dima.scotty.flinkconnector.KeyedScottyWindowOperator;
+import stream.scotty.core.AggregateWindow;
+import stream.scotty.core.windowType.Window;
+import stream.scotty.core.windowType.WindowMeasure;
+import stream.scotty.flinkconnector.KeyedScottyWindowOperator;
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;

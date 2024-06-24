@@ -3,7 +3,7 @@ package de.tub.dima.condor.flinkScottyConnector.processor.compute.scotty;
 import de.tub.dima.condor.core.synopsis.NonMergeableSynopsisManager;
 import de.tub.dima.condor.core.synopsis.StratifiedSynopsis;
 import de.tub.dima.condor.core.synopsis.Synopsis;
-import de.tub.dima.scotty.core.windowFunction.AggregateFunction;
+import stream.scotty.core.windowFunction.AggregateFunction;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
 

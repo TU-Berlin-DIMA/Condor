@@ -13,9 +13,9 @@ import de.tub.dima.condor.flinkScottyConnector.evaluator.ApproximateDataAnalytic
 import de.tub.dima.condor.flinkScottyConnector.evaluator.utils.StratifiedQueryResult;
 import de.tub.dima.condor.flinkScottyConnector.processor.SynopsisBuilder;
 import de.tub.dima.condor.flinkScottyConnector.processor.configs.BuildConfiguration;
-import de.tub.dima.scotty.core.windowType.TumblingWindow;
-import de.tub.dima.scotty.core.windowType.Window;
-import de.tub.dima.scotty.core.windowType.WindowMeasure;
+import stream.scotty.core.windowType.TumblingWindow;
+import stream.scotty.core.windowType.Window;
+import stream.scotty.core.windowType.WindowMeasure;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.TimeCharacteristic;

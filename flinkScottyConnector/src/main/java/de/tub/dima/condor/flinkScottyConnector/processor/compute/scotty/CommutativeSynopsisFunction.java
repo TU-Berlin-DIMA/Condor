@@ -2,7 +2,7 @@ package de.tub.dima.condor.flinkScottyConnector.processor.compute.scotty;
 
 import de.tub.dima.condor.core.synopsis.CommutativeSynopsis;
 import de.tub.dima.condor.core.synopsis.StratifiedSynopsis;
-import de.tub.dima.scotty.core.windowFunction.CommutativeAggregateFunction;
+import stream.scotty.core.windowFunction.CommutativeAggregateFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 
 import java.io.IOException;

@@ -1,7 +1,7 @@
 package de.tub.dima.condor.flinkScottyConnector.processor.utils.windowing;
 
 import de.tub.dima.condor.core.synopsis.MergeableSynopsis;
-import de.tub.dima.scotty.core.AggregateWindow;
+import stream.scotty.core.AggregateWindow;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.java.tuple.Tuple2;
 

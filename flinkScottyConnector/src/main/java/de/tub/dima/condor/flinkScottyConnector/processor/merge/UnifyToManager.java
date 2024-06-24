@@ -4,7 +4,7 @@ import de.tub.dima.condor.core.synopsis.NonMergeableSynopsisManager;
 import de.tub.dima.condor.flinkScottyConnector.processor.utils.windowing.NonMergeableSynopsisWindowState;
 import de.tub.dima.condor.flinkScottyConnector.processor.utils.windowing.WindowID;
 import de.tub.dima.condor.flinkScottyConnector.processor.utils.windowing.WindowState;
-import de.tub.dima.scotty.core.AggregateWindow;
+import stream.scotty.core.AggregateWindow;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;

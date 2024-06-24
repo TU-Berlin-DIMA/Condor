@@ -2,7 +2,7 @@ package de.tub.dima.condor.flinkScottyConnector.processor.configs;
 
 import de.tub.dima.condor.core.synopsis.NonMergeableSynopsisManager;
 import de.tub.dima.condor.core.synopsis.Synopsis;
-import de.tub.dima.scotty.core.windowType.Window;
+import stream.scotty.core.windowType.Window;
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;

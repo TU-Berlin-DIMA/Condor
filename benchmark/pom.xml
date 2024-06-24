@@ -61,7 +61,7 @@
 			<version>0.1</version>
 		</dependency>
 		<dependency>
-			<groupId>de.tub.dima.scotty</groupId>
+			<groupId>stream.scotty</groupId>
 			<artifactId>flink-connector</artifactId>
 			<version>0.4</version>
 		</dependency>

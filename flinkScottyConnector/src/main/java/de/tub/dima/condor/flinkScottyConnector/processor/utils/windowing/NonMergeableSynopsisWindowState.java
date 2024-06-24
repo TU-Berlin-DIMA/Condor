@@ -2,8 +2,8 @@ package de.tub.dima.condor.flinkScottyConnector.processor.utils.windowing;
 
 import de.tub.dima.condor.core.synopsis.NonMergeableSynopsisManager;
 import de.tub.dima.condor.core.synopsis.Synopsis;
-import de.tub.dima.scotty.core.AggregateWindow;
-import de.tub.dima.scotty.core.windowType.WindowMeasure;
+import stream.scotty.core.AggregateWindow;
+import stream.scotty.core.windowType.WindowMeasure;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
